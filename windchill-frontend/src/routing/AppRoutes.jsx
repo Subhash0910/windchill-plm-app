@@ -11,7 +11,7 @@ const AppRoutes = () => {
       <Routes>
         <Route
           path="/login"
-          element=(
+          element={
             <PublicRoute>
               <LoginPage />
             </PublicRoute>
@@ -19,7 +19,7 @@ const AppRoutes = () => {
         />
         <Route
           path="/dashboard"
-          element=(
+          element={
             <PrivateRoute>
               <DashboardPage />
             </PrivateRoute>
