@@ -1,0 +1,59 @@
+# Backend - Maven
+windchill-backend/target/
+windchill-backend/**/*.class
+windchill-backend/**/*.jar
+windchill-backend/**/*.war
+windchill-backend/.idea/
+windchill-backend/**/*.iml
+windchill-backend/.DS_Store
+windchill-backend/bin/
+windchill-backend/.classpath
+windchill-backend/.project
+windchill-backend/.settings/
+windchill-backend/*.log
+
+# Frontend - Node.js
+windchill-frontend/node_modules/
+windchill-frontend/dist/
+windchill-frontend/build/
+windchill-frontend/.env.local
+windchill-frontend/.env.*.local
+windchill-frontend/npm-debug.log*
+windchill-frontend/yarn-debug.log*
+windchill-frontend/yarn-error.log*
+windchill-frontend/.cache/
+windchill-frontend/.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.docker/
