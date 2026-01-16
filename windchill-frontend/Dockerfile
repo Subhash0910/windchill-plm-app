@@ -1,7 +1,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /build
 COPY package*.json ./
-RUN npm install
+RUN npm config set legacy-peer-deps true && npm install --no-audit --no-fund
 COPY . .
 RUN npm run build
 
