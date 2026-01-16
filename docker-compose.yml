@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: windchill-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: windchill_db
+      MYSQL_USER: windchill
+      MYSQL_PASSWORD: windchill123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: windchill-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: ./windchill-backend
+      dockerfile: backend-api/Dockerfile
+    container_name: windchill-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db
+      SPRING_DATASOURCE_USERNAME: windchill
+      SPRING_DATASOURCE_PASSWORD: windchill123
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - windchill-network
+
+  frontend:
+    build:
+      context: ./windchill-frontend
+      dockerfile: Dockerfile
+    container_name: windchill-frontend
+    ports:
+      - "80:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api/v1
+    depends_on:
+      - backend
+    networks:
+      - windchill-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  windchill-network:
+    driver: bridge
