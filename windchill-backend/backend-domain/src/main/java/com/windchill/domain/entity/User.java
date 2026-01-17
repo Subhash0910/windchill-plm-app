@@ -33,7 +33,7 @@ public class User extends BaseEntity {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(20)")
     private RoleEnum role = RoleEnum.VIEWER;
 
     @Column(name = "is_active", nullable = false)
