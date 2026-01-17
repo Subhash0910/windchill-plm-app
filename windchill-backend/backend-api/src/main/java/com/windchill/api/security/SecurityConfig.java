@@ -24,7 +24,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                // Allow public access to Swagger/OpenAPI docs (without /api/v1 prefix - evaluated before context-path)
+                // Allow public access to API docs
                 .requestMatchers(
                     "/api-docs/**",
                     "/swagger-ui/**",
@@ -32,8 +32,12 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/webjars/**"
                 ).permitAll()
-                // Allow public access to authentication endpoints (to be added later)
-                .requestMatchers("/auth/**").permitAll()
+                // Allow public access to auth endpoints (full path with context: /api/v1/auth/**)
+                .requestMatchers(
+                    "/auth/**",
+                    "/auth/login",
+                    "/auth/validate"
+                ).permitAll()
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )
