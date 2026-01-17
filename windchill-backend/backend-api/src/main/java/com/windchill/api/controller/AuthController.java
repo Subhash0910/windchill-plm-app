@@ -2,6 +2,7 @@ package com.windchill.api.controller;
 
 import com.windchill.api.dto.LoginRequest;
 import com.windchill.api.dto.LoginResponse;
+import com.windchill.api.exception.ValidationException;
 import com.windchill.api.security.JwtTokenProvider;
 import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
@@ -26,24 +27,36 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login attempt for user: {}", request.getUsername());
         
-        User user = userService.authenticateUser(request.getUsername(), request.getPassword());
-        userService.updateLastLogin(user.getId());
+        try {
+            User user = userService.authenticateUser(request.getUsername(), request.getPassword());
+            if (user == null) {
+                throw new ValidationException("Invalid username or password");
+            }
+            
+            userService.updateLastLogin(user.getId());
 
-        String token = jwtTokenProvider.generateToken(user);
-        long expiresIn = jwtTokenProvider.getExpirationTime();
+            String token = jwtTokenProvider.generateToken(user);
+            long expiresIn = jwtTokenProvider.getExpirationTime();
 
-        LoginResponse response = LoginResponse.builder()
-                .userId(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole())
-                .token(token)
-                .expiresIn(expiresIn)
-                .build();
+            LoginResponse response = LoginResponse.builder()
+                    .userId(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .fullName(user.getFullName())
+                    .role(user.getRole())
+                    .token(token)
+                    .expiresIn(expiresIn)
+                    .build();
 
-        log.info("User logged in successfully: {}", user.getUsername());
-        return ResponseEntity.ok(new ApiResponse<>("Login successful", response, true));
+            log.info("User logged in successfully: {}", user.getUsername());
+            return ResponseEntity.ok(new ApiResponse<>("Login successful", response, true));
+        } catch (ValidationException e) {
+            log.warn("Login failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Login error: {}", e.getMessage(), e);
+            throw new ValidationException("Login failed: " + e.getMessage());
+        }
     }
 
     @GetMapping("/validate")
