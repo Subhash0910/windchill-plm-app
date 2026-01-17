@@ -27,7 +27,7 @@ public class Product extends BaseEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(50)")
     private StatusEnum status = StatusEnum.DRAFT;
 
     @Column(name = "version_number")

@@ -30,7 +30,7 @@ public class Document extends BaseEntity {
     private String documentType; // e.g., "SPEC", "DRAWING", "MANUAL"
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(50)")
     private StatusEnum status = StatusEnum.DRAFT;
 
     @Column(name = "version_number")
