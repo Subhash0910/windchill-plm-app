@@ -2,12 +2,12 @@ package com.windchill.domain.entity;
 
 import com.windchill.common.enums.StatusEnum;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "projects", indexes = {
@@ -41,8 +41,8 @@ public class Project extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "budget")
-    private Double budget;
+    @Column(name = "budget", precision = 12, scale = 2)
+    private BigDecimal budget;
 
     @Column(name = "department")
     private String department;
