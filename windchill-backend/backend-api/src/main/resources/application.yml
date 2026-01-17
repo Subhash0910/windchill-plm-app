@@ -8,7 +8,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        # Hibernate 6 + MySQL supports native ENUM; force VARCHAR so it matches Flyway schema (status VARCHAR(50)).
+        type:
+          preferred_enum_jdbc_type: VARCHAR
+        # MySQL8Dialect is deprecated in Hibernate 6; MySQLDialect is preferred.
+        dialect: org.hibernate.dialect.MySQLDialect
   datasource:
     url: jdbc:mysql://localhost:3306/windchill_db?useSSL=false&serverTimezone=UTC
     username: root
