@@ -2,6 +2,7 @@ package com.windchill.domain.entity;
 
 import com.windchill.common.enums.StatusEnum;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -39,11 +40,11 @@ public class Product extends BaseEntity {
     @Column(name = "manufacturer")
     private String manufacturer;
 
-    @Column(name = "cost")
-    private Double cost;
+    @Column(name = "cost", precision = 10, scale = 2)
+    private BigDecimal cost;
 
-    @Column(name = "selling_price")
-    private Double sellingPrice;
+    @Column(name = "selling_price", precision = 10, scale = 2)
+    private BigDecimal sellingPrice;
 
     @Column(name = "unit_of_measure")
     private String unitOfMeasure = "EA";
