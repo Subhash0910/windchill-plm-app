@@ -2,15 +2,17 @@
 FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
 
-# Copy parent pom.xml
-COPY pom.xml .
-COPY windchill-backend/pom.xml windchill-backend/
+# Copy root pom.xml
+COPY ../../pom.xml .
 
-# Copy source code
-COPY windchill-backend windchill-backend
+# Copy windchill-backend parent pom.xml
+COPY ../pom.xml windchill-backend/
 
-# Build the application
-RUN mvn clean package -DskipTests -q
+# Copy windchill-backend source code
+COPY ../. windchill-backend/
+
+# Build the application from windchill-backend
+RUN cd windchill-backend && mvn clean package -DskipTests -q
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
