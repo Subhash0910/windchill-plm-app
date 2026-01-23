@@ -21,7 +21,7 @@ public class ProductController {
     private final IProductService productService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Product>> createProduct(@RequestBody Product product) {
+    public ResponseEntity<ApiResponse<?>> createProduct(@RequestBody Product product) {
         log.info("Creating new product: {}", product.getProductCode());
         Product createdProduct = productService.createProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -29,56 +29,56 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Product>> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<?>> getProductById(@PathVariable Long id) {
         log.info("Fetching product by id: {}", id);
         Product product = productService.getProductById(id);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, product, true));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Product>>> getAllProducts() {
+    public ResponseEntity<ApiResponse<?>> getAllProducts() {
         log.info("Fetching all products");
         List<Product> products = productService.getAllProducts();
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
     }
 
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<Product>> getProductByCode(@PathVariable String code) {
+    public ResponseEntity<ApiResponse<?>> getProductByCode(@PathVariable String code) {
         log.info("Fetching product by code: {}", code);
         Product product = productService.getProductByCode(code);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, product, true));
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<ApiResponse<List<Product>>> getProductsByProject(@PathVariable Long projectId) {
+    public ResponseEntity<ApiResponse<?>> getProductsByProject(@PathVariable Long projectId) {
         log.info("Fetching products for project: {}", projectId);
         List<Product> products = productService.getProductsByProject(projectId);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<Product>>> searchProducts(@RequestParam String keyword) {
+    public ResponseEntity<ApiResponse<?>> searchProducts(@RequestParam String keyword) {
         log.info("Searching products with keyword: {}", keyword);
         List<Product> products = productService.searchProducts(keyword);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Product>> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
+    public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
         log.info("Updating product: {}", id);
         Product updatedProduct = productService.updateProduct(id, productDetails);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedProduct, true));
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<Product>> updateProductStatus(@PathVariable Long id, @RequestParam StatusEnum status) {
+    public ResponseEntity<ApiResponse<?>> updateProductStatus(@PathVariable Long id, @RequestParam StatusEnum status) {
         log.info("Updating product status: {} to {}", id, status);
         Product updatedProduct = productService.updateProductStatus(id, status);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedProduct, true));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable Long id) {
         log.info("Deleting product: {}", id);
         productService.deleteProduct(id);
         return ResponseEntity.ok(new ApiResponse<>(APIConstants.DELETED, null, true));

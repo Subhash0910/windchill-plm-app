@@ -19,10 +19,10 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(
+    public ResponseEntity<ApiResponse<?>> handleUnauthorizedException(
             UnauthorizedException ex,
             WebRequest request) {
-        ApiResponse<Void> apiResponse = ApiResponse.builder()
+        ApiResponse<?> apiResponse = ApiResponse.builder()
             .success(false)
             .message(ex.getMessage() != null ? ex.getMessage() : "Unauthorized access")
             .build();
@@ -30,10 +30,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+    public ResponseEntity<ApiResponse<?>> handleResourceNotFoundException(
             ResourceNotFoundException ex,
             WebRequest request) {
-        ApiResponse<Void> apiResponse = ApiResponse.builder()
+        ApiResponse<?> apiResponse = ApiResponse.builder()
             .success(false)
             .message(ex.getMessage() != null ? ex.getMessage() : "Resource not found")
             .build();
@@ -41,10 +41,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+    public ResponseEntity<ApiResponse<?>> handleBusinessException(
             BusinessException ex,
             WebRequest request) {
-        ApiResponse<Void> apiResponse = ApiResponse.builder()
+        ApiResponse<?> apiResponse = ApiResponse.builder()
             .success(false)
             .message(ex.getMessage() != null ? ex.getMessage() : "Business operation failed")
             .build();
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
+    public ResponseEntity<ApiResponse<?>> handleValidationException(
             MethodArgumentNotValidException ex,
             WebRequest request) {
         Map<String, String> errors = new HashMap<>();
@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, message);
         });
         
-        ApiResponse<Map<String, String>> apiResponse = ApiResponse.builder()
+        ApiResponse<?> apiResponse = ApiResponse.builder()
             .success(false)
             .message("Validation failed")
             .data(errors)
@@ -71,11 +71,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(
+    public ResponseEntity<ApiResponse<?>> handleGenericException(
             Exception ex,
             WebRequest request) {
         ex.printStackTrace();
-        ApiResponse<Void> apiResponse = ApiResponse.builder()
+        ApiResponse<?> apiResponse = ApiResponse.builder()
             .success(false)
             .message("An unexpected error occurred: " + ex.getMessage())
             .build();
