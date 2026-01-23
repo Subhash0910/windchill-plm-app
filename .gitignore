@@ -1,47 +1,39 @@
-# Backend - Maven
-windchill-backend/target/
-windchill-backend/**/*.class
-windchill-backend/**/*.jar
-windchill-backend/**/*.war
-windchill-backend/.idea/
-windchill-backend/**/*.iml
-windchill-backend/.DS_Store
-windchill-backend/bin/
-windchill-backend/.classpath
-windchill-backend/.project
-windchill-backend/.settings/
-windchill-backend/*.log
-
-# Frontend - Node.js
-windchill-frontend/node_modules/
-windchill-frontend/dist/
-windchill-frontend/build/
-windchill-frontend/.env.local
-windchill-frontend/.env.*.local
-windchill-frontend/npm-debug.log*
-windchill-frontend/yarn-debug.log*
-windchill-frontend/yarn-error.log*
-windchill-frontend/.cache/
-windchill-frontend/.vite/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
 .DS_Store
-*.sublime-project
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.c9/
+*.launch
+.settings/
 *.sublime-workspace
+.vscode-test
+.history/
 
-# OS
-Thumbs.db
-.DS_Store
+# Build artifacts
+target/
+/build/
+dist/
+.gradle/
+out/
+
+# Frontend
+node_modules/
+/windchill-frontend/node_modules/
+/windchill-frontend/dist/
+/windchill-frontend/.env.local
+/windchill-frontend/.env.*.local
+*.pem
+.env
+.env.local
+.env.*.local
 
 # Logs
 logs/
@@ -49,11 +41,91 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Application
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
 # Database
+*.sql
 *.db
 *.sqlite
 *.sqlite3
 
+# OS
+.DS_Store
+Thumbs.db
+.env
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Gradle
+gradle/
+gradle-app.setting
+
+# Environment
+.env
+.env.local
+.env.prod
+.env.dev
+
 # Docker
 .docker/
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Node Package Manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Misc
+.cache
+.vuepress/dist
+.nuxt
+dist
+dl
+ocl_dist
+dist/
+.cache/
+.vuepress/dist
+.nuxt
+.cache
+.vuepress/dist
+.nuxt
+.cache
+.output
+.nuxt
+dist
+.next
+out
+.nuxt
+dist
+
+# IDE specific files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Application specific
+spring.log
+logs/
