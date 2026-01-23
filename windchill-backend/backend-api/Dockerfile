@@ -1,10 +1,35 @@
-FROM maven:3.9-eclipse-temurin-17 AS builder
+# Stage 1: Build the application
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
-COPY . .
-RUN mvn clean package -DskipTests
 
+# Copy parent pom.xml
+COPY pom.xml .
+COPY windchill-backend/pom.xml windchill-backend/
+
+# Copy source code
+COPY windchill-backend windchill-backend
+
+# Build the application
+RUN mvn clean package -DskipTests -q
+
+# Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
+
 WORKDIR /app
-COPY --from=builder /build/backend-api/target/backend-api-1.0.0-SNAPSHOT.jar app.jar
+
+# Copy the jar from builder
+COPY --from=builder /build/windchill-backend/backend-api/target/*.jar app.jar
+
+# Create non-root user
+RUN addgroup -g 1001 appuser && adduser -D -u 1001 -G appuser appuser
+USER appuser
+
+# Expose port
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+
+# Run the application
+CMD ["java", "-Xmx512m", "-Xms256m", "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200", "-jar", "app.jar"]
