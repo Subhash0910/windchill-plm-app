@@ -27,34 +27,54 @@ public class UserController {
         User user = userService.createUser(request.getUsername(), request.getEmail(), 
                 request.getPassword(), request.getRole());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(APIConstants.CREATED, user, true));
+                .body(ApiResponse.builder()
+                        .success(true)
+                        .message(APIConstants.CREATED)
+                        .data(user)
+                        .build());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> getUserById(@PathVariable Long id) {
         log.info("Fetching user by id: {}", id);
         User user = userService.getUserById(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, user, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(user)
+                .build());
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<?>> getAllUsers() {
         log.info("Fetching all users");
         List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, users, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(users)
+                .build());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         log.info("Updating user: {}", id);
         User updatedUser = userService.updateUser(id, userDetails);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedUser, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.UPDATED)
+                .data(updatedUser)
+                .build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> deleteUser(@PathVariable Long id) {
         log.info("Deleting user: {}", id);
         userService.deleteUser(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.DELETED, null, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.DELETED)
+                .data(null)
+                .build());
     }
 }
