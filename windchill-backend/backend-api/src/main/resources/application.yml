@@ -44,6 +44,11 @@ spring:
       allowed-headers: "*"
       allow-credentials: true
       max-age: 3600
+    static-path-pattern: /static/**
+
+  web:
+    resources:
+      static-locations: classpath:/static/
 
 server:
   port: 8080
@@ -56,12 +61,16 @@ server:
     threads:
       max: 200
       min-spare: 10
+  error:
+    include-message: always
+    include-binding-errors: always
 
 logging:
   level:
     root: INFO
     com.windchill: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -90,9 +99,13 @@ management:
       exposure:
         include: health,info,metrics
       base-path: /actuator
+      path-mapping:
+        health: health
   endpoint:
     health:
       show-details: always
       enabled: true
     info:
       enabled: true
+  endpoints:
+    enabled-by-default: true
