@@ -1,84 +1,75 @@
 package com.windchill.api.exception;
 
 import com.windchill.common.dto.ApiResponse;
-import com.windchill.common.exception.BusinessException;
-import com.windchill.common.exception.ResourceNotFoundException;
-import com.windchill.common.exception.UnauthorizedException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<?>> handleUnauthorizedException(
-            UnauthorizedException ex,
-            WebRequest request) {
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-            .success(false)
-            .message(ex.getMessage() != null ? ex.getMessage() : "Unauthorized access")
-            .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.UNAUTHORIZED);
-    }
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<?>> handleResourceNotFoundException(
-            ResourceNotFoundException ex,
-            WebRequest request) {
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-            .success(false)
-            .message(ex.getMessage() != null ? ex.getMessage() : "Resource not found")
-            .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<?>> handleBusinessException(
-            BusinessException ex,
-            WebRequest request) {
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-            .success(false)
-            .message(ex.getMessage() != null ? ex.getMessage() : "Business operation failed")
-            .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidationException(ValidationException ex) {
+        log.warn("Validation error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<?>> handleValidationException(
-            MethodArgumentNotValidException ex,
-            WebRequest request) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String message = error.getDefaultMessage();
-            errors.put(fieldName, message);
-        });
-        
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-            .success(false)
-            .message("Validation failed")
-            .data(errors)
-            .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponse<?>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        String errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        log.warn("Validation error: {}", errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message("Validation failed: " + errors)
+                        .data(null)
+                        .build());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .build());
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNoHandlerFound(NoHandlerFoundException ex) {
+        log.warn("Endpoint not found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message("Endpoint not found: " + ex.getRequestURL())
+                        .data(null)
+                        .build());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> handleGenericException(
-            Exception ex,
-            WebRequest request) {
-        ex.printStackTrace();
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-            .success(false)
-            .message("An unexpected error occurred: " + ex.getMessage())
-            .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ApiResponse<?>> handleGeneralException(Exception ex) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.builder()
+                        .success(false)
+                        .message("An unexpected error occurred: " + ex.getMessage())
+                        .data(null)
+                        .build());
     }
 }
