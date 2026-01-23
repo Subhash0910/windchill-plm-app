@@ -1,58 +1,94 @@
 spring:
   application:
-    name: windchill-backend
+    name: windchill-api
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: windchill
+    password: windchill123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
-        # Hibernate 6 + MySQL supports native ENUM; force VARCHAR so it matches Flyway schema (status VARCHAR(50)).
-        type:
-          preferred_enum_jdbc_type: VARCHAR
-        # MySQL8Dialect is deprecated in Hibernate 6; MySQLDialect is preferred.
-        dialect: org.hibernate.dialect.MySQLDialect
-  datasource:
-    url: jdbc:mysql://localhost:3306/windchill_db?useSSL=false&serverTimezone=UTC
-    username: root
-    password: password
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  cache:
-    type: redis
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 2000ms
+        use_sql_comments: true
+    show-sql: false
+    open-in-view: false
+  
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000
+    jedis:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+  
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+  mvc:
+    cors:
+      allowed-origins: "http://localhost,http://localhost:3000,http://frontend"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: 3600
 
 server:
   port: 8080
   servlet:
-    context-path: /api/v1
-  error:
-    include-message: always
-    include-binding-errors: always
-
-jwt:
-  secret: your-super-secret-key-min-256-chars-for-hs256-algorithm-requirement-minimum-length
-  expiration: 86400000
-  refresh-expiration: 604800000
+    context-path: /
+  compression:
+    enabled: true
+    min-response-size: 1024
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
 
 logging:
   level:
     root: INFO
     com.windchill: DEBUG
+    org.springframework.security: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
     name: logs/windchill.log
     max-size: 10MB
     max-history: 10
 
+jwt:
+  secret: windchill-secret-key-please-change-in-production-environment
+  expiration: 86400000  # 24 hours in milliseconds
+  refresh-expiration: 604800000  # 7 days in milliseconds
+
 springdoc:
-  api-docs:
-    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
