@@ -3,14 +3,14 @@ spring:
     name: windchill-api
   
   datasource:
-    url: jdbc:mysql://localhost:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://windchill-mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: windchill
     password: windchill123
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
@@ -20,7 +20,7 @@ spring:
     open-in-view: false
   
   redis:
-    host: localhost
+    host: windchill-redis
     port: 6379
     timeout: 2000
     jedis:
@@ -88,7 +88,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
+      base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      enabled: true
+    info:
+      enabled: true
