@@ -25,62 +25,98 @@ public class ProductController {
         log.info("Creating new product: {}", product.getProductCode());
         Product createdProduct = productService.createProduct(product);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(APIConstants.CREATED, createdProduct, true));
+                .body(ApiResponse.builder()
+                        .success(true)
+                        .message(APIConstants.CREATED)
+                        .data(createdProduct)
+                        .build());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> getProductById(@PathVariable Long id) {
         log.info("Fetching product by id: {}", id);
         Product product = productService.getProductById(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, product, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(product)
+                .build());
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<?>> getAllProducts() {
         log.info("Fetching all products");
         List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(products)
+                .build());
     }
 
     @GetMapping("/code/{code}")
     public ResponseEntity<ApiResponse<?>> getProductByCode(@PathVariable String code) {
         log.info("Fetching product by code: {}", code);
         Product product = productService.getProductByCode(code);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, product, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(product)
+                .build());
     }
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<ApiResponse<?>> getProductsByProject(@PathVariable Long projectId) {
         log.info("Fetching products for project: {}", projectId);
         List<Product> products = productService.getProductsByProject(projectId);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(products)
+                .build());
     }
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<?>> searchProducts(@RequestParam String keyword) {
         log.info("Searching products with keyword: {}", keyword);
         List<Product> products = productService.searchProducts(keyword);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, products, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(products)
+                .build());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
         log.info("Updating product: {}", id);
         Product updatedProduct = productService.updateProduct(id, productDetails);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedProduct, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.UPDATED)
+                .data(updatedProduct)
+                .build());
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<ApiResponse<?>> updateProductStatus(@PathVariable Long id, @RequestParam StatusEnum status) {
         log.info("Updating product status: {} to {}", id, status);
         Product updatedProduct = productService.updateProductStatus(id, status);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedProduct, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.UPDATED)
+                .data(updatedProduct)
+                .build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> deleteProduct(@PathVariable Long id) {
         log.info("Deleting product: {}", id);
         productService.deleteProduct(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.DELETED, null, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.DELETED)
+                .data(null)
+                .build());
     }
 }
