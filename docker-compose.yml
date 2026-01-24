@@ -20,7 +20,6 @@ services:
       timeout: 20s
       retries: 10
       interval: 10s
-      start-period: 40s
 
   redis:
     image: redis:7-alpine
@@ -36,7 +35,6 @@ services:
       timeout: 10s
       retries: 5
       interval: 10s
-      start-period: 20s
 
   backend:
     build:
@@ -70,13 +68,11 @@ services:
     networks:
       - windchill-network
     restart: unless-stopped
-    # Extended health check with better timeout
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       timeout: 10s
       retries: 5
       interval: 15s
-      start-period: 60s
 
   frontend:
     build:
@@ -98,7 +94,6 @@ services:
       timeout: 10s
       retries: 3
       interval: 15s
-      start-period: 30s
 
 volumes:
   mysql_data:
