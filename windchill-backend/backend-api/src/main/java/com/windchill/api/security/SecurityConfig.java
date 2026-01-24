@@ -4,14 +4,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,18 +32,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * CRITICAL: Disable security for actuator endpoints completely
-     * This bypasses ALL security filters for these paths
-     */
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web
-            .ignoring()
-            .requestMatchers("/actuator/**")
-            .requestMatchers("/actuator/health/**");
     }
 
     @Bean
@@ -86,7 +75,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // Only apply security to paths that are NOT /actuator/**
         http
+            .securityMatcher(
+                new NegatedRequestMatcher(
+                    new OrRequestMatcher(
+                        new AntPathRequestMatcher("/actuator/**")
+                    )
+                )
+            )
             // Enable CORS with our configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
@@ -96,7 +93,7 @@ public class SecurityConfig {
             // Use stateless session management for JWT
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             
-            // Configure request authorization
+            // Configure request authorization for non-actuator paths
             .authorizeHttpRequests(authz -> authz
                 // Allow OPTIONS requests (preflight)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
