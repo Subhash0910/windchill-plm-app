@@ -4,7 +4,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +31,18 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * CRITICAL: Disable security for actuator endpoints completely
+     * This bypasses ALL security filters for these paths
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web
+            .ignoring()
+            .requestMatchers("/actuator/**")
+            .requestMatchers("/actuator/health/**");
     }
 
     @Bean
@@ -86,11 +100,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 // Allow OPTIONS requests (preflight)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
-                // CRITICAL: Allow actuator endpoints FIRST - before JWT filter kicks in
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/actuator/health/**").permitAll()
                 
                 // Allow all auth endpoints
                 .requestMatchers("/api/v1/auth/**").permitAll()
