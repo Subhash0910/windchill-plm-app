@@ -2,6 +2,7 @@ package com.windchill.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -72,11 +73,12 @@ public class SecurityConfig {
     }
 
     /**
-     * SEPARATE SecurityFilterChain for ACTUATOR endpoints
+     * FIRST SecurityFilterChain for ACTUATOR endpoints (Order = 1)
      * This chain completely bypasses security for /actuator/** paths
-     * It's ordered FIRST so it takes precedence over the main security chain
+     * @Order(1) ensures this is evaluated FIRST before the main chain
      */
-    @Bean("actuatorSecurityFilterChain")
+    @Bean
+    @Order(1)
     public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher(new AntPathRequestMatcher("/actuator/**"))
@@ -88,10 +90,11 @@ public class SecurityConfig {
     }
 
     /**
-     * Main SecurityFilterChain for ALL OTHER endpoints
-     * This is ordered AFTER the actuator chain
+     * SECOND SecurityFilterChain for ALL OTHER endpoints (Order = 2)
+     * This is evaluated AFTER the actuator chain
      */
     @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             // Enable CORS with our configuration
