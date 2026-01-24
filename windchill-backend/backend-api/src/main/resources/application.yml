@@ -132,8 +132,7 @@ management:
         enabled: true
     info:
       enabled: true
-  endpoints:
-    enabled-by-default: true
+  enabled-by-default: true
   health:
     livenessState:
       enabled: true
