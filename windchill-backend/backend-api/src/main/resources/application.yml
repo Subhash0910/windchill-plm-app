@@ -81,8 +81,8 @@ logging:
 
 jwt:
   secret: windchill-secret-key-please-change-in-production-environment
-  expiration: 86400000  # 24 hours in milliseconds
-  refresh-expiration: 604800000  # 7 days in milliseconds
+  expiration: 86400000
+  refresh-expiration: 604800000
 
 springdoc:
   swagger-ui:
@@ -99,8 +99,6 @@ management:
       exposure:
         include: health,info,metrics
       base-path: /actuator
-      path-mapping:
-        health: health
   endpoint:
     health:
       show-details: always
