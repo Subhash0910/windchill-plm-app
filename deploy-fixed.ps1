@@ -12,7 +12,7 @@
     - Testing connectivity
 .NOTES
     Requires Docker and Docker Compose to be installed
-    Run as administrator for best results
+    Compatible with PowerShell 5.1+
 #>
 
 param(
@@ -24,7 +24,8 @@ param(
 )
 
 # Color output helper
-function Write-Status { param([string]$Message, [string]$Status = "INFO")
+function Write-Status { 
+    param([string]$Message, [string]$Status = "INFO")
     $colors = @{
         "INFO"    = "Cyan"
         "SUCCESS" = "Green"
@@ -32,16 +33,18 @@ function Write-Status { param([string]$Message, [string]$Status = "INFO")
         "ERROR"   = "Red"
         "HEADER"  = "Magenta"
     }
-    $color = $colors[$Status] ?? "White"
+    $color = if ($colors.ContainsKey($Status)) { $colors[$Status] } else { "White" }
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] [$Status] $Message" -ForegroundColor $color
 }
 
-function Invoke-Step { param([scriptblock]$ScriptBlock, [string]$Description)
+function Invoke-Step { 
+    param([scriptblock]$ScriptBlock, [string]$Description)
     Write-Status $Description "HEADER"
     try {
         & $ScriptBlock
         Write-Status "✓ Completed: $Description" "SUCCESS"
-    } catch {
+    } 
+    catch {
         Write-Status "✗ Failed: $Description" "ERROR"
         Write-Status "Error: $_" "ERROR"
         exit 1
@@ -50,10 +53,10 @@ function Invoke-Step { param([scriptblock]$ScriptBlock, [string]$Description)
 
 # Main deployment
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
-Write-Host "║  Windchill PLM - Backend Deployment Fix                   ║" -ForegroundColor Magenta
-Write-Host "║  Branch: fix/generic-type-errors                          ║" -ForegroundColor Magenta
-Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+Write-Host "════════════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host "  Windchill PLM - Backend Deployment Fix" -ForegroundColor Magenta
+Write-Host "  Branch: fix/generic-type-errors" -ForegroundColor Magenta
+Write-Host "════════════════════════════════════════════════════════════════════" -ForegroundColor Magenta
 Write-Host ""
 
 # Step 1: Clean previous deployment
@@ -70,7 +73,8 @@ if (-not $SkipPull) {
         Write-Status "Pulling latest changes from fix/generic-type-errors..." "INFO"
         git pull origin fix/generic-type-errors
     } "Pulling latest code"
-} else {
+} 
+else {
     Write-Status "Skipping git pull" "WARNING"
 }
 
@@ -81,7 +85,8 @@ if (-not $SkipBuild) {
         docker-compose build --no-cache backend
         Write-Status "Backend build completed successfully" "SUCCESS"
     } "Rebuilding backend Docker image"
-} else {
+} 
+else {
     Write-Status "Skipping Docker build" "WARNING"
 }
 
@@ -106,7 +111,8 @@ Invoke-Step {
         $status = docker-compose ps $service --format "table {{.Status}}" 2>$null
         if ($status -match "healthy|running") {
             Write-Status "✓ $service is healthy" "SUCCESS"
-        } else {
+        } 
+        else {
             Write-Status "⚠ $service status: $status" "WARNING"
         }
     }
@@ -123,19 +129,21 @@ if (-not $SkipTests) {
                 Write-Status "✓ Backend health check passed" "SUCCESS"
                 Write-Host $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 2 -Compress
             }
-        } catch {
+        } 
+        catch {
             Write-Status "⚠ Backend health check failed (may still be initializing)" "WARNING"
             Write-Status "Please wait a few more seconds and try manually:" "INFO"
             Write-Status "  PowerShell: Invoke-WebRequest -Uri 'http://localhost:8080/actuator/health' -UseBasicParsing" "INFO"
         }
         
-        Write-Status "\nTesting frontend connectivity..." "INFO"
+        Write-Status "`nTesting frontend connectivity..." "INFO"
         try {
             $response = Invoke-WebRequest -Uri "http://localhost" -UseBasicParsing -ErrorAction Stop
             if ($response.StatusCode -eq 200) {
                 Write-Status "✓ Frontend is accessible" "SUCCESS"
             }
-        } catch {
+        } 
+        catch {
             Write-Status "⚠ Frontend not yet responding" "WARNING"
         }
     } "Running connectivity tests"
@@ -149,11 +157,11 @@ Invoke-Step {
 
 # Final summary
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║                  DEPLOYMENT COMPLETED                      ║" -ForegroundColor Green
-Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "════════════════════════════════════════════════════════════════════" -ForegroundColor Green
+Write-Host "                  DEPLOYMENT COMPLETED" -ForegroundColor Green
+Write-Host "════════════════════════════════════════════════════════════════════" -ForegroundColor Green
 Write-Host ""
-Write-Host "📍 Service URLs:" -ForegroundColor Cyan
+Write-Host "📋 Service URLs:" -ForegroundColor Cyan
 Write-Host "   • Frontend:     http://localhost" -ForegroundColor White
 Write-Host "   • Backend API:  http://localhost:8080" -ForegroundColor White
 Write-Host "   • Swagger:      http://localhost:8080/swagger-ui.html" -ForegroundColor White
@@ -187,13 +195,14 @@ for ($i = 0; $i -lt 5; $i++) {
             $BackendReady = $true
             break
         }
-    } catch {
+    } 
+    catch {
         Write-Host "." -NoNewline -ForegroundColor Yellow
     }
 }
 
 if (-not $BackendReady) {
-    Write-Host "\n⚠️  Backend still initializing. Please check logs:" -ForegroundColor Yellow
+    Write-Host "`n⚠️  Backend still initializing. Please check logs:" -ForegroundColor Yellow
     Write-Host "   docker-compose logs backend" -ForegroundColor White
 }
 
