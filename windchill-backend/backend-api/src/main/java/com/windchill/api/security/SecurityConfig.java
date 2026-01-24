@@ -87,6 +87,11 @@ public class SecurityConfig {
                 // Allow OPTIONS requests (preflight)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
+                // CRITICAL: Allow actuator endpoints FIRST - before JWT filter kicks in
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/health/**").permitAll()
+                
                 // Allow all auth endpoints
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v1/auth/login").permitAll()
@@ -97,7 +102,6 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
                 .requestMatchers("/webjars/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()
