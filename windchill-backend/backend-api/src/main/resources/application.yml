@@ -3,12 +3,10 @@ spring:
     name: windchill-api
   
   datasource:
-    # Default for Docker - uses 'mysql' service name
     url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
     username: windchill
     password: windchill123
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # Connection pool optimization
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -23,7 +21,6 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
         use_sql_comments: true
-        # Connection validation
         connection:
           provider_disables_autocommit: false
     show-sql: false
@@ -56,13 +53,11 @@ spring:
       allowed-headers: "*"
       allow-credentials: true
       max-age: 3600
-    static-path-pattern: /static/**
-    throw-exception-if-no-handler-found: true
+    throw-exception-if-no-handler-found: false
 
   web:
     resources:
       static-locations: classpath:/static/
-    throw-exception-if-no-handler-found: true
 
 server:
   port: 8080
@@ -87,18 +82,8 @@ logging:
   level:
     root: INFO
     com.windchill: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.boot.autoconfigure: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/windchill.log
-    max-size: 10MB
-    max-history: 10
 
 jwt:
   secret: windchill-secret-key-please-change-in-production-environment
@@ -108,22 +93,16 @@ jwt:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
     enabled: true
   api-docs:
     path: /v3/api-docs
-  show-actuator: false
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env
+        include: health,info,metrics
       base-path: /actuator
-      cors:
-        allowed-origins: "*"
-        allowed-methods: "GET"
   endpoint:
     health:
       show-details: always
@@ -132,7 +111,6 @@ management:
         enabled: true
     info:
       enabled: true
-  enabled-by-default: true
   health:
     livenessState:
       enabled: true
