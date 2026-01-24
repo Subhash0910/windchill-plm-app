@@ -11,8 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -73,17 +71,29 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * SEPARATE SecurityFilterChain for ACTUATOR endpoints
+     * This chain completely bypasses security for /actuator/** paths
+     * It's ordered FIRST so it takes precedence over the main security chain
+     */
+    @Bean("actuatorSecurityFilterChain")
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher(new AntPathRequestMatcher("/actuator/**"))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+        
+        return http.build();
+    }
+
+    /**
+     * Main SecurityFilterChain for ALL OTHER endpoints
+     * This is ordered AFTER the actuator chain
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // Only apply security to paths that are NOT /actuator/**
         http
-            .securityMatcher(
-                new NegatedRequestMatcher(
-                    new OrRequestMatcher(
-                        new AntPathRequestMatcher("/actuator/**")
-                    )
-                )
-            )
             // Enable CORS with our configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
@@ -93,7 +103,7 @@ public class SecurityConfig {
             // Use stateless session management for JWT
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             
-            // Configure request authorization for non-actuator paths
+            // Configure request authorization
             .authorizeHttpRequests(authz -> authz
                 // Allow OPTIONS requests (preflight)
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
