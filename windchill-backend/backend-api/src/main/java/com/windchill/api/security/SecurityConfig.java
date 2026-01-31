@@ -2,6 +2,7 @@ package com.windchill.api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -10,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -70,7 +72,29 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * FIRST SecurityFilterChain for ACTUATOR endpoints (Order = 1)
+     * This chain completely bypasses security for /actuator/** paths
+     * @Order(1) ensures this is evaluated FIRST before the main chain
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher(new AntPathRequestMatcher("/actuator/**"))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+        
+        return http.build();
+    }
+
+    /**
+     * SECOND SecurityFilterChain for ALL OTHER endpoints (Order = 2)
+     * This is evaluated AFTER the actuator chain
+     */
+    @Bean
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             // Enable CORS with our configuration
@@ -97,7 +121,6 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
                 .requestMatchers("/webjars/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

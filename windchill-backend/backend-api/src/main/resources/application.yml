@@ -3,31 +3,40 @@ spring:
     name: windchill-api
   
   datasource:
-    url: jdbc:mysql://localhost:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
     username: windchill
     password: windchill123
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
   
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
         use_sql_comments: true
+        connection:
+          provider_disables_autocommit: false
     show-sql: false
     open-in-view: false
   
   redis:
-    host: localhost
+    host: redis
     port: 6379
     timeout: 2000
+    connect-timeout: 2000
     jedis:
       pool:
         max-active: 8
         max-idle: 8
         min-idle: 0
+        max-wait: -1ms
   
   jackson:
     default-property-inclusion: non_null
@@ -39,11 +48,16 @@ spring:
 
   mvc:
     cors:
-      allowed-origins: "http://localhost,http://localhost:3000,http://frontend"
-      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-origins: "http://localhost,http://localhost:3000,http://localhost:80,http://frontend,http://frontend:80"
+      allowed-methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
       allowed-headers: "*"
       allow-credentials: true
       max-age: 3600
+    throw-exception-if-no-handler-found: false
+  
+  web:
+    resources:
+      add-mappings: false
 
 server:
   port: 8080
@@ -52,43 +66,53 @@ server:
   compression:
     enabled: true
     min-response-size: 1024
+    mime-types: "text/html,text/xml,text/plain,text/css,application/javascript,application/json"
   tomcat:
     threads:
       max: 200
       min-spare: 10
+    accept-count: 100
+    max-connections: 10000
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
 
 logging:
   level:
     root: INFO
     com.windchill: DEBUG
-    org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/windchill.log
-    max-size: 10MB
-    max-history: 10
 
 jwt:
   secret: windchill-secret-key-please-change-in-production-environment
-  expiration: 86400000  # 24 hours in milliseconds
-  refresh-expiration: 604800000  # 7 days in milliseconds
+  expiration: 86400000
+  refresh-expiration: 604800000
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
+    enabled: true
   api-docs:
     path: /v3/api-docs
-  show-actuator: false
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics
+      base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      enabled: true
+      probes:
+        enabled: true
+    info:
+      enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
