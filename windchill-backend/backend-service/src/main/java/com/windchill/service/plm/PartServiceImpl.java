@@ -4,8 +4,10 @@ import com.windchill.common.exceptions.BusinessException;
 import com.windchill.common.exceptions.ResourceNotFoundException;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.enums.PlmEntityTypeEnum;
+import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.PartRepository;
+import com.windchill.service.plm.security.PlmAclService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,12 +23,15 @@ public class PartServiceImpl implements IPartService {
 
     private final PartRepository partRepository;
     private final IAuditService auditService;
+    private final PlmAclService acl;
 
     @Override
     public Part createPart(Part part) {
         if (part.getContextId() == null) {
             throw new BusinessException("contextId is required");
         }
+        acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+
         if (part.getPartNumber() == null || part.getPartNumber().isBlank()) {
             throw new BusinessException("partNumber is required");
         }
@@ -54,8 +59,10 @@ public class PartServiceImpl implements IPartService {
     @Override
     @Transactional(readOnly = true)
     public Part getPart(Long id) {
-        return partRepository.findById(id)
+        Part part = partRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Part", "id", id));
+        acl.requireContextMember(part.getContextId());
+        return part;
     }
 
     @Override
@@ -64,12 +71,14 @@ public class PartServiceImpl implements IPartService {
         if (contextId == null) {
             throw new BusinessException("contextId is required");
         }
+        acl.requireContextMember(contextId);
         return partRepository.findByContextIdAndIsDeletedFalseOrderByPartNumberAsc(contextId);
     }
 
     @Override
     public Part updatePart(Long id, Part details) {
         Part part = getPart(id);
+        acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
 
         if (part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
             throw new BusinessException("RELEASED parts are immutable. Create a new revision to change it.");
@@ -91,6 +100,16 @@ public class PartServiceImpl implements IPartService {
     public Part promote(Long id, LifecycleStateEnum target) {
         Part part = getPart(id);
         LifecycleStateEnum from = part.getLifecycleState();
+
+        if (target == LifecycleStateEnum.UNDERREVIEW) {
+            acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+        } else if (target == LifecycleStateEnum.RELEASED) {
+            acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.APPROVER);
+        } else if (target == LifecycleStateEnum.OBSOLETE) {
+            acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+        } else {
+            acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+        }
 
         if (from == LifecycleStateEnum.OBSOLETE) {
             throw new BusinessException("OBSOLETE parts cannot be promoted");
@@ -114,6 +133,7 @@ public class PartServiceImpl implements IPartService {
     @Override
     public Part revise(Long id) {
         Part released = getPart(id);
+        acl.requireContextRole(released.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
 
         if (released.getLifecycleState() != LifecycleStateEnum.RELEASED) {
             throw new BusinessException("Only RELEASED parts can be revised");

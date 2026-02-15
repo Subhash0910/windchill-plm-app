@@ -3,8 +3,10 @@ package com.windchill.service.plm;
 import com.windchill.common.exceptions.BusinessException;
 import com.windchill.common.exceptions.ResourceNotFoundException;
 import com.windchill.common.enums.PlmEntityTypeEnum;
+import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Folder;
 import com.windchill.repository.FolderRepository;
+import com.windchill.service.plm.security.PlmAclService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class FolderServiceImpl implements IFolderService {
 
     private final FolderRepository folderRepository;
     private final IAuditService auditService;
+    private final PlmAclService acl;
 
     @Override
     public Folder ensureRootFolder(Long contextId) {
@@ -38,6 +41,8 @@ public class FolderServiceImpl implements IFolderService {
 
     @Override
     public Folder createFolder(Long contextId, Long parentId, String name) {
+        acl.requireContextRole(contextId, RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+
         if (name == null || name.isBlank()) {
             throw new BusinessException("Folder name is required");
         }
@@ -72,6 +77,8 @@ public class FolderServiceImpl implements IFolderService {
 
     @Override
     public List<Folder> listFolders(Long contextId) {
+        acl.requireContextMember(contextId);
+
         // NOTE: do not mark this method readOnly, because we may lazily bootstrap the Root folder.
         ensureRootFolder(contextId);
         return folderRepository.findByContextIdAndIsDeletedFalseOrderByPathAsc(contextId);
