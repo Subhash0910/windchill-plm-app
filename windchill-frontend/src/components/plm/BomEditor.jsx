@@ -11,6 +11,8 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [showAllVersions, setShowAllVersions] = useState(false);
+
   const [form, setForm] = useState({ childPartId: '', quantity: 1, unit: 'EA', findNumber: '', sortOrder: 10, lineNote: '' });
 
   const childById = useMemo(() => {
@@ -20,6 +22,22 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
     });
     return map;
   }, [candidateChildren]);
+
+  const selectableChildren = useMemo(() => {
+    const list = candidateChildren || [];
+    const hasIsLatest = list.some(p => p?.isLatest !== undefined && p?.isLatest !== null);
+    if (showAllVersions || !hasIsLatest) return list;
+    return list.filter(p => p?.isLatest === true);
+  }, [candidateChildren, showAllVersions]);
+
+  useEffect(() => {
+    if (!form.childPartId) return;
+    const exists = (selectableChildren || []).some(p => String(p.id) === String(form.childPartId));
+    if (!exists) {
+      setForm(prev => ({ ...prev, childPartId: '' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAllVersions, candidateChildren]);
 
   const load = async () => {
     if (!parentPartId) return;
@@ -85,6 +103,13 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
     );
   };
 
+  const formatOptionLabel = (p) => {
+    const rev = p?.revision != null ? `${p.revision}.${p.iteration ?? ''}` : '';
+    const latest = p?.isLatest ? ' (Latest)' : '';
+    const revText = rev ? ` • ${rev}` : '';
+    return `${p.partNumber}${revText}${latest} — ${p.name || ''}`.trim();
+  };
+
   return (
     <div className="bom-wrap">
       <div className="bom-title">BOM</div>
@@ -121,11 +146,18 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
         </table>
       )}
 
+      <div className="bom-filter">
+        <label className="bom-filter-label">
+          <input type="checkbox" checked={showAllVersions} onChange={e => setShowAllVersions(e.target.checked)} />
+          Show all versions (otherwise latest only)
+        </label>
+      </div>
+
       <div className="bom-add">
         <select className="plm-select" value={form.childPartId} onChange={e => setForm({ ...form, childPartId: e.target.value })}>
           <option value="">Select child part</option>
-          {(candidateChildren || []).map(p => (
-            <option key={p.id} value={p.id}>{p.partNumber} - {p.name}</option>
+          {(selectableChildren || []).map(p => (
+            <option key={p.id} value={p.id}>{formatOptionLabel(p)}</option>
           ))}
         </select>
         <input className="plm-input" type="number" min="0" step="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="Qty" />
