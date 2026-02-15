@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import Header from '../../components/organisms/Header/Header';
 import ContextSwitcher from '../../components/plm/ContextSwitcher';
+import ContextTeamPanel from '../../components/plm/ContextTeamPanel';
 import FolderTree from '../../components/plm/FolderTree';
 import './PlmLayout.css';
 
@@ -23,6 +24,7 @@ const PlmLayout = () => {
       <div className="plm-body">
         <aside className="plm-left">
           <ContextSwitcher />
+          <ContextTeamPanel />
           <FolderTree />
         </aside>
 
