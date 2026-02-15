@@ -12,4 +12,6 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     Optional<Part> findByContextIdAndPartNumberAndIsLatestTrueAndIsDeletedFalse(Long contextId, String partNumber);
     List<Part> findByMasterIdAndIsDeletedFalseOrderByRevisionAscIterationAsc(Long masterId);
     List<Part> findByLifecycleStateAndIsDeletedFalse(LifecycleStateEnum state);
+
+    List<Part> findByIdInAndIsDeletedFalseOrderByPartNumberAsc(List<Long> ids);
 }

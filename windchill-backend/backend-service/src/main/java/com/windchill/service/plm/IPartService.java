@@ -12,4 +12,6 @@ public interface IPartService {
     Part updatePart(Long id, Part details);
     Part promote(Long id, LifecycleStateEnum target);
     Part revise(Long id);
+
+    List<Part> whereUsed(Long partId);
 }

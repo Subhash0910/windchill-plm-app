@@ -1,14 +1,43 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../atoms/Button/Button';
 import { plmApi } from '../../services/plmApi';
 import './BomEditor.css';
 
 const BomEditor = ({ parentPartId, candidateChildren }) => {
+  const navigate = useNavigate();
+
   const [lines, setLines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [showAllVersions, setShowAllVersions] = useState(false);
+
   const [form, setForm] = useState({ childPartId: '', quantity: 1, unit: 'EA', findNumber: '', sortOrder: 10, lineNote: '' });
+
+  const childById = useMemo(() => {
+    const map = new Map();
+    (candidateChildren || []).forEach(p => {
+      if (p?.id != null) map.set(String(p.id), p);
+    });
+    return map;
+  }, [candidateChildren]);
+
+  const selectableChildren = useMemo(() => {
+    const list = candidateChildren || [];
+    const hasIsLatest = list.some(p => p?.isLatest !== undefined && p?.isLatest !== null);
+    if (showAllVersions || !hasIsLatest) return list;
+    return list.filter(p => p?.isLatest === true);
+  }, [candidateChildren, showAllVersions]);
+
+  useEffect(() => {
+    if (!form.childPartId) return;
+    const exists = (selectableChildren || []).some(p => String(p.id) === String(form.childPartId));
+    if (!exists) {
+      setForm(prev => ({ ...prev, childPartId: '' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAllVersions, candidateChildren]);
 
   const load = async () => {
     if (!parentPartId) return;
@@ -57,6 +86,30 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
     }
   };
 
+  const renderChild = (childPartId) => {
+    const p = childById.get(String(childPartId));
+    if (!p) return <span className="mono">{childPartId}</span>;
+
+    return (
+      <button
+        type="button"
+        className="bom-open"
+        title="Open child part"
+        onClick={() => navigate(`/plm/parts/${p.id}`)}
+      >
+        <span className="mono">{p.partNumber}</span>
+        <span className="bom-open-sub">{p.name}{p.revision ? ` • Rev ${p.revision}.${p.iteration ?? ''}` : ''}</span>
+      </button>
+    );
+  };
+
+  const formatOptionLabel = (p) => {
+    const rev = p?.revision != null ? `${p.revision}.${p.iteration ?? ''}` : '';
+    const latest = p?.isLatest ? ' (Latest)' : '';
+    const revText = rev ? ` • ${rev}` : '';
+    return `${p.partNumber}${revText}${latest} — ${p.name || ''}`.trim();
+  };
+
   return (
     <div className="bom-wrap">
       <div className="bom-title">BOM</div>
@@ -78,7 +131,7 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
             {(lines || []).map(l => (
               <tr key={l.id}>
                 <td className="mono">{l.findNumber || '-'}</td>
-                <td className="mono">{l.childPartId}</td>
+                <td>{renderChild(l.childPartId)}</td>
                 <td>{l.quantity}</td>
                 <td>{l.unit}</td>
                 <td style={{ textAlign: 'right' }}>
@@ -93,18 +146,33 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
         </table>
       )}
 
+      <div className="bom-filter">
+        <label className="bom-filter-label">
+          <input type="checkbox" checked={showAllVersions} onChange={e => setShowAllVersions(e.target.checked)} />
+          Show all versions (otherwise latest only)
+        </label>
+      </div>
+
       <div className="bom-add">
         <select className="plm-select" value={form.childPartId} onChange={e => setForm({ ...form, childPartId: e.target.value })}>
           <option value="">Select child part</option>
-          {(candidateChildren || []).map(p => (
-            <option key={p.id} value={p.id}>{p.partNumber} - {p.name}</option>
+          {(selectableChildren || []).map(p => (
+            <option key={p.id} value={p.id}>{formatOptionLabel(p)}</option>
           ))}
         </select>
         <input className="plm-input" type="number" min="0" step="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="Qty" />
         <input className="plm-input" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="Unit" />
-        <input className="plm-input" value={form.findNumber} onChange={e => setForm({ ...form, findNumber: e.target.value })} placeholder="Find" />
+        <input
+          className="plm-input"
+          value={form.findNumber}
+          onChange={e => setForm({ ...form, findNumber: e.target.value })}
+          placeholder="Find # (e.g., 10)"
+          title="Find Number = line/item number (example: 10, 20, 30)"
+        />
         <Button variant="secondary" size="sm" onClick={add} disabled={!form.childPartId}>Add</Button>
       </div>
+
+      <div className="bom-hint">Find # is a BOM line/item number (example: 10, 20, 30).</div>
 
       {error && <div className="plm-error">{error}</div>}
     </div>

@@ -15,6 +15,11 @@ const TAB = {
   RELATED: 'RELATED',
 };
 
+const RELATED_VIEW = {
+  VERSIONS: 'VERSIONS',
+  WHERE_USED: 'WHERE_USED',
+};
+
 const PartDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -22,17 +27,32 @@ const PartDetailPage = () => {
 
   const [part, setPart] = useState(null);
   const [partsInCtx, setPartsInCtx] = useState([]);
+
+  const [whereUsed, setWhereUsed] = useState([]);
+  const [whereUsedLoading, setWhereUsedLoading] = useState(false);
+  const [whereUsedError, setWhereUsedError] = useState(null);
+  const [whereUsedLoaded, setWhereUsedLoaded] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const [activeTab, setActiveTab] = useState(TAB.STRUCTURE);
+  const [relatedView, setRelatedView] = useState(RELATED_VIEW.VERSIONS);
   const [edit, setEdit] = useState({ name: '', description: '' });
 
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Reset related caches when opening a new part
+      setWhereUsed([]);
+      setWhereUsedError(null);
+      setWhereUsedLoaded(false);
+      setWhereUsedLoading(false);
+      setRelatedView(RELATED_VIEW.VERSIONS);
+
       const p = await plmApi.getPart(id);
       setPart(p);
       setEdit({ name: p.name || '', description: p.description || '' });
@@ -52,10 +72,37 @@ const PartDetailPage = () => {
     }
   };
 
+  const loadWhereUsed = async (partId) => {
+    if (!partId) return;
+    try {
+      setWhereUsedLoading(true);
+      setWhereUsedError(null);
+      const parents = await plmApi.getWhereUsed(partId);
+      setWhereUsed(parents || []);
+      setWhereUsedLoaded(true);
+    } catch (e) {
+      setWhereUsed([]);
+      setWhereUsedError(e.response?.data?.message || e.message || 'Failed to load where used');
+      setWhereUsedLoaded(true);
+    } finally {
+      setWhereUsedLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!part) return;
+    if (activeTab !== TAB.RELATED) return;
+    if (relatedView !== RELATED_VIEW.WHERE_USED) return;
+    if (whereUsedLoaded || whereUsedLoading) return;
+
+    loadWhereUsed(part.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, relatedView, part?.id, whereUsedLoaded]);
 
   const save = async () => {
     if (!part) return;
@@ -141,6 +188,22 @@ const PartDetailPage = () => {
     </button>
   );
 
+  const RelatedNavItem = ({ view, label, count, loading: isLoading }) => {
+    const active = relatedView === view;
+    const countText = isLoading ? '…' : (count === null || count === undefined ? '' : String(count));
+
+    return (
+      <button
+        type="button"
+        className={active ? 'related-nav-item related-nav-item-active' : 'related-nav-item'}
+        onClick={() => setRelatedView(view)}
+      >
+        <span>{label}</span>
+        <span className="related-count">{countText}</span>
+      </button>
+    );
+  };
+
   return (
     <div>
       <div className="detail-head">
@@ -218,60 +281,117 @@ const PartDetailPage = () => {
           )}
 
           {activeTab === TAB.RELATED && (
-            <div>
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Versions</div>
-                <div className="plm-muted">All revisions/iterations with the same master.</div>
+            <div className="related-split">
+              <div className="related-nav">
+                <RelatedNavItem view={RELATED_VIEW.VERSIONS} label="Versions" count={(versions || []).length} loading={false} />
+                <RelatedNavItem
+                  view={RELATED_VIEW.WHERE_USED}
+                  label="Where Used"
+                  count={whereUsedLoaded ? (whereUsed || []).length : null}
+                  loading={whereUsedLoading}
+                />
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table className="parts-table" style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th>Number</th>
-                      <th>Rev</th>
-                      <th>Iter</th>
-                      <th>State</th>
-                      <th>Latest</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(versions || []).map(v => (
-                      <tr key={v.id}>
-                        <td className="mono">{v.partNumber}</td>
-                        <td>{v.revision}</td>
-                        <td>{v.iteration}</td>
-                        <td>
-                          <span className={`pill pill-${(v.lifecycleState || '').toLowerCase()}`}>{v.lifecycleState}</span>
-                        </td>
-                        <td>{v.isLatest ? 'Yes' : 'No'}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => navigate(`/plm/parts/${v.id}`)}
-                            disabled={String(v.id) === String(part.id)}
-                          >
-                            Open
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {(versions || []).length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>No related versions found.</td>
-                      </tr>
+              <div className="related-panel">
+                {relatedView === RELATED_VIEW.VERSIONS && (
+                  <div>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>Versions</div>
+                      <div className="plm-muted">All revisions/iterations with the same master.</div>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="parts-table" style={{ width: '100%' }}>
+                        <thead>
+                          <tr>
+                            <th>Number</th>
+                            <th>Rev</th>
+                            <th>Iter</th>
+                            <th>State</th>
+                            <th>Latest</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(versions || []).map(v => (
+                            <tr key={v.id}>
+                              <td className="mono">{v.partNumber}</td>
+                              <td>{v.revision}</td>
+                              <td>{v.iteration}</td>
+                              <td>
+                                <span className={`pill pill-${(v.lifecycleState || '').toLowerCase()}`}>{v.lifecycleState}</span>
+                              </td>
+                              <td>{v.isLatest ? 'Yes' : 'No'}</td>
+                              <td style={{ textAlign: 'right' }}>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => navigate(`/plm/parts/${v.id}`)}
+                                  disabled={String(v.id) === String(part.id)}
+                                >
+                                  Open
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                          {(versions || []).length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>No related versions found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {relatedView === RELATED_VIEW.WHERE_USED && (
+                  <div>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 6 }}>Where Used</div>
+                      <div className="plm-muted">Parent assemblies that reference this part via BOM lines.</div>
+                    </div>
+
+                    {whereUsedLoading && <div className="plm-muted">Loading where used...</div>}
+                    {whereUsedError && <div className="plm-error">{whereUsedError}</div>}
+
+                    {!whereUsedLoading && !whereUsedError && (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="parts-table" style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th>Number</th>
+                              <th>Name</th>
+                              <th>State</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(whereUsed || []).map(p => (
+                              <tr key={p.id}>
+                                <td className="mono">{p.partNumber}</td>
+                                <td>{p.name}</td>
+                                <td>
+                                  <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span>
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                  <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${p.id}`)}>
+                                    Open
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                            {(whereUsed || []).length === 0 && (
+                              <tr>
+                                <td colSpan={4} className="plm-muted" style={{ padding: 12 }}>No parents found (not used anywhere).</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Where Used (next)</div>
-                <div className="plm-muted">
-                  Next step: show parent assemblies that reference this part via BOM lines (needs a backend endpoint like “where-used”).
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
