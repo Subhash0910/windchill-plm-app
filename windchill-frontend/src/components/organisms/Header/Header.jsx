@@ -21,6 +21,9 @@ const Header = ({ title }) => {
         <div className="header-right">
           {user && (
             <>
+              {user.role === 'ADMIN' && (
+                <a className="header-link" href="/admin/users">Users</a>
+              )}
               <span className="user-name">Welcome, {user.firstName || user.username}</span>
               <Button variant="secondary" size="sm" onClick={handleLogout}>
                 Logout

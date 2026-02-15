@@ -8,6 +8,7 @@ import PublicRoute from './PublicRoute';
 import PlmLayout from '../pages/plm/PlmLayout';
 import PartsPage from '../pages/plm/PartsPage';
 import PartDetailPage from '../pages/plm/PartDetailPage';
+import UsersAdminPage from '../pages/admin/UsersAdminPage';
 
 const AppRoutes = () => {
   return (
@@ -27,6 +28,15 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <PrivateRoute>
+              <UsersAdminPage />
             </PrivateRoute>
           }
         />
