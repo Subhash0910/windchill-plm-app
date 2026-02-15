@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS folders (
     context_id BIGINT NOT NULL,
     parent_id BIGINT,
     name VARCHAR(255) NOT NULL,
-    path VARCHAR(1024) NOT NULL,
+    -- NOTE: Keep this <= 512 to avoid MySQL index length issues when using utf8mb4.
+    path VARCHAR(512) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by VARCHAR(100),
