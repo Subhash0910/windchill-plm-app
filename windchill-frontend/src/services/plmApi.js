@@ -11,6 +11,24 @@ export const plmApi = {
     return res.data.data;
   },
 
+  // Context Team / Members
+  listContextMembers: async (contextId) => {
+    const res = await api.get(`/api/v1/plm/contexts/${contextId}/members`);
+    return res.data.data;
+  },
+  addContextMember: async (contextId, payload) => {
+    const res = await api.post(`/api/v1/plm/contexts/${contextId}/members`, payload);
+    return res.data.data;
+  },
+  updateContextMemberRole: async (contextId, userId, role) => {
+    const res = await api.patch(`/api/v1/plm/contexts/${contextId}/members/${userId}`, { role });
+    return res.data.data;
+  },
+  removeContextMember: async (contextId, userId) => {
+    const res = await api.delete(`/api/v1/plm/contexts/${contextId}/members/${userId}`);
+    return res.data.data;
+  },
+
   // Folders
   listFolders: async (contextId) => {
     const res = await api.get(`/api/v1/plm/contexts/${contextId}/folders`);

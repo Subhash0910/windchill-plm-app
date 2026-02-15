@@ -12,6 +12,8 @@ public interface PlmContextMemberRepository extends JpaRepository<PlmContextMemb
 
     Optional<PlmContextMember> findByContextIdAndUserIdAndIsDeletedFalse(Long contextId, Long userId);
 
+    Optional<PlmContextMember> findByContextIdAndUserId(Long contextId, Long userId);
+
     List<PlmContextMember> findByUserIdAndIsDeletedFalse(Long userId);
 
     List<PlmContextMember> findByContextIdAndIsDeletedFalse(Long contextId);
