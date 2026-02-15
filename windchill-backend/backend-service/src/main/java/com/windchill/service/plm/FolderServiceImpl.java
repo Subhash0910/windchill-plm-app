@@ -71,8 +71,8 @@ public class FolderServiceImpl implements IFolderService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Folder> listFolders(Long contextId) {
+        // NOTE: do not mark this method readOnly, because we may lazily bootstrap the Root folder.
         ensureRootFolder(contextId);
         return folderRepository.findByContextIdAndIsDeletedFalseOrderByPathAsc(contextId);
     }
