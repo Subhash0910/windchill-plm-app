@@ -23,13 +23,23 @@ const ContextSwitcher = () => {
       setLoading(true);
       setError(null);
       const data = await plmApi.listContexts();
-      setContexts(data || []);
+      const list = data || [];
+      setContexts(list);
+
+      // If we have a selectedContextId that no longer exists (DB reset, ACL changes), clear it.
+      if (selectedContextId && !list.some(c => c.id === selectedContextId)) {
+        setSelectedContextId(null);
+        return;
+      }
+
       // If no context selected, auto-select first available
-      if (!selectedContextId && data && data.length > 0) {
-        setSelectedContextId(data[0].id);
+      if (!selectedContextId && list.length > 0) {
+        setSelectedContextId(list[0].id);
       }
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to load contexts');
+      // On error loading contexts, ensure we don't keep a stale context selection.
+      setSelectedContextId(null);
     } finally {
       setLoading(false);
     }
