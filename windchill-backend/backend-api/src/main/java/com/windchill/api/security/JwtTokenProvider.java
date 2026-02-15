@@ -46,14 +46,19 @@ public class JwtTokenProvider {
         return Long.parseLong(claims.getSubject());
     }
 
-    public String extractUsername(String token) {
+    /**
+     * Extract username claim from JWT.
+     * JwtAuthenticationFilter expects this method.
+     */
+    public String getUsernameFromToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return (String) claims.get("username");
+        Object username = claims.get("username");
+        return username != null ? username.toString() : null;
     }
 
     public boolean validateToken(String token) {
