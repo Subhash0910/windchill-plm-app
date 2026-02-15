@@ -130,9 +130,17 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
         </select>
         <input className="plm-input" type="number" min="0" step="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="Qty" />
         <input className="plm-input" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="Unit" />
-        <input className="plm-input" value={form.findNumber} onChange={e => setForm({ ...form, findNumber: e.target.value })} placeholder="Find" />
+        <input
+          className="plm-input"
+          value={form.findNumber}
+          onChange={e => setForm({ ...form, findNumber: e.target.value })}
+          placeholder="Find # (e.g., 10)"
+          title="Find Number = line/item number (example: 10, 20, 30)"
+        />
         <Button variant="secondary" size="sm" onClick={add} disabled={!form.childPartId}>Add</Button>
       </div>
+
+      <div className="bom-hint">Find # is a BOM line/item number (example: 10, 20, 30).</div>
 
       {error && <div className="plm-error">{error}</div>}
     </div>
