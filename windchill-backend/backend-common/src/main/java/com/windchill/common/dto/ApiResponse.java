@@ -21,32 +21,44 @@ public class ApiResponse<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
- * Response status - true for success, false for failure
+     * Response status - true for success, false for failure
      */
     private boolean success;
 
     /**
- * Response message for UI display or debugging
+     * Response message for UI display or debugging
      */
     private String message;
 
     /**
- * Response data payload
+     * Response data payload
      */
     private T data;
 
     /**
- * HTTP status code
+     * HTTP status code
      */
     private Integer statusCode;
 
     /**
- * Timestamp of the response
+     * Timestamp of the response
      */
     private Long timestamp;
 
     /**
- * Create a successful response
+     * Convenience constructor used across controllers: (message, data, success).
+     *
+     * This avoids generic inference issues with "new ApiResponse<>(...)" calls.
+     */
+    public ApiResponse(String message, T data, boolean success) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    /**
+     * Create a successful response
      */
     public static <T> ApiResponse<T> success(T data, String message) {
         return ApiResponse.<T>builder()
@@ -58,14 +70,14 @@ public class ApiResponse<T> implements Serializable {
     }
 
     /**
- * Create a successful response with just data
+     * Create a successful response with just data
      */
     public static <T> ApiResponse<T> success(T data) {
         return success(data, "Success");
     }
 
     /**
- * Create an error response
+     * Create an error response
      */
     public static <T> ApiResponse<T> error(String message, Integer statusCode) {
         return ApiResponse.<T>builder()
@@ -77,7 +89,7 @@ public class ApiResponse<T> implements Serializable {
     }
 
     /**
-* Create an error response (default 500)
+     * Create an error response (default 500)
      */
     public static <T> ApiResponse<T> error(String message) {
         return error(message, 500);
