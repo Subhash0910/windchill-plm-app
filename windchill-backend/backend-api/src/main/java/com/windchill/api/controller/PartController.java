@@ -58,4 +58,10 @@ public class PartController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder().success(true).message(APIConstants.CREATED).data(newRev).build());
     }
+
+    @GetMapping("/{id}/where-used")
+    public ResponseEntity<ApiResponse<?>> whereUsed(@PathVariable Long id) {
+        List<Part> parents = partService.whereUsed(id);
+        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(parents).build());
+    }
 }

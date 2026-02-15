@@ -22,6 +22,10 @@ const PartDetailPage = () => {
 
   const [part, setPart] = useState(null);
   const [partsInCtx, setPartsInCtx] = useState([]);
+  const [whereUsed, setWhereUsed] = useState([]);
+  const [whereUsedLoading, setWhereUsedLoading] = useState(false);
+  const [whereUsedError, setWhereUsedError] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -44,6 +48,19 @@ const PartDetailPage = () => {
         setPartsInCtx(list || []);
       } else {
         setPartsInCtx([]);
+      }
+
+      // Where used
+      try {
+        setWhereUsedLoading(true);
+        setWhereUsedError(null);
+        const parents = await plmApi.getWhereUsed(p.id);
+        setWhereUsed(parents || []);
+      } catch (e) {
+        setWhereUsed([]);
+        setWhereUsedError(e.response?.data?.message || e.message || 'Failed to load where used');
+      } finally {
+        setWhereUsedLoading(false);
       }
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to load part');
@@ -268,10 +285,53 @@ const PartDetailPage = () => {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Where Used (next)</div>
-                <div className="plm-muted">
-                  Next step: show parent assemblies that reference this part via BOM lines (needs a backend endpoint like “where-used”).
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Where Used</div>
+                <div className="plm-muted" style={{ marginBottom: 8 }}>
+                  Parent assemblies that reference this part via BOM lines.
                 </div>
+
+                {whereUsedLoading && <div className="plm-muted">Loading where used...</div>}
+                {whereUsedError && <div className="plm-error">{whereUsedError}</div>}
+
+                {!whereUsedLoading && !whereUsedError && (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="parts-table" style={{ width: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th>Number</th>
+                          <th>Name</th>
+                          <th>Rev</th>
+                          <th>Iter</th>
+                          <th>State</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(whereUsed || []).map(p => (
+                          <tr key={p.id}>
+                            <td className="mono">{p.partNumber}</td>
+                            <td>{p.name}</td>
+                            <td>{p.revision}</td>
+                            <td>{p.iteration}</td>
+                            <td>
+                              <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${p.id}`)}>
+                                Open
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                        {(whereUsed || []).length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>No parents found (not used anywhere).</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}

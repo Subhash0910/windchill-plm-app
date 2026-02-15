@@ -6,6 +6,7 @@ import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Part;
+import com.windchill.repository.BomLineRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.plm.security.PlmAclService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -22,6 +24,7 @@ import java.util.List;
 public class PartServiceImpl implements IPartService {
 
     private final PartRepository partRepository;
+    private final BomLineRepository bomLineRepository;
     private final IAuditService auditService;
     private final PlmAclService acl;
 
@@ -158,6 +161,28 @@ public class PartServiceImpl implements IPartService {
         Part saved = partRepository.save(newRev);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "REVISE", "New revision from partId=" + released.getId());
         return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Part> whereUsed(Long partId) {
+        Part child = getPart(partId); // enforces context-member ACL
+
+        List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(partId);
+        if (parentIds == null || parentIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentIds);
+
+        // Defensive filter: ensure same context
+        List<Part> filtered = new ArrayList<>();
+        for (Part p : parents) {
+            if (p.getContextId() != null && p.getContextId().equals(child.getContextId())) {
+                filtered.add(p);
+            }
+        }
+        return filtered;
     }
 
     private String incrementRevision(String current) {

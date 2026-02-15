@@ -64,6 +64,10 @@ export const plmApi = {
     const res = await api.post(`/api/v1/plm/parts/${id}/revise`);
     return res.data.data;
   },
+  getWhereUsed: async (id) => {
+    const res = await api.get(`/api/v1/plm/parts/${id}/where-used`);
+    return res.data.data;
+  },
 
   // BOM
   listBom: async (parentPartId) => {
