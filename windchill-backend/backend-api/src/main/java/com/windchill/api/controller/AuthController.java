@@ -24,7 +24,7 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login attempt for user: {}", request.getUsername());
         
         try {
@@ -49,7 +49,11 @@ public class AuthController {
                     .build();
 
             log.info("User logged in successfully: {}", user.getUsername());
-            return ResponseEntity.ok(new ApiResponse<>("Login successful", response, true));
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .success(true)
+                    .message("Login successful")
+                    .data(response)
+                    .build());
         } catch (ValidationException e) {
             log.warn("Login failed: {}", e.getMessage());
             throw e;
@@ -60,13 +64,21 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader(APIConstants.AUTHORIZATION) String authHeader) {
+    public ResponseEntity<ApiResponse<?>> validateToken(@RequestHeader(APIConstants.AUTHORIZATION) String authHeader) {
         if (authHeader == null || !authHeader.startsWith(APIConstants.BEARER)) {
-            return ResponseEntity.ok(new ApiResponse<>("Invalid token", false, false));
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .success(false)
+                    .message("Invalid token")
+                    .data(false)
+                    .build());
         }
 
         String token = authHeader.substring(APIConstants.BEARER.length());
         boolean isValid = jwtTokenProvider.validateToken(token);
-        return ResponseEntity.ok(new ApiResponse<>("Token validation result", isValid, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message("Token validation result")
+                .data(isValid)
+                .build());
     }
 }

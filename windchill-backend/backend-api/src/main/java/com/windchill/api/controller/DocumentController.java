@@ -21,66 +21,102 @@ public class DocumentController {
     private final IDocumentService documentService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Document>> createDocument(@RequestBody Document document) {
+    public ResponseEntity<ApiResponse<?>> createDocument(@RequestBody Document document) {
         log.info("Creating new document: {}", document.getDocumentNumber());
         Document createdDocument = documentService.createDocument(document);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(APIConstants.CREATED, createdDocument, true));
+                .body(ApiResponse.builder()
+                        .success(true)
+                        .message(APIConstants.CREATED)
+                        .data(createdDocument)
+                        .build());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Document>> getDocumentById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<?>> getDocumentById(@PathVariable Long id) {
         log.info("Fetching document by id: {}", id);
         Document document = documentService.getDocumentById(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, document, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(document)
+                .build());
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Document>>> getAllDocuments() {
+    public ResponseEntity<ApiResponse<?>> getAllDocuments() {
         log.info("Fetching all documents");
         List<Document> documents = documentService.getAllDocuments();
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, documents, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(documents)
+                .build());
     }
 
     @GetMapping("/number/{documentNumber}")
-    public ResponseEntity<ApiResponse<Document>> getDocumentByNumber(@PathVariable String documentNumber) {
+    public ResponseEntity<ApiResponse<?>> getDocumentByNumber(@PathVariable String documentNumber) {
         log.info("Fetching document by number: {}", documentNumber);
         Document document = documentService.getDocumentByNumber(documentNumber);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, document, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(document)
+                .build());
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<ApiResponse<List<Document>>> getDocumentsByProject(@PathVariable Long projectId) {
+    public ResponseEntity<ApiResponse<?>> getDocumentsByProject(@PathVariable Long projectId) {
         log.info("Fetching documents for project: {}", projectId);
         List<Document> documents = documentService.getDocumentsByProject(projectId);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, documents, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(documents)
+                .build());
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<Document>>> searchDocuments(@RequestParam String keyword) {
+    public ResponseEntity<ApiResponse<?>> searchDocuments(@RequestParam String keyword) {
         log.info("Searching documents with keyword: {}", keyword);
         List<Document> documents = documentService.searchDocuments(keyword);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.SUCCESS, documents, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(documents)
+                .build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Document>> updateDocument(@PathVariable Long id, @RequestBody Document documentDetails) {
+    public ResponseEntity<ApiResponse<?>> updateDocument(@PathVariable Long id, @RequestBody Document documentDetails) {
         log.info("Updating document: {}", id);
         Document updatedDocument = documentService.updateDocument(id, documentDetails);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedDocument, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.UPDATED)
+                .data(updatedDocument)
+                .build());
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<Document>> updateDocumentStatus(@PathVariable Long id, @RequestParam StatusEnum status) {
+    public ResponseEntity<ApiResponse<?>> updateDocumentStatus(@PathVariable Long id, @RequestParam StatusEnum status) {
         log.info("Updating document status: {} to {}", id, status);
         Document updatedDocument = documentService.updateDocumentStatus(id, status);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.UPDATED, updatedDocument, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.UPDATED)
+                .data(updatedDocument)
+                .build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDocument(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<?>> deleteDocument(@PathVariable Long id) {
         log.info("Deleting document: {}", id);
         documentService.deleteDocument(id);
-        return ResponseEntity.ok(new ApiResponse<>(APIConstants.DELETED, null, true));
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.DELETED)
+                .data(null)
+                .build());
     }
 }
