@@ -14,14 +14,23 @@ import java.util.Date;
 @Component
 @Slf4j
 public class JwtTokenProvider {
-    @Value("${app.jwtSecret:mySecretKeyForJWTTokenGenerationAndValidationWithMinimumLength}")
+
+    /**
+     * IMPORTANT: HS512 requires a minimum key size of 512 bits (64 bytes).
+     * We default to a long dev secret to avoid runtime failures when env/config is missing.
+     */
+    @Value("${app.jwtSecret:windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890}")
     private String jwtSecret;
 
     @Value("${app.jwtExpirationInMs:86400000}")
     private long jwtExpirationInMs;
 
+    private SecretKey signingKey() {
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    }
+
     public String generateToken(User user) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        SecretKey key = signingKey();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
@@ -37,7 +46,7 @@ public class JwtTokenProvider {
     }
 
     public Long getUserIdFromJWT(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        SecretKey key = signingKey();
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
@@ -51,7 +60,7 @@ public class JwtTokenProvider {
      * JwtAuthenticationFilter expects this method.
      */
     public String getUsernameFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        SecretKey key = signingKey();
         Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
@@ -63,7 +72,7 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            SecretKey key = signingKey();
             Jwts.parser()
                     .verifyWith(key)
                     .build()

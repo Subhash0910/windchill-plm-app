@@ -25,7 +25,9 @@ spring:
           provider_disables_autocommit: false
     show-sql: false
     open-in-view: false
-  
+
+  # Spring Boot 3 Redis config (spring.data.redis.* is the canonical namespace,
+  # but spring.redis.* is still supported in many cases). Keep this for non-Docker runs.
   redis:
     host: redis
     port: 6379
@@ -85,10 +87,12 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
 
-jwt:
-  secret: windchill-secret-key-please-change-in-production-environment
-  expiration: 86400000
-  refresh-expiration: 604800000
+# Use app.* keys because JwtTokenProvider reads app.jwtSecret/app.jwtExpirationInMs.
+# IMPORTANT: HS512 requires a key >= 512 bits (64 bytes). This default is long enough
+# for dev, but you should override it via env var APP_JWTSECRET in real deployments.
+app:
+  jwtSecret: windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890
+  jwtExpirationInMs: 86400000
 
 springdoc:
   swagger-ui:
