@@ -73,8 +73,8 @@ public class AdminUserController {
                 ? generateTempPassword()
                 : req.getNewPassword().trim();
 
-        // Store encoded password. User entity is expected to persist encoded password.
-        u.setPassword(passwordEncoder.encode(temp));
+        // Store encoded password hash
+        u.setPasswordHash(passwordEncoder.encode(temp));
         userRepository.save(u);
 
         return ResponseEntity.ok(ApiResponse.builder()
