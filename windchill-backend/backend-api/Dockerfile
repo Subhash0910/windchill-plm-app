@@ -2,17 +2,26 @@
 FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
 
-# Copy root pom.xml
+# Build context is set to ./windchill-backend in docker-compose.yml
+# Copy parent pom first for better layer caching
 COPY pom.xml .
 
-# Copy windchill-backend parent pom.xml
-COPY windchill-backend/pom.xml windchill-backend/
+# Copy module POMs (improves cache when only sources change)
+COPY backend-common/pom.xml backend-common/
+COPY backend-domain/pom.xml backend-domain/
+COPY backend-repository/pom.xml backend-repository/
+COPY backend-service/pom.xml backend-service/
+COPY backend-api/pom.xml backend-api/
 
-# Copy windchill-backend source code
-COPY windchill-backend windchill-backend/
+# Copy sources
+COPY backend-common backend-common/
+COPY backend-domain backend-domain/
+COPY backend-repository backend-repository/
+COPY backend-service backend-service/
+COPY backend-api backend-api/
 
-# Build the application from windchill-backend
-RUN cd windchill-backend && mvn clean package -DskipTests -q
+# Build the application
+RUN mvn clean package -DskipTests -q
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
@@ -20,7 +29,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Copy the jar from builder
-COPY --from=builder /build/windchill-backend/backend-api/target/*.jar app.jar
+COPY --from=builder /build/backend-api/target/*.jar app.jar
 
 # Create non-root user
 RUN addgroup -g 1001 appuser && adduser -D -u 1001 -G appuser appuser
