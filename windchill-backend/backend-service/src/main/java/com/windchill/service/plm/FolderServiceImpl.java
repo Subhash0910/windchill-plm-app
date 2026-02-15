@@ -6,6 +6,7 @@ import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Folder;
 import com.windchill.repository.FolderRepository;
+import com.windchill.repository.PlmContextRepository;
 import com.windchill.service.plm.security.PlmAclService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +22,20 @@ import java.util.List;
 public class FolderServiceImpl implements IFolderService {
 
     private final FolderRepository folderRepository;
+    private final PlmContextRepository contextRepository;
     private final IAuditService auditService;
     private final PlmAclService acl;
 
+    private void requireContextExists(Long contextId) {
+        if (contextId == null || !contextRepository.existsById(contextId)) {
+            throw new ResourceNotFoundException("PlmContext", "id", contextId);
+        }
+    }
+
     @Override
     public Folder ensureRootFolder(Long contextId) {
+        requireContextExists(contextId);
+
         return folderRepository.findByContextIdAndPathAndIsDeletedFalse(contextId, "/")
                 .orElseGet(() -> {
                     Folder root = new Folder();
@@ -41,6 +51,7 @@ public class FolderServiceImpl implements IFolderService {
 
     @Override
     public Folder createFolder(Long contextId, Long parentId, String name) {
+        requireContextExists(contextId);
         acl.requireContextRole(contextId, RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
 
         if (name == null || name.isBlank()) {
@@ -77,6 +88,7 @@ public class FolderServiceImpl implements IFolderService {
 
     @Override
     public List<Folder> listFolders(Long contextId) {
+        requireContextExists(contextId);
         acl.requireContextMember(contextId);
 
         // NOTE: do not mark this method readOnly, because we may lazily bootstrap the Root folder.
