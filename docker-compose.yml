@@ -36,8 +36,9 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: windchill-backend/backend-api/Dockerfile
+      # Use windchill-backend as build context so Dockerfile can COPY pom.xml correctly
+      context: ./windchill-backend
+      dockerfile: backend-api/Dockerfile
     container_name: windchill-backend
     ports:
       - "8080:8080"
