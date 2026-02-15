@@ -1,0 +1,24 @@
+.folder-list{
+  margin-top:8px;
+  border:1px solid #eef0f7;
+  border-radius:8px;
+  overflow:hidden;
+}
+.folder-row{
+  width:100%;
+  text-align:left;
+  border:0;
+  background:#fff;
+  padding:8px 10px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  cursor:pointer;
+  border-bottom:1px solid #f2f4fb;
+}
+.folder-row:last-child{border-bottom:none;}
+.folder-row:hover{background:#f7f8ff;}
+.folder-row.active{background:#eef2ff;}
+.folder-icon{color:#6b7280;font-size:12px;}
+.folder-name{font-size:13px;color:#111827;font-weight:700;}
+.folder-create{display:flex;gap:8px;align-items:center;margin-top:10px;}

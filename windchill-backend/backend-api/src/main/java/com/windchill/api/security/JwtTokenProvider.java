@@ -1,6 +1,6 @@
 package com.windchill.api.security;
 
-import com.windchill.domain.entity.User;
+import com.windchill.common.enums.RoleEnum;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class JwtTokenProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(User user) {
+    public String generateToken(com.windchill.domain.entity.User user) {
         SecretKey key = signingKey();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
@@ -68,6 +68,22 @@ public class JwtTokenProvider {
                 .getPayload();
         Object username = claims.get("username");
         return username != null ? username.toString() : null;
+    }
+
+    public RoleEnum getRoleFromToken(String token) {
+        SecretKey key = signingKey();
+        Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        Object role = claims.get("role");
+        if (role == null) return null;
+        try {
+            return RoleEnum.valueOf(role.toString());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
