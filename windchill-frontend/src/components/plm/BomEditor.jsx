@@ -1,14 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../atoms/Button/Button';
 import { plmApi } from '../../services/plmApi';
 import './BomEditor.css';
 
 const BomEditor = ({ parentPartId, candidateChildren }) => {
+  const navigate = useNavigate();
+
   const [lines, setLines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [form, setForm] = useState({ childPartId: '', quantity: 1, unit: 'EA', findNumber: '', sortOrder: 10, lineNote: '' });
+
+  const childById = useMemo(() => {
+    const map = new Map();
+    (candidateChildren || []).forEach(p => {
+      if (p?.id != null) map.set(String(p.id), p);
+    });
+    return map;
+  }, [candidateChildren]);
 
   const load = async () => {
     if (!parentPartId) return;
@@ -57,6 +68,23 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
     }
   };
 
+  const renderChild = (childPartId) => {
+    const p = childById.get(String(childPartId));
+    if (!p) return <span className="mono">{childPartId}</span>;
+
+    return (
+      <button
+        type="button"
+        className="bom-open"
+        title="Open child part"
+        onClick={() => navigate(`/plm/parts/${p.id}`)}
+      >
+        <span className="mono">{p.partNumber}</span>
+        <span className="bom-open-sub">{p.name}{p.revision ? ` • Rev ${p.revision}.${p.iteration ?? ''}` : ''}</span>
+      </button>
+    );
+  };
+
   return (
     <div className="bom-wrap">
       <div className="bom-title">BOM</div>
@@ -78,7 +106,7 @@ const BomEditor = ({ parentPartId, candidateChildren }) => {
             {(lines || []).map(l => (
               <tr key={l.id}>
                 <td className="mono">{l.findNumber || '-'}</td>
-                <td className="mono">{l.childPartId}</td>
+                <td>{renderChild(l.childPartId)}</td>
                 <td>{l.quantity}</td>
                 <td>{l.unit}</td>
                 <td style={{ textAlign: 'right' }}>
