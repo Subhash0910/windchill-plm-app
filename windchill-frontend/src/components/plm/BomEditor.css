@@ -1,0 +1,8 @@
+.bom-wrap{margin-top:16px;border:1px solid #eef0f7;border-radius:10px;padding:12px;}
+.bom-title{font-weight:900;color:#111827;margin-bottom:10px;}
+.bom-table{width:100%;border-collapse:collapse;font-size:14px;}
+.bom-table th{background:#f8fafc;text-align:left;padding:10px;border-bottom:1px solid #eef0f7;color:#374151;font-size:12px;text-transform:uppercase;}
+.bom-table td{padding:10px;border-bottom:1px solid #f2f4fb;}
+.bom-add{margin-top:10px;display:grid;grid-template-columns: 1fr 90px 80px 90px auto;gap:8px;align-items:center;}
+.link-btn{border:0;background:transparent;color:#dc2626;font-weight:800;cursor:pointer;}
+.link-btn:hover{text-decoration:underline;}

@@ -1,8 +1,10 @@
 import React from 'react';
-import { useFetch } from '../../hooks/useFetch';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useFetch } from '../../hooks/useFetch';
 import Header from '../../components/organisms/Header/Header';
 import Card from '../../components/molecules/Card/Card';
+import Button from '../../components/atoms/Button/Button';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
@@ -36,6 +38,15 @@ const DashboardPage = () => {
             </Card>
           ))}
         </div>
+
+        <Card title="Workspace" subtitle="Windchill-like navigator (Contexts/Folders/Parts/BOM)">
+          <p>
+            Open the PLM Workspace to work with contexts, folders, parts, BOM, lifecycle, and audit trail.
+          </p>
+          <Link to="/plm" style={{ textDecoration: 'none' }}>
+            <Button variant="secondary" size="sm">Open Workspace</Button>
+          </Link>
+        </Card>
 
         <Card title="Welcome" subtitle={`Role: ${user?.role || 'Viewer'}`}>
           <p>

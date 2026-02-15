@@ -1,0 +1,3 @@
+.lifecycle-wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.lifecycle-state{font-size:14px;color:#111827;font-weight:700;}
+.lifecycle-actions{display:flex;gap:8px;}
