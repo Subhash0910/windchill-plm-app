@@ -18,6 +18,7 @@ import com.windchill.repository.WorkItemRepository;
 import com.windchill.service.plm.IAuditService;
 import com.windchill.service.plm.security.PlmAclService;
 import jakarta.persistence.OptimisticLockException;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -186,6 +187,26 @@ public class PromotionWorkflowService {
 
         failPromotion(saved.getPromotionRequestId(), me);
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public PromotionSnapshot getLatestPromotionSnapshotForPart(Long partId) {
+        PromotionRequest pr = promotionRequestRepository.findFirstByPartIdOrderByCreatedAtDesc(partId).orElse(null);
+        if (pr == null) return null;
+
+        // Only context members (or global admin) can view promotion details
+        acl.requireContextMember(pr.getContextId());
+
+        List<WorkItem> items = workItemRepository.findByPromotionRequestIdAndIsDeletedFalse(pr.getId());
+        List<WorkItemComment> comments = commentRepository.findByPromotionRequestIdAndIsDeletedFalseOrderByCreatedAtAsc(pr.getId());
+        return new PromotionSnapshot(pr, items, comments);
+    }
+
+    @Data
+    public static class PromotionSnapshot {
+        private final PromotionRequest request;
+        private final List<WorkItem> workItems;
+        private final List<WorkItemComment> comments;
     }
 
     private void maybeCompletePromotion(Long promotionRequestId, Long actorUserId) {

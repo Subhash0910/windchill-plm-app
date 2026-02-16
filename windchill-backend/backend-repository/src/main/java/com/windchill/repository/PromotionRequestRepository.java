@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface PromotionRequestRepository extends JpaRepository<PromotionRequest, Long> {
 
     Optional<PromotionRequest> findFirstByPartIdAndStatusInOrderByCreatedAtDesc(Long partId, List<PromotionRequestStatusEnum> statuses);
+
+    Optional<PromotionRequest> findFirstByPartIdOrderByCreatedAtDesc(Long partId);
 }

@@ -69,6 +69,12 @@ export const plmApi = {
     return res.data.data;
   },
 
+  // Promotions
+  getLatestPromotion: async (partId) => {
+    const res = await api.get(`/api/v1/plm/promotions/parts/${partId}/latest`);
+    return res.data.data;
+  },
+
   // Worklist / Work Items
   listMyWorkItems: async () => {
     const res = await api.get('/api/v1/plm/workitems/my');
