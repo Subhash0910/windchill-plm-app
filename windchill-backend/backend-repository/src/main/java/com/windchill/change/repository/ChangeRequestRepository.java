@@ -9,5 +9,6 @@ import java.util.Optional;
 
 public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Long> {
     List<ChangeRequest> findByStatusOrderByIdDesc(ChangeRequestStatus status);
+    List<ChangeRequest> findAllByOrderByIdDesc();
     Optional<ChangeRequest> findByNumber(String number);
 }

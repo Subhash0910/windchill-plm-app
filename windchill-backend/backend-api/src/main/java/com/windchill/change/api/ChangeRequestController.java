@@ -1,5 +1,6 @@
 package com.windchill.change.api;
 
+import com.windchill.change.api.dto.ChangeRequestDetailsResponse;
 import com.windchill.change.api.dto.CreateEcrRequest;
 import com.windchill.change.api.dto.SubmitEcrRequest;
 import com.windchill.change.domain.ChangeRequest;
@@ -43,6 +44,12 @@ public class ChangeRequestController {
     @GetMapping("/{id}")
     public ChangeRequest get(@PathVariable("id") Long id) {
         return changeRequestService.getById(id);
+    }
+
+    @GetMapping("/{id}/details")
+    public ChangeRequestDetailsResponse details(@PathVariable("id") Long id) {
+        ChangeRequestService.ChangeRequestDetails d = changeRequestService.getDetails(id);
+        return new ChangeRequestDetailsResponse(d.getEcr(), d.getTasks(), d.getEcn());
     }
 
     @GetMapping

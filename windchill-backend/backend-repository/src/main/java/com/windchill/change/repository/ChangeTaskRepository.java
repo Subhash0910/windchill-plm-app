@@ -14,4 +14,6 @@ public interface ChangeTaskRepository extends JpaRepository<ChangeTask, Long> {
     List<ChangeTask> findByAssigneeAndDecisionOrderByCreatedAtDesc(String assignee, ChangeTaskDecision decision);
 
     List<ChangeTask> findByChangeRequestIdAndType(Long changeRequestId, ChangeTaskType type);
+
+    List<ChangeTask> findByChangeRequestIdOrderByCreatedAtAsc(Long changeRequestId);
 }
