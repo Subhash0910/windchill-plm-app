@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
 import { clearAuth } from '../../utils/localStorage';
 import './WorklistPage.css';
@@ -13,10 +13,16 @@ const fmtDateTime = (iso) => {
 
 const WorklistPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const focusWorkItemId = searchParams.get('workItemId');
+
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
   const [commentById, setCommentById] = useState({});
+  const [highlightId, setHighlightId] = useState(null);
+
+  const scrollDoneRef = useRef(false);
 
   const pendingCount = useMemo(
     () => items.filter((i) => i.status === 'PENDING').length,
@@ -49,6 +55,30 @@ const WorklistPage = () => {
   useEffect(() => {
     load();
   }, []);
+
+  // Deep-link highlighting: /plm/worklist?workItemId=123
+  useEffect(() => {
+    scrollDoneRef.current = false;
+    if (!focusWorkItemId) {
+      setHighlightId(null);
+      return;
+    }
+    setHighlightId(String(focusWorkItemId));
+  }, [focusWorkItemId]);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    if (loading) return;
+    if (scrollDoneRef.current) return;
+
+    const row = document.getElementById(`wl-row-${highlightId}`);
+    if (!row) return;
+
+    scrollDoneRef.current = true;
+    setTimeout(() => {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  }, [highlightId, loading, items.length]);
 
   const onApprove = async (id) => {
     setError('');
@@ -87,6 +117,11 @@ const WorklistPage = () => {
     }
   };
 
+  const openPart = (partId) => {
+    if (!partId) return;
+    navigate(`/plm/parts/${partId}`);
+  };
+
   return (
     <div className="wl-page">
       <div className="wl-header">
@@ -123,11 +158,16 @@ const WorklistPage = () => {
               {items.map((it) => {
                 const comment = commentById[it.id] || '';
                 const isPending = it.status === 'PENDING';
+                const isHighlighted = highlightId && String(it.id) === String(highlightId);
 
                 return (
-                  <tr key={it.id}>
+                  <tr key={it.id} id={`wl-row-${it.id}`} className={isHighlighted ? 'wl-highlight' : ''}>
                     <td>#{it.id}</td>
-                    <td>{it.partId}</td>
+                    <td>
+                      <button type="button" className="wl-link" onClick={() => openPart(it.partId)}>
+                        {it.partId}
+                      </button>
+                    </td>
                     <td><span className={`wl-status wl-${String(it.status || '').toLowerCase()}`}>{it.status}</span></td>
                     <td>{fmtDateTime(it.dueAt)}</td>
                     <td>{fmtDateTime(it.completedAt)}</td>

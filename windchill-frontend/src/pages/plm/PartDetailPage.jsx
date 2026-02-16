@@ -6,6 +6,7 @@ import BomEditor from '../../components/plm/BomEditor';
 import AuditPanel from '../../components/plm/AuditPanel';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
+import { AuthContext } from '../../context/AuthContext';
 import './PartDetailPage.css';
 
 const TAB = {
@@ -24,6 +25,8 @@ const PartDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { selectedContextId } = useContext(PlmWorkspaceContext);
+  const auth = useContext(AuthContext);
+  const meUserId = auth?.user?.userId;
 
   const [part, setPart] = useState(null);
   const [partsInCtx, setPartsInCtx] = useState([]);
@@ -260,6 +263,11 @@ const PartDetailPage = () => {
     );
   };
 
+  const openWorkItemInWorklist = (workItemId) => {
+    if (!workItemId) return;
+    navigate(`/plm/worklist?workItemId=${encodeURIComponent(String(workItemId))}`);
+  };
+
   return (
     <div>
       <div className="detail-head">
@@ -336,20 +344,30 @@ const PartDetailPage = () => {
                         <th>Status</th>
                         <th>Due</th>
                         <th>Completed</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {prItems.map(w => (
-                        <tr key={w.id}>
-                          <td className="mono">{w.assignee || w.assigneeUserId}</td>
-                          <td><StatusPill value={w.status} /></td>
-                          <td className="mono">{w.dueAt ? String(w.dueAt) : '-'}</td>
-                          <td className="mono">{w.completedAt ? String(w.completedAt) : '-'}</td>
-                        </tr>
-                      ))}
+                      {prItems.map(w => {
+                        const isMe = meUserId && String(meUserId) === String(w.assigneeUserId);
+                        return (
+                          <tr key={w.id}>
+                            <td className="mono">
+                              {w.assignee || w.assigneeUserId}
+                              {isMe ? <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 800, color: '#0f4d6d' }}>(You)</span> : null}
+                            </td>
+                            <td><StatusPill value={w.status} /></td>
+                            <td className="mono">{w.dueAt ? String(w.dueAt) : '-'}</td>
+                            <td className="mono">{w.completedAt ? String(w.completedAt) : '-'}</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>Open</Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {prItems.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="plm-muted" style={{ padding: 12 }}>No approver work items found.</td>
+                          <td colSpan={5} className="plm-muted" style={{ padding: 12 }}>No approver work items found.</td>
                         </tr>
                       )}
                     </tbody>
