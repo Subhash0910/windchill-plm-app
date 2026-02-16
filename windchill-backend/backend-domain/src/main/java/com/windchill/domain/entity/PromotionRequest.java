@@ -47,7 +47,4 @@ public class PromotionRequest extends BaseEntity {
 
     @Column(name = "completed_by_user_id")
     private Long completedByUserId;
-
-    @Version
-    private Long version;
 }

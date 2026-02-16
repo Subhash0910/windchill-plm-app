@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
+import { clearAuth } from '../../utils/localStorage';
 import './WorklistPage.css';
 
 const fmtDateTime = (iso) => {
@@ -23,12 +24,7 @@ const WorklistPage = () => {
   );
 
   const forceRelogin = () => {
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch (e) {
-      // ignore
-    }
+    clearAuth();
     navigate('/login', { replace: true });
   };
 
