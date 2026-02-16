@@ -36,32 +36,24 @@ services:
 
   backend:
     build:
-      # Use windchill-backend as build context so Dockerfile can COPY pom.xml correctly
       context: ./windchill-backend
       dockerfile: backend-api/Dockerfile
     container_name: windchill-backend
     ports:
       - "8080:8080"
     environment:
-      # Redis configuration (Spring Boot 3 uses spring.data.redis.*)
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_TIMEOUT: 2000
-      # MySQL configuration
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
       SPRING_DATASOURCE_USERNAME: windchill
       SPRING_DATASOURCE_PASSWORD: windchill123
-      # JPA/Hibernate configuration
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
-      # Server configuration
       SERVER_SERVLET_CONTEXT_PATH: /
       SERVER_PORT: 8080
-      # Java options
       JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
-      # Spring profiles
       SPRING_PROFILES_ACTIVE: docker
-      # Timezone
       TZ: UTC
     depends_on:
       mysql:
@@ -86,18 +78,19 @@ services:
     ports:
       - "80:80"
     environment:
-      # NOTE: Static build won't read runtime env vars by default; prefer /api proxy in nginx.conf.
       VITE_API_BASE_URL: /api/v1
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - windchill-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/healthz"]
       timeout: 10s
-      retries: 3
+      retries: 5
       interval: 15s
+      start_period: 10s
 
 volumes:
   mysql_data:
