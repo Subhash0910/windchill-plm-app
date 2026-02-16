@@ -12,7 +12,9 @@
 
 .wl-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
 }
 
 .wl-sub {
@@ -27,33 +29,49 @@
 
 .wl-card {
   margin-top: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #eef0f7;
   background: #fff;
   border-radius: 12px;
-  padding: 12px;
+  padding: 0;
   overflow-x: auto;
 }
 
 .wl-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 14px;
 }
 
-.wl-table th,
+.wl-table th {
+  background: #f8fafc;
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid #eef0f7;
+  color: #374151;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
 .wl-table td {
-  padding: 10px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 9px 10px;
+  border-bottom: 1px solid #f2f4fb;
   text-align: left;
   white-space: nowrap;
+  color: #111827;
+}
+
+.wl-table tr:hover td {
+  background: #fafbff;
 }
 
 .wl-empty {
-  padding: 20px;
+  padding: 18px;
   color: #6b7280;
 }
 
 .wl-error {
-  margin-top: 10px;
+  margin: 10px 0 0;
   border: 1px solid #fecaca;
   background: #fef2f2;
   color: #991b1b;
@@ -64,9 +82,9 @@
 .wl-btn {
   border: 1px solid #e5e7eb;
   background: #fff;
-  padding: 8px 12px;
+  padding: 7px 10px;
   border-radius: 10px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
 }
 
@@ -91,11 +109,12 @@
 }
 
 .wl-status {
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 900;
   font-size: 12px;
   display: inline-block;
+  letter-spacing: .02em;
 }
 
 .wl-pending {
@@ -122,7 +141,8 @@
   width: 260px;
   padding: 7px 10px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e7e9f3;
+  background:#fff;
 }
 
 .wl-highlight td {
@@ -135,7 +155,7 @@
   padding: 0;
   margin: 0;
   color: #0f4d6d;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   text-decoration: underline;
 }
