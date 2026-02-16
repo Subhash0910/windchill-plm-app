@@ -1,0 +1,120 @@
+.wl-page{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.wl-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.wl-title{
+  margin:0;
+  font-size:20px;
+}
+
+.wl-sub{
+  margin-top:4px;
+  color:#667085;
+  font-size:13px;
+}
+
+.wl-actions{
+  display:flex;
+  gap:8px;
+}
+
+.wl-card{
+  border:1px solid #e7e9f3;
+  border-radius:10px;
+  background:#fff;
+  overflow:hidden;
+}
+
+.wl-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.wl-table th,
+.wl-table td{
+  padding:10px 12px;
+  border-bottom:1px solid #eef0f6;
+  text-align:left;
+  font-size:13px;
+}
+
+.wl-table th{
+  background:#fafbff;
+  color:#344054;
+  font-weight:700;
+}
+
+.wl-empty{
+  padding:16px;
+  color:#667085;
+}
+
+.wl-error{
+  border:1px solid #fecaca;
+  background:#fff1f2;
+  color:#9f1239;
+  padding:10px 12px;
+  border-radius:10px;
+}
+
+.wl-btn{
+  border:1px solid #d0d5dd;
+  background:#ffffff;
+  border-radius:8px;
+  padding:8px 10px;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.wl-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+.wl-row-actions{
+  display:flex;
+  gap:8px;
+}
+
+.wl-approve{
+  border-color:#86efac;
+  background:#f0fdf4;
+}
+
+.wl-reject{
+  border-color:#fecaca;
+  background:#fff1f2;
+}
+
+.wl-input{
+  width:100%;
+  border:1px solid #d0d5dd;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:13px;
+}
+
+.wl-status{
+  display:inline-block;
+  padding:3px 8px;
+  border-radius:999px;
+  border:1px solid #e7e9f3;
+  background:#fff;
+  font-weight:800;
+  font-size:12px;
+}
+
+.wl-pending{ border-color:#c7d2fe; background:#eef2ff; }
+.wl-approved{ border-color:#86efac; background:#f0fdf4; }
+.wl-rejected{ border-color:#fecaca; background:#fff1f2; }
+.wl-cancelled{ border-color:#e5e7eb; background:#f9fafb; }

@@ -69,6 +69,21 @@ export const plmApi = {
     return res.data.data;
   },
 
+  // Worklist / Work Items
+  listMyWorkItems: async () => {
+    const res = await api.get('/api/v1/plm/workitems/my');
+    return res.data.data;
+  },
+  approveWorkItem: async (id, comment) => {
+    const payload = comment ? { comment } : null;
+    const res = await api.post(`/api/v1/plm/workitems/${id}/approve`, payload);
+    return res.data.data;
+  },
+  rejectWorkItem: async (id, comment) => {
+    const res = await api.post(`/api/v1/plm/workitems/${id}/reject`, { comment });
+    return res.data.data;
+  },
+
   // BOM
   listBom: async (parentPartId) => {
     const res = await api.get(`/api/v1/plm/parts/${parentPartId}/bom`);

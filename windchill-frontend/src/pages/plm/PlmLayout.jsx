@@ -8,7 +8,10 @@ import './PlmLayout.css';
 
 const PlmLayout = () => {
   const location = useLocation();
-  const active = location.pathname.startsWith('/plm') ? 'plm' : 'dashboard';
+
+  const isDashboard = location.pathname.startsWith('/dashboard');
+  const isWorklist = location.pathname.startsWith('/plm/worklist');
+  const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist;
 
   return (
     <div className="plm-shell">
@@ -16,8 +19,9 @@ const PlmLayout = () => {
 
       <div className="plm-topnav">
         <div className="plm-topnav-inner">
-          <Link className={active === 'dashboard' ? 'plm-link active' : 'plm-link'} to="/dashboard">Dashboard</Link>
-          <Link className={active === 'plm' ? 'plm-link active' : 'plm-link'} to="/plm">Workspace</Link>
+          <Link className={isDashboard ? 'plm-link active' : 'plm-link'} to="/dashboard">Dashboard</Link>
+          <Link className={isWorkspace ? 'plm-link active' : 'plm-link'} to="/plm">Workspace</Link>
+          <Link className={isWorklist ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
         </div>
       </div>
 
