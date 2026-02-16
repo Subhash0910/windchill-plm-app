@@ -17,8 +17,10 @@ import com.windchill.repository.WorkItemCommentRepository;
 import com.windchill.repository.WorkItemRepository;
 import com.windchill.service.plm.IAuditService;
 import com.windchill.service.plm.security.PlmAclService;
+import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -130,6 +132,9 @@ public class PromotionWorkflowService {
             throw new BusinessException("Work item is not pending");
         }
 
+        // Windchill-like: still must be an APPROVER in the context at action time
+        acl.requireContextRole(wi.getContextId(), RoleEnum.APPROVER);
+
         wi.setStatus(WorkItemStatusEnum.APPROVED);
         wi.setCompletedAt(LocalDateTime.now());
         wi.setCompletedByUserId(me);
@@ -164,6 +169,9 @@ public class PromotionWorkflowService {
             throw new BusinessException("Work item is not pending");
         }
 
+        // Windchill-like: still must be an APPROVER in the context at action time
+        acl.requireContextRole(wi.getContextId(), RoleEnum.APPROVER);
+
         wi.setStatus(WorkItemStatusEnum.REJECTED);
         wi.setCompletedAt(LocalDateTime.now());
         wi.setCompletedByUserId(me);
@@ -192,11 +200,17 @@ public class PromotionWorkflowService {
         boolean allApproved = items.stream().allMatch(i -> i.getStatus() == WorkItemStatusEnum.APPROVED);
         if (!allApproved) return;
 
-        // All approved: set PR approved, promote part to RELEASED
-        pr.setStatus(PromotionRequestStatusEnum.APPROVED);
-        pr.setCompletedAt(LocalDateTime.now());
-        pr.setCompletedByUserId(actorUserId);
-        promotionRequestRepository.save(pr);
+        try {
+            // All approved: set PR approved, promote part to RELEASED
+            pr.setStatus(PromotionRequestStatusEnum.APPROVED);
+            pr.setCompletedAt(LocalDateTime.now());
+            pr.setCompletedByUserId(actorUserId);
+            promotionRequestRepository.saveAndFlush(pr);
+        } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+            // Another approver completed/rejected concurrently; treat as idempotent.
+            log.info("Promotion request {} completion already handled concurrently", promotionRequestId);
+            return;
+        }
 
         Part part = partRepository.findById(pr.getPartId())
                 .orElseThrow(() -> new BusinessException("Part not found"));
@@ -218,10 +232,16 @@ public class PromotionWorkflowService {
             return;
         }
 
-        pr.setStatus(PromotionRequestStatusEnum.REJECTED);
-        pr.setCompletedAt(LocalDateTime.now());
-        pr.setCompletedByUserId(actorUserId);
-        promotionRequestRepository.save(pr);
+        try {
+            pr.setStatus(PromotionRequestStatusEnum.REJECTED);
+            pr.setCompletedAt(LocalDateTime.now());
+            pr.setCompletedByUserId(actorUserId);
+            promotionRequestRepository.saveAndFlush(pr);
+        } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
+            // Another approver completed concurrently; treat as idempotent.
+            log.info("Promotion request {} rejection already handled concurrently", promotionRequestId);
+            return;
+        }
 
         // Cancel remaining pending work items
         List<WorkItem> items = workItemRepository.findByPromotionRequestIdAndIsDeletedFalse(promotionRequestId);
