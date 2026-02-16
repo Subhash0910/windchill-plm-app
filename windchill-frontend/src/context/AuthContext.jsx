@@ -1,5 +1,5 @@
-import React, { createContext, useState, useCallback, useEffect } from 'react';
-import { getToken, setToken, removeToken, getUser, setUser, removeUser } from '../utils/localStorage';
+import React, { createContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { getToken, setToken, getUser, setUser, clearAuth } from '../utils/localStorage';
 import api from '../utils/api';
 import { API_ENDPOINTS } from '../config/api.config';
 
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize from localStorage
+  // Initialize from storage (sessionStorage by default)
   useEffect(() => {
     const token = getToken();
     const storedUser = getUser();
@@ -44,11 +44,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
-    removeToken();
-    removeUser();
+    clearAuth();
     setUserState(null);
     setError(null);
   }, []);
+
+  const isAuthenticated = useMemo(() => {
+    // Prefer state (stable), fallback to storage for hard refresh cases
+    return !!(user || getToken());
+  }, [user]);
 
   const value = {
     user,
@@ -56,7 +60,7 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
-    isAuthenticated: !!getToken(),
+    isAuthenticated,
   };
 
   return (
