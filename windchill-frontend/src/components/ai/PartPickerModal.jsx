@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import api from '../../utils/api';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './PartPickerModal.css';
 
 /**
  * Part Picker Modal - Search and select parts from database
+ * Shows ALL parts from selected context (across all folders)
  */
 const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
+  const { selectedContextId } = useContext(PlmWorkspaceContext); // Get context from workspace
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,36 +20,37 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     if (isOpen) {
       loadParts();
     }
-  }, [isOpen]);
+  }, [isOpen, selectedContextId]); // Reload when context changes
 
   const loadParts = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Get the ACTUAL current context - don't use fallback!
-      const contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
+      // Get context from workspace context provider
+      const contextId = selectedContextId;
       
       if (!contextId) {
-        setError('No context selected. Please go to Parts page and select a Product/Project first.');
+        setError('No context selected. Please go to Parts page and select a Product/Project (e.g., SUbhash - PROD001).');
         setLoading(false);
+        setParts([]);
         return;
       }
       
-      console.log('Using context ID:', contextId);
+      console.log('Loading parts for context ID:', contextId);
       
-      // Call the parts API with the current context
+      // Call the parts API - gets ALL parts from this context (all folders)
       const response = await api.get(`/api/v1/plm/parts?contextId=${contextId}`);
       
       console.log('Parts response:', response.data);
       
       const partsList = response.data?.data || [];
       
-      console.log(`Loaded ${partsList.length} parts from context ${contextId}`);
+      console.log(`Loaded ${partsList.length} parts from context ${contextId} (all folders)`);
       setParts(partsList);
       
       if (partsList.length === 0) {
-        setError(`No parts found in this context. Create some parts in the Parts workspace for context ${contextId}.`);
+        setError('No parts found in this context. Create some parts in the Parts workspace first.');
       }
       
     } catch (error) {
