@@ -28,6 +28,9 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
+# Needed for Docker HEALTHCHECK and docker-compose healthcheck
+RUN apk add --no-cache wget
+
 # Copy the jar from builder
 COPY --from=builder /build/backend-api/target/*.jar app.jar
 
