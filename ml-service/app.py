@@ -1,356 +1,251 @@
-"""FastAPI ML Service for PLM AI Impact Engine.
-
-Provides risk prediction and analysis for engineering change requests.
-"""
-
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 import joblib
 import numpy as np
+from typing import List, Optional
+import os
 import logging
 from datetime import datetime
-import os
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
 app = FastAPI(
     title="PLM AI Service",
-    description="Machine Learning service for Engineering Impact Analysis",
+    description="Machine Learning service for Windchill PLM Impact Analysis",
     version="1.0.0"
 )
 
-# CORS middleware for frontend access
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load trained model (will be None initially, use rule-based fallback)
-MODEL_PATH = "models/risk_model.pkl"
-trained_model = None
-
+# Load trained model (if exists)
 try:
-    if os.path.exists(MODEL_PATH):
-        trained_model = joblib.load(MODEL_PATH)
-        logger.info("Trained ML model loaded successfully")
+    model_path = os.getenv("MODEL_PATH", "models/risk_model.pkl")
+    if os.path.exists(model_path):
+        risk_model = joblib.load(model_path)
+        logger.info(f"Loaded trained model from {model_path}")
     else:
-        logger.warning(f"No trained model found at {MODEL_PATH}, using rule-based fallback")
+        risk_model = None
+        logger.warning("No trained model found, using rule-based fallback")
 except Exception as e:
     logger.error(f"Error loading model: {e}")
-    trained_model = None
+    risk_model = None
 
-# ==================== Request/Response Models ====================
-
+# Pydantic models
 class RiskPredictionRequest(BaseModel):
-    """Request model for risk prediction."""
     part_id: int = Field(..., description="ID of the part being changed")
-    part_number: Optional[str] = Field(None, description="Part number (optional)")
-    change_type: str = Field(..., description="Type of change: REVISE, OBSOLETE, etc.")
-    
-    # Graph metrics from Java backend
-    bom_depth: int = Field(0, ge=0, description="Maximum BOM depth")
+    change_type: str = Field(..., description="Type of change: OBSOLETE, REVISE, PROMOTE, etc.")
+    bom_depth: int = Field(0, ge=0, description="Depth of BOM hierarchy")
     where_used_count: int = Field(0, ge=0, description="Number of parent assemblies")
-    released_affected: int = Field(0, ge=0, description="Number of released parts affected")
+    released_affected: int = Field(0, ge=0, description="Number of RELEASED parts affected")
     conflicting_changes: int = Field(0, ge=0, description="Number of conflicting active changes")
-    
-    # Part metadata
-    lifecycle_state: str = Field(..., description="Current lifecycle state")
-    classification: Optional[str] = Field(None, description="Part classification")
-    
-    # Context
-    user_id: Optional[int] = Field(None, description="User making the change")
-    context_id: Optional[int] = Field(None, description="Context/container ID")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "part_id": 123,
-                "part_number": "PART-M456",
-                "change_type": "OBSOLETE",
-                "bom_depth": 3,
-                "where_used_count": 12,
-                "released_affected": 3,
-                "conflicting_changes": 1,
-                "lifecycle_state": "RELEASED",
-                "classification": "ELECTRICAL"
-            }
-        }
+    lifecycle_state: str = Field("INWORK", description="Current lifecycle state")
+    has_compliance_issues: bool = Field(False, description="Whether compliance violations detected")
 
 class RiskPredictionResponse(BaseModel):
-    """Response model for risk prediction."""
-    risk_score: float = Field(..., ge=0, le=10, description="Risk score from 0 (safe) to 10 (critical)")
-    risk_level: str = Field(..., description="Risk category: LOW, MEDIUM, HIGH, CRITICAL")
-    confidence: float = Field(..., ge=0, le=1, description="Model confidence (0-1)")
-    factors: List[str] = Field(..., description="List of risk factors identified")
-    recommendations: List[str] = Field(default_factory=list, description="Suggested actions")
-    model_version: str = Field(..., description="Model type used: ML or RULE_BASED")
-    prediction_time_ms: float = Field(..., description="Prediction latency in milliseconds")
+    risk_score: float = Field(..., ge=0, le=10, description="Risk score from 0-10")
+    confidence: float = Field(..., ge=0, le=1, description="Prediction confidence 0-1")
+    risk_level: str = Field(..., description="LOW, MEDIUM, or HIGH")
+    factors: List[str] = Field(..., description="List of risk contributing factors")
+    model_type: str = Field(..., description="ML or RULE_BASED")
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 class HealthResponse(BaseModel):
-    """Health check response."""
     status: str
     model_loaded: bool
     model_type: str
-    version: str
     timestamp: str
 
-# ==================== Helper Functions ====================
-
-def get_risk_level(score: float) -> str:
-    """Convert numeric risk score to categorical level."""
-    if score < 3.0:
-        return "LOW"
-    elif score < 6.0:
-        return "MEDIUM"
-    elif score < 8.5:
-        return "HIGH"
-    else:
-        return "CRITICAL"
-
-def generate_recommendations(risk_level: str, factors: List[str], change_type: str) -> List[str]:
-    """Generate actionable recommendations based on risk assessment."""
-    recommendations = []
-    
-    if risk_level == "CRITICAL" or risk_level == "HIGH":
-        recommendations.append("Create formal ECN with detailed change tasks")
-        recommendations.append("Assign senior engineer or domain expert for review")
-        recommendations.append("Schedule impact assessment meeting with stakeholders")
-        
-        if "conflicting" in " ".join(factors).lower():
-            recommendations.append("Coordinate with owners of conflicting changes before proceeding")
-        
-        if "released" in " ".join(factors).lower():
-            recommendations.append("Plan cascading ECN for all affected released assemblies")
-    
-    elif risk_level == "MEDIUM":
-        recommendations.append("Document affected assemblies in ECR description")
-        recommendations.append("Request peer review from team member")
-        recommendations.append("Verify no active production orders use affected parts")
-    
-    elif risk_level == "LOW":
-        recommendations.append("Standard review process is sufficient")
-        recommendations.append("Proceed with confidence")
-    
-    return recommendations
-
-# ==================== Rule-Based Fallback Logic ====================
-
-def rule_based_risk_prediction(request: RiskPredictionRequest) -> RiskPredictionResponse:
-    """Rule-based risk scoring when ML model is unavailable.
-    
-    This provides immediate value even before model training.
+# Risk prediction endpoint
+@app.post("/predict-risk", response_model=RiskPredictionResponse, tags=["Prediction"])
+async def predict_risk(request: RiskPredictionRequest):
     """
-    start_time = datetime.now()
+    Predict risk score for a proposed engineering change.
+    
+    Returns risk score (0-10), confidence level, and contributing factors.
+    Uses ML model if available, otherwise falls back to rule-based heuristics.
+    """
+    try:
+        logger.info(f"Risk prediction request for part_id={request.part_id}, change_type={request.change_type}")
+        
+        if risk_model is not None:
+            return ml_based_risk(request)
+        else:
+            return rule_based_risk(request)
+            
+    except Exception as e:
+        logger.error(f"Error in risk prediction: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
+    """
+    ML-based risk prediction using trained model.
+    """
+    # Feature engineering
+    features = np.array([[
+        request.bom_depth,
+        request.where_used_count,
+        request.released_affected,
+        request.conflicting_changes,
+        1 if request.lifecycle_state == "RELEASED" else 0,
+        1 if request.change_type == "OBSOLETE" else 0,
+        1 if request.has_compliance_issues else 0
+    ]])
+    
+    # Predict
+    risk_score = float(risk_model.predict(features)[0])
+    confidence = float(risk_model.predict_proba(features).max())
+    
+    # Determine risk level
+    if risk_score < 4:
+        risk_level = "LOW"
+    elif risk_score < 7:
+        risk_level = "MEDIUM"
+    else:
+        risk_level = "HIGH"
+    
+    # Analyze factors
+    factors = analyze_risk_factors(request, risk_score)
+    
+    return RiskPredictionResponse(
+        risk_score=round(risk_score, 1),
+        confidence=round(confidence, 2),
+        risk_level=risk_level,
+        factors=factors,
+        model_type="ML"
+    )
+
+def rule_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
+    """
+    Fallback: Rule-based risk scoring when no ML model available.
+    
+    Scoring logic:
+    - Released parts affected: +3.0 per part (max 6.0)
+    - Conflicting changes: +2.0 per conflict (max 4.0)
+    - High reuse (where_used > 5): +1.5
+    - Complex BOM (depth > 3): +1.0
+    - Lifecycle is RELEASED: +1.5
+    - Change type OBSOLETE: +1.0
+    - Compliance issues: +2.0
+    """
     score = 0.0
     factors = []
     
-    # Factor 1: Released parts affected (highest risk)
+    # Released parts affected (highest impact)
     if request.released_affected > 0:
-        weight = min(request.released_affected * 1.5, 4.0)
-        score += weight
-        factors.append(
-            f"{request.released_affected} released part{'s' if request.released_affected > 1 else ''} "
-            f"affected - requires formal ECN cascade"
-        )
+        impact = min(request.released_affected * 3.0, 6.0)
+        score += impact
+        factors.append(f"{request.released_affected} released part(s) affected - critical impact")
     
-    # Factor 2: Conflicting changes
+    # Conflicting changes
     if request.conflicting_changes > 0:
-        score += 2.5
-        factors.append(
-            f"{request.conflicting_changes} conflicting active change{'s' if request.conflicting_changes > 1 else ''} "
-            f"- coordination risk detected"
-        )
+        impact = min(request.conflicting_changes * 2.0, 4.0)
+        score += impact
+        factors.append(f"{request.conflicting_changes} conflicting active change(s) detected")
     
-    # Factor 3: High reuse (where-used count)
-    if request.where_used_count > 10:
-        score += 2.0
-        factors.append(f"High reuse factor: {request.where_used_count} parent assemblies")
-    elif request.where_used_count > 5:
-        score += 1.0
-        factors.append(f"Moderate reuse: {request.where_used_count} parent assemblies")
-    
-    # Factor 4: BOM complexity
-    if request.bom_depth > 4:
+    # High reuse indication
+    if request.where_used_count > 5:
         score += 1.5
+        factors.append(f"High reuse: used in {request.where_used_count} parent assemblies")
+    elif request.where_used_count > 0:
+        factors.append(f"Moderate reuse: used in {request.where_used_count} assemblies")
+    
+    # BOM complexity
+    if request.bom_depth > 3:
+        score += 1.0
         factors.append(f"Complex BOM structure: {request.bom_depth} levels deep")
-    elif request.bom_depth > 2:
-        score += 0.5
-        factors.append(f"Moderate BOM depth: {request.bom_depth} levels")
     
-    # Factor 5: Change type severity
-    high_risk_changes = ["OBSOLETE", "DELETE"]
-    if request.change_type.upper() in high_risk_changes:
-        score += 1.0
-        factors.append(f"{request.change_type} is a high-impact change type")
-    
-    # Factor 6: Current lifecycle state
-    if request.lifecycle_state.upper() == "RELEASED":
+    # Current lifecycle state
+    if request.lifecycle_state == "RELEASED":
         score += 1.5
-        factors.append("Part is RELEASED - formal change process required")
-    elif request.lifecycle_state.upper() == "UNDERREVIEW":
-        score += 0.5
-        factors.append("Part is UNDER REVIEW - may cause review delays")
+        factors.append("Part is RELEASED - requires formal change process")
     
-    # Cap score at 10
+    # Change type
+    if request.change_type == "OBSOLETE":
+        score += 1.0
+        factors.append("Obsolescence requires supply chain validation")
+    elif request.change_type == "REVISE":
+        factors.append("Revision change - review all references")
+    
+    # Compliance issues
+    if request.has_compliance_issues:
+        score += 2.0
+        factors.append("Compliance violations detected - regulatory review required")
+    
+    # Cap score at 10.0
     score = min(score, 10.0)
     
-    # If no factors, it's low risk
+    # Determine risk level
+    if score < 4:
+        risk_level = "LOW"
+    elif score < 7:
+        risk_level = "MEDIUM"
+    else:
+        risk_level = "HIGH"
+    
+    # Add recommendation if no major risks
     if not factors:
-        factors.append("No major risk factors detected")
-        factors.append("Part has minimal dependencies")
-    
-    risk_level = get_risk_level(score)
-    recommendations = generate_recommendations(risk_level, factors, request.change_type)
-    
-    # Calculate latency
-    end_time = datetime.now()
-    latency_ms = (end_time - start_time).total_seconds() * 1000
+        factors.append("No major risk factors detected - proceed with standard review")
     
     return RiskPredictionResponse(
         risk_score=round(score, 1),
+        confidence=0.75,  # Rule-based has fixed confidence
         risk_level=risk_level,
-        confidence=0.75,  # Rule-based has good confidence but not perfect
         factors=factors,
-        recommendations=recommendations,
-        model_version="RULE_BASED_V1",
-        prediction_time_ms=round(latency_ms, 2)
+        model_type="RULE_BASED"
     )
 
-# ==================== ML Model Prediction ====================
-
-def ml_model_prediction(request: RiskPredictionRequest) -> RiskPredictionResponse:
-    """ML-based risk prediction using trained model.
-    
-    TODO: Implement after model training in Phase 1C.
+def analyze_risk_factors(request: RiskPredictionRequest, risk_score: float) -> List[str]:
     """
-    start_time = datetime.now()
-    
-    try:
-        # Feature engineering (must match training pipeline)
-        features = np.array([[
-            request.bom_depth,
-            request.where_used_count,
-            request.released_affected,
-            request.conflicting_changes,
-            1 if request.lifecycle_state.upper() == "RELEASED" else 0,
-            1 if request.change_type.upper() in ["OBSOLETE", "DELETE"] else 0
-        ]])
-        
-        # Predict
-        risk_score_raw = float(trained_model.predict(features)[0])
-        risk_score = min(max(risk_score_raw, 0), 10)  # Clamp to 0-10
-        
-        # Get probability/confidence if available
-        if hasattr(trained_model, 'predict_proba'):
-            proba = trained_model.predict_proba(features)
-            confidence = float(np.max(proba))
-        else:
-            confidence = 0.85  # Default for regression models
-        
-        risk_level = get_risk_level(risk_score)
-        
-        # Analyze feature importance for explanation
-        factors = analyze_ml_factors(request, risk_score)
-        recommendations = generate_recommendations(risk_level, factors, request.change_type)
-        
-        end_time = datetime.now()
-        latency_ms = (end_time - start_time).total_seconds() * 1000
-        
-        return RiskPredictionResponse(
-            risk_score=round(risk_score, 1),
-            risk_level=risk_level,
-            confidence=round(confidence, 2),
-            factors=factors,
-            recommendations=recommendations,
-            model_version="ML_RANDOM_FOREST_V1",
-            prediction_time_ms=round(latency_ms, 2)
-        )
-    
-    except Exception as e:
-        logger.error(f"ML prediction failed: {e}, falling back to rule-based")
-        return rule_based_risk_prediction(request)
-
-def analyze_ml_factors(request: RiskPredictionRequest, risk_score: float) -> List[str]:
-    """Analyze which factors contributed most to ML prediction.
-    
-    Uses feature importance from model to explain results.
+    Generate human-readable risk factors based on input features.
     """
     factors = []
     
-    # Simple heuristic-based explanation (in production, use SHAP or LIME)
     if request.released_affected > 0:
-        factors.append(f"{request.released_affected} released parts affected (high impact)")
+        factors.append(f"{request.released_affected} released parts require formal ECN process")
     
     if request.conflicting_changes > 0:
-        factors.append(f"{request.conflicting_changes} conflicting changes detected")
+        factors.append(f"Conflicts with {request.conflicting_changes} active change(s)")
     
-    if request.where_used_count > 8:
-        factors.append(f"High dependency: {request.where_used_count} parent assemblies")
+    if request.where_used_count > 5:
+        factors.append(f"Widely used component ({request.where_used_count} parents)")
     
     if request.bom_depth > 3:
-        factors.append(f"Complex structure: {request.bom_depth}-level BOM")
+        factors.append(f"Deep BOM hierarchy ({request.bom_depth} levels)")
+    
+    if request.has_compliance_issues:
+        factors.append("Regulatory compliance concerns flagged")
     
     if not factors:
-        factors.append("Multiple minor risk factors contribute to moderate risk")
+        factors.append("Low complexity change")
     
     return factors
 
-# ==================== API Endpoints ====================
-
-@app.post("/predict-risk", response_model=RiskPredictionResponse, status_code=status.HTTP_200_OK)
-async def predict_risk(request: RiskPredictionRequest):
-    """Predict risk score for an engineering change request.
-    
-    Uses trained ML model if available, otherwise falls back to rule-based scoring.
+# Health check endpoint
+@app.get("/health", response_model=HealthResponse, tags=["System"])
+async def health():
     """
-    logger.info(f"Risk prediction request for part_id={request.part_id}, change_type={request.change_type}")
-    
-    try:
-        if trained_model is not None:
-            response = ml_model_prediction(request)
-        else:
-            response = rule_based_risk_prediction(request)
-        
-        logger.info(
-            f"Prediction complete: part_id={request.part_id}, "
-            f"risk_score={response.risk_score}, level={response.risk_level}"
-        )
-        return response
-    
-    except Exception as e:
-        logger.error(f"Prediction error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Risk prediction failed: {str(e)}"
-        )
-
-@app.get("/health", response_model=HealthResponse)
-async def health_check():
-    """Health check endpoint for container orchestration."""
-    model_type = "ML" if trained_model is not None else "RULE_BASED"
-    
+    Health check endpoint for container orchestration.
+    """
     return HealthResponse(
         status="healthy",
-        model_loaded=trained_model is not None,
-        model_type=model_type,
-        version="1.0.0",
-        timestamp=datetime.now().isoformat()
+        model_loaded=risk_model is not None,
+        model_type="ML" if risk_model is not None else "RULE_BASED",
+        timestamp=datetime.utcnow().isoformat()
     )
 
-@app.get("/")
+# Root endpoint
+@app.get("/", tags=["System"])
 async def root():
-    """Root endpoint with API information."""
     return {
         "service": "PLM AI Service",
         "version": "1.0.0",
@@ -362,16 +257,6 @@ async def root():
         }
     }
 
-# ==================== Startup/Shutdown Events ====================
-
-@app.on_event("startup")
-async def startup_event():
-    """Log startup information."""
-    logger.info("PLM AI Service starting...")
-    logger.info(f"Model loaded: {trained_model is not None}")
-    logger.info("Service ready to accept requests")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("PLM AI Service shutting down...")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
