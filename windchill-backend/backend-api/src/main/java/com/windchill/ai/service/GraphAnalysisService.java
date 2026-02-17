@@ -1,9 +1,9 @@
 package com.windchill.ai.service;
 
 import com.windchill.ai.dto.GraphImpactResult;
+import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.BomLine;
 import com.windchill.domain.entity.Part;
-import com.windchill.domain.enums.LifecycleState;
 import com.windchill.repository.BomLineRepository;
 import com.windchill.repository.PartRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for graph-based structural analysis of BOMs and part relationships.
@@ -40,7 +39,7 @@ public class GraphAnalysisService {
 
             GraphImpactResult result = new GraphImpactResult();
             result.setTargetPartId(partId);
-            result.setTargetPartNumber(targetPart.getNumber());
+            result.setTargetPartNumber(targetPart.getPartNumber());
             result.setChangeType(changeType);
 
             // Find all parent assemblies (where-used analysis)
@@ -52,7 +51,7 @@ public class GraphAnalysisService {
             
             // Count released parts
             long releasedCount = affectedParts.stream()
-                    .filter(p -> p.getLifecycleState() == LifecycleState.RELEASED)
+                    .filter(p -> p.getLifecycleState() == LifecycleStateEnum.RELEASED)
                     .count();
 
             // Analyze BOM structure complexity
