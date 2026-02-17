@@ -5,7 +5,10 @@ import com.windchill.change.domain.ChangeRequest;
 import com.windchill.change.domain.ChangeRequestStatus;
 import com.windchill.change.domain.ChangeTask;
 import com.windchill.change.domain.ChangeTaskType;
+import com.windchill.change.impact.domain.ImpactReport;
+import com.windchill.change.impact.domain.ImpactRiskLevel;
 import com.windchill.change.impact.service.ChangeImpactAnalysisService;
+import com.windchill.change.impact.service.ChangeImpactRoutingPolicy;
 import com.windchill.change.repository.ChangeNoticeRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
 import com.windchill.change.repository.ChangeTaskRepository;
@@ -26,17 +29,20 @@ public class ChangeRequestService {
     private final ChangeNoticeRepository changeNoticeRepository;
     private final ChangeRobotService changeRobotService;
     private final ChangeImpactAnalysisService changeImpactAnalysisService;
+    private final ChangeImpactRoutingPolicy changeImpactRoutingPolicy;
 
     public ChangeRequestService(ChangeRequestRepository changeRequestRepository,
                                ChangeTaskRepository changeTaskRepository,
                                ChangeNoticeRepository changeNoticeRepository,
                                ChangeRobotService changeRobotService,
-                               ChangeImpactAnalysisService changeImpactAnalysisService) {
+                               ChangeImpactAnalysisService changeImpactAnalysisService,
+                               ChangeImpactRoutingPolicy changeImpactRoutingPolicy) {
         this.changeRequestRepository = changeRequestRepository;
         this.changeTaskRepository = changeTaskRepository;
         this.changeNoticeRepository = changeNoticeRepository;
         this.changeRobotService = changeRobotService;
         this.changeImpactAnalysisService = changeImpactAnalysisService;
+        this.changeImpactRoutingPolicy = changeImpactRoutingPolicy;
     }
 
     @Transactional
@@ -87,8 +93,22 @@ public class ChangeRequestService {
             changeTaskRepository.save(t);
         }
 
-        // Auto-generate impact report snapshot on submit (safe, explainable intelligence)
-        changeImpactAnalysisService.analyzeForEcr(ecr.getId());
+        // Auto-generate impact report snapshot on submit
+        ImpactReport report = changeImpactAnalysisService.analyzeForEcr(ecr.getId());
+
+        // Simple policy-based routing: if risk HIGH, add senior reviewers (if configured)
+        if (report.getRiskLevel() == ImpactRiskLevel.HIGH) {
+            for (String sr : changeImpactRoutingPolicy.getSeniorReviewers()) {
+                if (sr == null || sr.isBlank()) continue;
+                if (!changeTaskRepository.existsByChangeRequestIdAndTypeAndAssignee(ecr.getId(), ChangeTaskType.REVIEW, sr)) {
+                    ChangeTask t = new ChangeTask();
+                    t.setChangeRequestId(ecr.getId());
+                    t.setType(ChangeTaskType.REVIEW);
+                    t.setAssignee(sr);
+                    changeTaskRepository.save(t);
+                }
+            }
+        }
 
         return ecr;
     }

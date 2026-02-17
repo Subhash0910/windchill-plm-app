@@ -11,4 +11,8 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
     List<ChangeRequest> findByStatusOrderByIdDesc(ChangeRequestStatus status);
     List<ChangeRequest> findAllByOrderByIdDesc();
     Optional<ChangeRequest> findByNumber(String number);
+
+    List<ChangeRequest> findTop50ByContextTypeIgnoreCaseAndContextIdAndIdNotOrderByIdDesc(String contextType, String contextId, Long id);
+
+    List<ChangeRequest> findTop50ByTitleContainingIgnoreCaseAndIdNotOrderByIdDesc(String title, Long id);
 }
