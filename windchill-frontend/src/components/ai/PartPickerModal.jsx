@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getToken } from '../../utils/localStorage';
+import api from '../../utils/api';
 import './PartPickerModal.css';
 
 /**
@@ -23,44 +23,24 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
-      // Get auth token from sessionStorage
-      const token = getToken();
-      
-      if (!token) {
-        console.error('❌ No auth token found');
-        setError('Not authenticated. Please login again.');
-        setLoading(false);
-        return;
-      }
-
-      console.log('✅ Token found, length:', token.length);
-
-      // Try to get current context
+      // Try to get current context from storage
       let contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
       
-      // Fallback: fetch from user profile
+      // Fallback: fetch from user profile if no context
       if (!contextId) {
         try {
           console.log('Fetching user context...');
-          const userResponse = await fetch('/api/v1/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          const userResponse = await api.get('/api/v1/auth/me');
           
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            contextId = userData.currentContextId;
+          if (userResponse.data) {
+            contextId = userResponse.data.currentContextId;
             if (contextId) {
               sessionStorage.setItem('currentContextId', contextId);
               console.log('✅ Context ID:', contextId);
             }
-          } else {
-            console.warn('⚠️ Could not fetch user context:', userResponse.status);
           }
         } catch (err) {
-          console.warn('⚠️ Error fetching user context:', err);
+          console.warn('⚠️ Could not fetch user context:', err.message);
         }
       }
 
@@ -71,41 +51,16 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       
       console.log('Loading parts from:', url);
       
-      // Fetch parts with proper authentication
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      });
+      // Fetch parts using axios API wrapper (handles auth automatically)
+      const response = await api.get(url);
       
-      console.log('Parts API response status:', response.status);
-      
-      if (response.status === 403) {
-        throw new Error('Access denied. Your session may have expired. Please login again.');
-      }
-      
-      if (response.status === 401) {
-        throw new Error('Unauthorized. Please login again.');
-      }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Parts API error response:', errorText);
-        throw new Error(`Failed to load parts: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('Parts API response:', data);
+      console.log('✅ Parts API response:', response.status);
       
       // Handle both paginated and direct array responses
-      const partsList = data.content || data;
+      const partsList = response.data.content || response.data;
       
       if (!Array.isArray(partsList)) {
-        console.error('❌ Unexpected response format:', data);
+        console.error('❌ Unexpected response format:', response.data);
         setError('Invalid response from server');
         setParts([]);
       } else {
@@ -119,7 +74,18 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       
     } catch (error) {
       console.error('❌ Failed to load parts:', error);
-      setError(error.message || 'Failed to load parts. Please try again.');
+      
+      // Better error messages
+      if (error.response?.status === 403) {
+        setError('Access denied. Your session may have expired. Please logout and login again.');
+      } else if (error.response?.status === 401) {
+        setError('Unauthorized. Please logout and login again.');
+      } else if (!error.response) {
+        setError('Cannot connect to backend. Is the server running?');
+      } else {
+        setError(error.message || 'Failed to load parts. Please try again.');
+      }
+      
       setParts([]);
     } finally {
       setLoading(false);
