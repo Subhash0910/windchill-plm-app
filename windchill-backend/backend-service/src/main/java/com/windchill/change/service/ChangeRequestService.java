@@ -5,6 +5,7 @@ import com.windchill.change.domain.ChangeRequest;
 import com.windchill.change.domain.ChangeRequestStatus;
 import com.windchill.change.domain.ChangeTask;
 import com.windchill.change.domain.ChangeTaskType;
+import com.windchill.change.impact.service.ChangeImpactAnalysisService;
 import com.windchill.change.repository.ChangeNoticeRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
 import com.windchill.change.repository.ChangeTaskRepository;
@@ -24,15 +25,18 @@ public class ChangeRequestService {
     private final ChangeTaskRepository changeTaskRepository;
     private final ChangeNoticeRepository changeNoticeRepository;
     private final ChangeRobotService changeRobotService;
+    private final ChangeImpactAnalysisService changeImpactAnalysisService;
 
     public ChangeRequestService(ChangeRequestRepository changeRequestRepository,
                                ChangeTaskRepository changeTaskRepository,
                                ChangeNoticeRepository changeNoticeRepository,
-                               ChangeRobotService changeRobotService) {
+                               ChangeRobotService changeRobotService,
+                               ChangeImpactAnalysisService changeImpactAnalysisService) {
         this.changeRequestRepository = changeRequestRepository;
         this.changeTaskRepository = changeTaskRepository;
         this.changeNoticeRepository = changeNoticeRepository;
         this.changeRobotService = changeRobotService;
+        this.changeImpactAnalysisService = changeImpactAnalysisService;
     }
 
     @Transactional
@@ -82,6 +86,9 @@ public class ChangeRequestService {
             t.setAssignee(reviewer.trim());
             changeTaskRepository.save(t);
         }
+
+        // Auto-generate impact report snapshot on submit (safe, explainable intelligence)
+        changeImpactAnalysisService.analyzeForEcr(ecr.getId());
 
         return ecr;
     }
