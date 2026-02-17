@@ -45,9 +45,8 @@ public class ImpactAnalyzerService {
                     request.getPartId(), request.getChangeType()
             );
 
-            // Step 3: ML prediction
-            RiskPredictionRequest mlRequest = buildMLRequest(request, part, graphResult);
-            RiskPredictionResponse riskPrediction = mlServiceClient.predictRisk(mlRequest);
+            // Step 3: ML prediction (with fallback)
+            RiskPredictionResponse riskPrediction = getRiskPrediction(request, part, graphResult);
 
             // Step 4: Business rules
             List<String> warnings = generateWarnings(graphResult, part);
@@ -78,6 +77,60 @@ public class ImpactAnalyzerService {
             log.error("Impact analysis failed", e);
             throw new RuntimeException("Impact analysis failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Get risk prediction with fallback to rule-based scoring if ML service fails
+     */
+    private RiskPredictionResponse getRiskPrediction(ImpactAnalysisRequest request,
+                                                       Part part,
+                                                       GraphImpactResult graphResult) {
+        try {
+            RiskPredictionRequest mlRequest = buildMLRequest(request, part, graphResult);
+            return mlServiceClient.predictRisk(mlRequest);
+        } catch (Exception e) {
+            log.warn("ML service unavailable, using rule-based fallback: {}", e.getMessage());
+            return createFallbackRiskPrediction(graphResult, part);
+        }
+    }
+
+    /**
+     * Rule-based risk scoring fallback when ML service is unavailable
+     */
+    private RiskPredictionResponse createFallbackRiskPrediction(GraphImpactResult graphResult, Part part) {
+        double riskScore = 0.0;
+        
+        // Factor 1: Released parts (0-4 points)
+        if (graphResult.getReleasedAffectedCount() > 10) riskScore += 4.0;
+        else if (graphResult.getReleasedAffectedCount() > 5) riskScore += 3.0;
+        else if (graphResult.getReleasedAffectedCount() > 2) riskScore += 2.0;
+        else if (graphResult.getReleasedAffectedCount() > 0) riskScore += 1.0;
+        
+        // Factor 2: Total affected (0-3 points)
+        if (graphResult.getTotalAffectedCount() > 20) riskScore += 3.0;
+        else if (graphResult.getTotalAffectedCount() > 10) riskScore += 2.0;
+        else if (graphResult.getTotalAffectedCount() > 5) riskScore += 1.0;
+        
+        // Factor 3: BOM depth (0-2 points)
+        if (graphResult.getBomDepth() > 5) riskScore += 2.0;
+        else if (graphResult.getBomDepth() > 3) riskScore += 1.0;
+        
+        // Factor 4: Part state (0-1 point)
+        if (part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            riskScore += 1.0;
+        }
+        
+        // Determine risk level
+        String riskLevel;
+        if (riskScore >= 7.0) riskLevel = "HIGH";
+        else if (riskScore >= 4.0) riskLevel = "MEDIUM";
+        else riskLevel = "LOW";
+        
+        return RiskPredictionResponse.builder()
+                .riskScore(riskScore)
+                .riskLevel(riskLevel)
+                .confidence(0.75) // Rule-based has lower confidence
+                .build();
     }
 
     private RiskPredictionRequest buildMLRequest(ImpactAnalysisRequest request, 
@@ -129,10 +182,10 @@ public class ImpactAnalyzerService {
                                                    Part part) {
         List<String> recommendations = new ArrayList<>();
 
-        if (risk.getRiskScore() != null && risk.getRiskScore() > 7.0) {
+        if (risk.getRiskScore() != null && risk.getRiskScore() >= 7.0) {
             recommendations.add("High risk - senior engineer review required");
             recommendations.add("Schedule impact assessment meeting");
-        } else if (risk.getRiskScore() != null && risk.getRiskScore() > 4.0) {
+        } else if (risk.getRiskScore() != null && risk.getRiskScore() >= 4.0) {
             recommendations.add("Medium risk - standard review recommended");
         } else {
             recommendations.add("Low risk - proceed with standard process");
