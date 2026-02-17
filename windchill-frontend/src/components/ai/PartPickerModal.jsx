@@ -8,6 +8,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedPart, setSelectedPart] = useState(null);
 
   useEffect(() => {
@@ -18,26 +19,85 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
 
   const loadParts = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/parts', {
+      if (!token) {
+        setError('Not authenticated. Please login.');
+        setLoading(false);
+        return;
+      }
+
+      // Try to get current context first
+      let contextId = localStorage.getItem('currentContextId');
+      
+      // Fallback: try to get from user profile
+      if (!contextId) {
+        try {
+          const userResponse = await fetch('/api/v1/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            contextId = userData.currentContextId;
+            if (contextId) {
+              localStorage.setItem('currentContextId', contextId);
+            }
+          }
+        } catch (err) {
+          console.warn('Could not fetch user context:', err);
+        }
+      }
+
+      // Load parts from API
+      const url = contextId 
+        ? `/api/v1/parts?contextId=${contextId}&size=100`
+        : '/api/v1/parts?size=100';
+      
+      const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setParts(data.content || data);
+      if (!response.ok) {
+        throw new Error(`Failed to load parts: ${response.status}`);
       }
+      
+      const data = await response.json();
+      
+      // Handle both paginated and direct array responses
+      const partsList = data.content || data;
+      
+      if (!Array.isArray(partsList)) {
+        console.error('Unexpected response format:', data);
+        setError('Invalid response from server');
+        setParts([]);
+      } else {
+        console.log(`Loaded ${partsList.length} parts`);
+        setParts(partsList);
+        
+        if (partsList.length === 0) {
+          setError('No parts found in current context. Create some parts first.');
+        }
+      }
+      
     } catch (error) {
       console.error('Failed to load parts:', error);
+      setError(`Failed to load parts: ${error.message}`);
+      setParts([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredParts = parts.filter(part => {
+    if (!searchTerm) return true;
+    
     const search = searchTerm.toLowerCase();
     return (
       part.partNumber?.toLowerCase().includes(search) ||
@@ -48,6 +108,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
 
   const handleSelect = () => {
     if (selectedPart) {
+      console.log('Selected part:', selectedPart);
       onSelect(selectedPart);
       onClose();
     }
@@ -85,12 +146,26 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoFocus
+            disabled={loading}
           />
         </div>
 
         <div className="part-picker-list">
           {loading ? (
-            <div className="loading-state">Loading parts...</div>
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Loading parts...</p>
+            </div>
+          ) : error ? (
+            <div className="error-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#e53e3e">
+                <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <p>{error}</p>
+              <button onClick={loadParts} className="btn-retry">Retry</button>
+            </div>
           ) : filteredParts.length === 0 ? (
             <div className="empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e0">
@@ -98,7 +173,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
                 <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <p>No parts found</p>
-              <small>Try a different search term</small>
+              <small>{searchTerm ? 'Try a different search term' : 'No parts in this context'}</small>
             </div>
           ) : (
             filteredParts.map((part) => (
