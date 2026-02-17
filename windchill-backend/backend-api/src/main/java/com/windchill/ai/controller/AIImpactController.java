@@ -61,18 +61,6 @@ public class AIImpactController {
         }
     }
 
-    /**
-     * Health check for AI service.
-     */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
-        health.put("service", "AI Impact Analysis");
-        health.put("timestamp", System.currentTimeMillis());
-        return ResponseEntity.ok(health);
-    }
-
     private Map<String, String> createErrorResponse(String message) {
         Map<String, String> error = new HashMap<>();
         error.put("error", message);
