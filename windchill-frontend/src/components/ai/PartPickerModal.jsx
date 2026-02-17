@@ -4,7 +4,6 @@ import './PartPickerModal.css';
 
 /**
  * Part Picker Modal - Search and select parts from database
- * SIMPLIFIED VERSION - uses context ID 1 as fallback
  */
 const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,28 +23,40 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
-      // Simple approach: use context ID 1 (SUbhash - PROD001)
-      const contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId') || '1';
+      // Get the ACTUAL current context - don't use fallback!
+      const contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
+      
+      if (!contextId) {
+        setError('No context selected. Please go to Parts page and select a Product/Project first.');
+        setLoading(false);
+        return;
+      }
       
       console.log('Using context ID:', contextId);
       
-      // Call the parts API
+      // Call the parts API with the current context
       const response = await api.get(`/api/v1/plm/parts?contextId=${contextId}`);
       
       console.log('Parts response:', response.data);
       
       const partsList = response.data?.data || [];
       
-      console.log(`Loaded ${partsList.length} parts`);
+      console.log(`Loaded ${partsList.length} parts from context ${contextId}`);
       setParts(partsList);
       
       if (partsList.length === 0) {
-        setError('No parts found. Create some parts first.');
+        setError(`No parts found in this context. Create some parts in the Parts workspace for context ${contextId}.`);
       }
       
     } catch (error) {
       console.error('Error loading parts:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to load parts');
+      
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        setError('Session expired. Please logout and login again.');
+      } else {
+        setError(error.response?.data?.message || error.message || 'Failed to load parts');
+      }
+      
       setParts([]);
     } finally {
       setLoading(false);
@@ -129,7 +140,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
                 <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <p>No parts found</p>
-              <small>{searchTerm ? 'Try a different search term' : 'No parts available'}</small>
+              <small>{searchTerm ? 'Try a different search term' : 'No parts in current context'}</small>
             </div>
           ) : (
             filteredParts.map((part) => (
