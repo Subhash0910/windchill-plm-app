@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getToken } from '../../utils/localStorage';
 import './PartPickerModal.css';
 
 /**
@@ -22,15 +23,17 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
-      const token = localStorage.getItem('token');
+      // Use the correct auth token from sessionStorage
+      const token = getToken();
+      
       if (!token) {
-        setError('Not authenticated. Please login.');
+        setError('Not authenticated. Please login again.');
         setLoading(false);
         return;
       }
 
       // Try to get current context first
-      let contextId = localStorage.getItem('currentContextId');
+      let contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
       
       // Fallback: try to get from user profile
       if (!contextId) {
@@ -44,7 +47,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
             const userData = await userResponse.json();
             contextId = userData.currentContextId;
             if (contextId) {
-              localStorage.setItem('currentContextId', contextId);
+              sessionStorage.setItem('currentContextId', contextId);
             }
           }
         } catch (err) {
@@ -57,6 +60,8 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
         ? `/api/v1/parts?contextId=${contextId}&size=100`
         : '/api/v1/parts?size=100';
       
+      console.log('Loading parts from:', url);
+      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,7 +70,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to load parts: ${response.status}`);
+        throw new Error(`Failed to load parts: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -78,7 +83,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
         setError('Invalid response from server');
         setParts([]);
       } else {
-        console.log(`Loaded ${partsList.length} parts`);
+        console.log(`✅ Loaded ${partsList.length} parts`);
         setParts(partsList);
         
         if (partsList.length === 0) {
@@ -87,7 +92,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       }
       
     } catch (error) {
-      console.error('Failed to load parts:', error);
+      console.error('❌ Failed to load parts:', error);
       setError(`Failed to load parts: ${error.message}`);
       setParts([]);
     } finally {
@@ -108,7 +113,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
 
   const handleSelect = () => {
     if (selectedPart) {
-      console.log('Selected part:', selectedPart);
+      console.log('✅ Selected part:', selectedPart);
       onSelect(selectedPart);
       onClose();
     }
