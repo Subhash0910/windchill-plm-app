@@ -3,12 +3,13 @@ package com.windchill.ai.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 /**
  * Configuration for AI Impact Analysis services.
- * Ensures all beans are properly loaded.
  */
 @Slf4j
 @Configuration
@@ -21,6 +22,6 @@ public class AIServiceConfig {
 
     @PostConstruct
     public void init() {
-        log.info("✅ AI Impact Analysis Service initialized successfully");
+        log.info("✅ AI Impact Analysis Service initialized");
     }
 }
