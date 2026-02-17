@@ -59,6 +59,8 @@ const parseReviewersCsv = (csv) => {
   return out;
 };
 
+const isReleased = (rootState) => String(rootState || '').toUpperCase() === 'RELEASED';
+
 const EcrDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -159,6 +161,17 @@ const EcrDetailPage = () => {
   const title = ecr.title || 'Untitled change';
   const isDraft = String(ecr.status || '').toUpperCase() === 'DRAFT';
 
+  // Score explanation (kept aligned with backend):
+  // score = impactedParents*4 + maxDepth*8 + releasedParents*15 + (rootReleased?20:0) + (maxNodesHit?10:0), clamped 0..100
+  const impactedParents = Number(factors?.impactedParentsCount ?? 0);
+  const releasedParents = Number(factors?.releasedParentsCount ?? 0);
+  const maxDepth = Number(factors?.maxDepth ?? 0);
+  const rootState = factors?.rootLifecycleState;
+  const rootPenalty = isReleased(rootState) ? 20 : 0;
+  const structural = impactedParents * 4 + maxDepth * 8;
+  const releasedPenalty = releasedParents * 15;
+  const approxTotal = Math.min(100, Math.max(0, structural + releasedPenalty + rootPenalty));
+
   return (
     <div className="ecr-page">
       <div className="ecr-head">
@@ -212,7 +225,7 @@ const EcrDetailPage = () => {
             <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
               <div className="ecr-card-title">Submit for review</div>
               <div className="plm-muted" style={{ marginBottom: 10 }}>
-                Windchill-style: submitting creates reviewer tasks and runs impact + routing.
+                Submitting creates reviewer tasks and runs impact + routing.
               </div>
 
               <div className="ecr-submit-grid">
@@ -222,8 +235,9 @@ const EcrDetailPage = () => {
                     className="plm-input"
                     value={reviewersCsv}
                     onChange={(e) => setReviewersCsv(e.target.value)}
-                    placeholder="Example: senior1, senior2"
+                    placeholder="Example: subhash1, subhash2"
                   />
+                  <div className="plm-muted" style={{ marginTop: 6 }}>Tip: matching is case-insensitive, but use the login username for best results.</div>
                 </div>
 
                 <div className="ecr-submit-actions">
@@ -302,7 +316,7 @@ const EcrDetailPage = () => {
             <div className="ecr-card">
               <div className="ecr-card-title">Impact</div>
               {!report ? (
-                <div className="plm-muted">No impact report available yet.</div>
+                <div className="plm-muted">No impact report available yet. Click “Recompute impact” or submit the ECR.</div>
               ) : (
                 <>
                   <div className="ecr-impact-top">
@@ -325,6 +339,21 @@ const EcrDetailPage = () => {
                     <div className="ecr-mini-v mono">{factors?.maxDepth ?? '-'}</div>
                     <div className="ecr-mini-k">Root state</div>
                     <div className="ecr-mini-v mono">{factors?.rootLifecycleState ?? '-'}</div>
+                  </div>
+
+                  <div className="ecr-explain">
+                    <div className="ecr-explain-title">How the score is calculated</div>
+                    <div className="plm-muted" style={{ marginBottom: 8 }}>Simple heuristic (0–100) to estimate blast radius + release risk.</div>
+                    <div className="ecr-explain-row">
+                      <div className="plm-muted">Structural impact</div>
+                      <div className="mono">{impactedParents}×4 + {maxDepth}×8 = {structural}</div>
+                      <div className="plm-muted">Released parents penalty</div>
+                      <div className="mono">{releasedParents}×15 = {releasedPenalty}</div>
+                      <div className="plm-muted">Root released penalty</div>
+                      <div className="mono">{isReleased(rootState) ? '+20 (root is RELEASED)' : '+0'}</div>
+                      <div className="plm-muted">Approx total</div>
+                      <div className="mono">{structural} + {releasedPenalty} + {rootPenalty} = {approxTotal} (clamped to 0..100)</div>
+                    </div>
                   </div>
 
                   <div style={{ marginTop: 10 }}>

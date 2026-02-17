@@ -34,10 +34,11 @@ public class ChangeTaskService {
 
     @Transactional(readOnly = true)
     public List<ChangeTask> getMyTasks(String username, boolean pendingOnly) {
+        // Use ignore-case repository methods so login principal and stored assignee can differ only by case.
         if (pendingOnly) {
-            return changeTaskRepository.findByAssigneeAndDecisionOrderByCreatedAtDesc(username, ChangeTaskDecision.PENDING);
+            return changeTaskRepository.findByAssigneeIgnoreCaseAndDecisionOrderByCreatedAtDesc(username, ChangeTaskDecision.PENDING);
         }
-        return changeTaskRepository.findByAssigneeOrderByCreatedAtDesc(username);
+        return changeTaskRepository.findByAssigneeIgnoreCaseOrderByCreatedAtDesc(username);
     }
 
     @Transactional

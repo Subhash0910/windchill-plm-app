@@ -13,9 +13,16 @@ public interface ChangeTaskRepository extends JpaRepository<ChangeTask, Long> {
 
     List<ChangeTask> findByAssigneeAndDecisionOrderByCreatedAtDesc(String assignee, ChangeTaskDecision decision);
 
+    // Case-insensitive variants for "My tasks" view (principal might differ only by case)
+    List<ChangeTask> findByAssigneeIgnoreCaseOrderByCreatedAtDesc(String assignee);
+
+    List<ChangeTask> findByAssigneeIgnoreCaseAndDecisionOrderByCreatedAtDesc(String assignee, ChangeTaskDecision decision);
+
     List<ChangeTask> findByChangeRequestIdAndType(Long changeRequestId, ChangeTaskType type);
 
     List<ChangeTask> findByChangeRequestIdOrderByCreatedAtAsc(Long changeRequestId);
 
     boolean existsByChangeRequestIdAndTypeAndAssignee(Long changeRequestId, ChangeTaskType type, String assignee);
+
+    boolean existsByChangeRequestIdAndTypeAndAssigneeIgnoreCase(Long changeRequestId, ChangeTaskType type, String assignee);
 }
