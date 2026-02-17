@@ -7,7 +7,10 @@ import com.windchill.change.impact.domain.ImpactRiskLevel;
 import com.windchill.change.impact.repository.ImpactItemRepository;
 import com.windchill.change.impact.repository.ImpactReportRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
+import com.windchill.common.enums.LifecycleStateEnum;
+import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
+import com.windchill.repository.PartRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -32,15 +34,18 @@ public class ChangeImpactAnalysisService {
 
     private final ChangeRequestRepository changeRequestRepository;
     private final BomLineRepository bomLineRepository;
+    private final PartRepository partRepository;
     private final ImpactReportRepository impactReportRepository;
     private final ImpactItemRepository impactItemRepository;
 
     public ChangeImpactAnalysisService(ChangeRequestRepository changeRequestRepository,
                                       BomLineRepository bomLineRepository,
+                                      PartRepository partRepository,
                                       ImpactReportRepository impactReportRepository,
                                       ImpactItemRepository impactItemRepository) {
         this.changeRequestRepository = changeRequestRepository;
         this.bomLineRepository = bomLineRepository;
+        this.partRepository = partRepository;
         this.impactReportRepository = impactReportRepository;
         this.impactItemRepository = impactItemRepository;
     }
@@ -68,7 +73,13 @@ public class ChangeImpactAnalysisService {
 
         ImpactComputationResult result = computeWhereUsed(partId, DEFAULT_MAX_DEPTH, DEFAULT_MAX_NODES);
 
-        int score = computeScore(result.impactedParentsCount, result.maxDepth, result.maxNodesHit);
+        Part root = partRepository.findById(partId).orElse(null);
+        String rootState = root == null || root.getLifecycleState() == null ? null : root.getLifecycleState().name();
+
+        List<Long> impactedParentIds = new ArrayList<>(result.parentDepthMap.keySet());
+        int releasedParentsCount = countReleased(impactedParentIds);
+
+        int score = computeScore(result.impactedParentsCount, releasedParentsCount, result.maxDepth, result.maxNodesHit, rootState);
         ImpactRiskLevel risk = toRisk(score);
 
         ImpactReport report = new ImpactReport();
@@ -77,7 +88,7 @@ public class ChangeImpactAnalysisService {
         report.setRootObjectId(String.valueOf(partId));
         report.setScore(score);
         report.setRiskLevel(risk);
-        report.setFactorsJson(buildFactorsJson(result));
+        report.setFactorsJson(buildFactorsJson(result, releasedParentsCount, rootState));
 
         ImpactReport savedReport = impactReportRepository.save(report);
 
@@ -102,6 +113,18 @@ public class ChangeImpactAnalysisService {
     @Transactional(readOnly = true)
     public List<ImpactItem> getItems(Long reportId) {
         return impactItemRepository.findByReportIdOrderByDepthAscIdAsc(reportId);
+    }
+
+    private int countReleased(List<Long> partIds) {
+        if (partIds == null || partIds.isEmpty()) return 0;
+        List<Part> parts = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(partIds);
+        int count = 0;
+        for (Part p : parts) {
+            if (p.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private ImpactItem buildItem(Long reportId, String objectType, String objectId, String relation, int depth, String pathHint) {
@@ -161,27 +184,43 @@ public class ChangeImpactAnalysisService {
         return r;
     }
 
-    private int computeScore(int impactedParentsCount, int maxDepth, boolean maxNodesHit) {
+    private int computeScore(int impactedParentsCount, int releasedParentsCount, int maxDepth, boolean maxNodesHit, String rootState) {
         int score = 0;
-        score += impactedParentsCount * 5;
-        score += maxDepth * 10;
+
+        // Structural impact
+        score += impactedParentsCount * 4;
+        score += maxDepth * 8;
+
+        // Released parents are the real risk multiplier
+        score += releasedParentsCount * 15;
+
+        // Changing a released part itself is risky
+        if ("RELEASED".equalsIgnoreCase(rootState)) {
+            score += 20;
+        }
+
+        // Safety guardrail: if traversal capped, add a small penalty
         if (maxNodesHit) {
             score += 10;
         }
+
         return Math.min(100, Math.max(0, score));
     }
 
     private ImpactRiskLevel toRisk(int score) {
-        if (score >= 70) return ImpactRiskLevel.HIGH;
-        if (score >= 30) return ImpactRiskLevel.MEDIUM;
+        if (score >= 75) return ImpactRiskLevel.HIGH;
+        if (score >= 35) return ImpactRiskLevel.MEDIUM;
         return ImpactRiskLevel.LOW;
     }
 
-    private String buildFactorsJson(ImpactComputationResult r) {
+    private String buildFactorsJson(ImpactComputationResult r, int releasedParentsCount, String rootState) {
+        String rootStateJson = rootState == null ? "null" : "\"" + rootState + "\"";
         return "{" +
                 "\"impactedParentsCount\":" + r.impactedParentsCount + "," +
+                "\"releasedParentsCount\":" + releasedParentsCount + "," +
                 "\"maxDepth\":" + r.maxDepth + "," +
-                "\"maxNodesHit\":" + r.maxNodesHit +
+                "\"maxNodesHit\":" + r.maxNodesHit + "," +
+                "\"rootLifecycleState\":" + rootStateJson +
                 "}";
     }
 
