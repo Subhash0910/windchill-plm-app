@@ -5,7 +5,7 @@ import './PartPickerModal.css';
 
 /**
  * Part Picker Modal - Search and select parts from database
- * Shows ALL parts from selected context (across all folders)
+ * Shows ALL parts from selected context (across all folders) with folder path
  */
 const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
   const { selectedContextId } = useContext(PlmWorkspaceContext); // Get context from workspace
@@ -74,6 +74,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     return (
       part.partNumber?.toLowerCase().includes(search) ||
       part.name?.toLowerCase().includes(search) ||
+      part.folderPath?.toLowerCase().includes(search) ||
       part.id?.toString().includes(search)
     );
   });
@@ -114,7 +115,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
           </svg>
           <input
             type="text"
-            placeholder="Search by part number, name, or ID..."
+            placeholder="Search by part number, name, folder, or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             autoFocus
@@ -148,27 +149,39 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
               <small>{searchTerm ? 'Try a different search term' : 'No parts in current context'}</small>
             </div>
           ) : (
-            filteredParts.map((part) => (
-              <div
-                key={part.id}
-                className={`part-item ${selectedPart?.id === part.id ? 'selected' : ''}`}
-                onClick={() => setSelectedPart(part)}
-              >
-                <div className="part-item-main">
-                  <div className="part-number">{part.partNumber}</div>
-                  <div className="part-name">{part.name}</div>
+            filteredParts.map((part) => {
+              // Display folder path to differentiate same part numbers in different folders
+              const folderDisplay = part.folderPath && part.folderPath !== '/' 
+                ? part.folderPath 
+                : 'Root';
+              
+              return (
+                <div
+                  key={part.id}
+                  className={`part-item ${selectedPart?.id === part.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedPart(part)}
+                >
+                  <div className="part-item-main">
+                    <div className="part-number">
+                      <span style={{color: '#94a3b8', fontSize: '0.85em', marginRight: 6}}>
+                        📁 {folderDisplay}
+                      </span>
+                      {part.partNumber}
+                    </div>
+                    <div className="part-name">{part.name}</div>
+                  </div>
+                  <div className="part-item-meta">
+                    <span className={`part-state part-state--${part.lifecycleState?.toLowerCase()}`}>
+                      {part.lifecycleState}
+                    </span>
+                    <span className="part-version">
+                      {part.revision}.{part.iteration}
+                    </span>
+                    <span className="part-id">ID: {part.id}</span>
+                  </div>
                 </div>
-                <div className="part-item-meta">
-                  <span className={`part-state part-state--${part.lifecycleState?.toLowerCase()}`}>
-                    {part.lifecycleState}
-                  </span>
-                  <span className="part-version">
-                    {part.revision}.{part.iteration}
-                  </span>
-                  <span className="part-id">ID: {part.id}</span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
