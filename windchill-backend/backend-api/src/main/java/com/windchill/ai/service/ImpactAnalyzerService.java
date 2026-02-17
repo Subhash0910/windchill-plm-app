@@ -1,20 +1,20 @@
 package com.windchill.ai.service;
 
 import com.windchill.ai.dto.*;
+import com.windchill.domain.entity.Part;
+import com.windchill.repository.BomLineRepository;
+import com.windchill.repository.PartRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.RestClientException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Main service orchestrating impact analysis.
- * Combines graph analysis with ML risk prediction.
+ * Core service orchestrating AI-powered impact analysis.
+ * Combines graph analysis, ML risk prediction, and business rules.
  */
 @Slf4j
 @Service
@@ -24,54 +24,68 @@ public class ImpactAnalyzerService {
     private GraphAnalysisService graphAnalysisService;
 
     @Autowired
-    @Qualifier("mlServiceRestTemplate")
-    private RestTemplate mlServiceRestTemplate;
+    private MLServiceClient mlServiceClient;
+
+    @Autowired
+    private PartRepository partRepository;
+
+    @Autowired
+    private BomLineRepository bomLineRepository;
 
     /**
-     * Perform complete impact analysis for a proposed change.
-     * 
-     * @param request Impact analysis request
-     * @return Comprehensive analysis with risk score and recommendations
+     * Main entry point for impact analysis.
+     * Orchestrates graph analysis, ML prediction, and business rule evaluation.
      */
     public ImpactAnalysisResponse analyzeChange(ImpactAnalysisRequest request) {
-        log.info("Starting impact analysis for partId={}, changeType={}", 
+        log.info("Starting impact analysis: partId={}, changeType={}", 
                 request.getPartId(), request.getChangeType());
 
         try {
-            // Step 1: Graph-based structural analysis
+            // Step 1: Validate part exists
+            Part part = partRepository.findById(request.getPartId())
+                    .orElseThrow(() -> new RuntimeException("Part not found: " + request.getPartId()));
+
+            log.info("Analyzing part: {} ({}), state={}, version={}",
+                    part.getNumber(), part.getName(), part.getLifecycleState(), part.getVersionId());
+
+            // Step 2: Perform graph-based structural analysis
             GraphImpactResult graphResult = graphAnalysisService.analyzePartChange(
                     request.getPartId(), 
                     request.getChangeType()
             );
 
-            // Step 2: Call ML service for risk prediction
-            RiskPredictionResponse riskPrediction = predictRisk(graphResult, request);
+            // Step 3: Prepare ML prediction request
+            RiskPredictionRequest mlRequest = buildMLRequest(request, part, graphResult);
 
-            // Step 3: Generate recommendations
-            List<String> recommendations = generateRecommendations(graphResult, riskPrediction);
+            // Step 4: Get ML risk prediction
+            RiskPredictionResponse riskPrediction = mlServiceClient.predictRisk(mlRequest);
 
-            // Step 4: Generate warnings
-            List<String> warnings = generateWarnings(graphResult, riskPrediction);
+            // Step 5: Apply business rules and generate warnings/recommendations
+            List<String> warnings = generateWarnings(graphResult, part);
+            List<String> recommendations = generateRecommendations(graphResult, riskPrediction, part);
+            List<String> blockers = generateBlockers(graphResult, part);
 
-            // Step 5: Identify blockers
-            List<String> blockers = identifyBlockers(graphResult, riskPrediction);
+            // Step 6: Get affected parts details
+            List<AffectedPartInfo> affectedParts = getAffectedPartsDetails(graphResult.getAffectedPartIds());
 
-            // Step 6: Create summary
-            String summary = generateSummary(graphResult, riskPrediction);
-
-            return ImpactAnalysisResponse.builder()
-                    .partId(request.getPartId())
-                    .partNumber("PART-" + request.getPartId()) // TODO: Get from part service
-                    .changeType(request.getChangeType())
-                    .graphAnalysis(graphResult)
+            // Step 7: Build response
+            ImpactAnalysisResponse response = ImpactAnalysisResponse.builder()
                     .riskPrediction(riskPrediction)
-                    .impactSummary(summary)
-                    .recommendations(recommendations)
+                    .graphAnalysis(graphResult)
                     .warnings(warnings)
+                    .recommendations(recommendations)
                     .blockers(blockers)
-                    .analyzedAt(LocalDateTime.now())
-                    .analyzedBy(request.getUserId())
+                    .affectedParts(affectedParts)
+                    .impactSummary(buildImpactSummary(graphResult, riskPrediction, part))
+                    .analysisTimestamp(Instant.now().toString())
                     .build();
+
+            log.info("Impact analysis completed: partId={}, riskScore={}, totalAffected={}",
+                    request.getPartId(), 
+                    riskPrediction.getRiskScore(),
+                    graphResult.getTotalAffectedCount());
+
+            return response;
 
         } catch (Exception e) {
             log.error("Impact analysis failed for partId={}", request.getPartId(), e);
@@ -80,138 +94,148 @@ public class ImpactAnalyzerService {
     }
 
     /**
-     * Call ML service for risk prediction.
+     * Build ML prediction request from graph analysis results
      */
-    private RiskPredictionResponse predictRisk(GraphImpactResult graphResult, ImpactAnalysisRequest request) {
-        try {
-            RiskPredictionRequest mlRequest = RiskPredictionRequest.builder()
-                    .partId(request.getPartId())
-                    .changeType(request.getChangeType())
-                    .bomDepth(graphResult.getBomDepth())
-                    .whereUsedCount(graphResult.getTotalAffectedCount())
-                    .releasedAffected(graphResult.getReleasedAffectedCount())
-                    .conflictingChanges(graphResult.getConflictingChangesCount())
-                    .lifecycleState(graphResult.getCurrentLifecycleState())
-                    .hasComplianceIssues(graphResult.isHasComplianceIssues())
-                    .build();
-
-            log.debug("Calling ML service with request: {}", mlRequest);
-
-            RiskPredictionResponse response = mlServiceRestTemplate.postForObject(
-                    "/predict-risk",
-                    mlRequest,
-                    RiskPredictionResponse.class
-            );
-
-            log.info("ML service prediction: riskScore={}, riskLevel={}, modelType={}",
-                    response.getRiskScore(), response.getRiskLevel(), response.getModelType());
-
-            return response;
-
-        } catch (RestClientException e) {
-            log.error("ML service call failed, using fallback", e);
-            // Fallback to simple rule-based scoring if ML service unavailable
-            return createFallbackRiskPrediction(graphResult);
-        }
-    }
-
-    /**
-     * Fallback risk prediction if ML service is unavailable.
-     */
-    private RiskPredictionResponse createFallbackRiskPrediction(GraphImpactResult graphResult) {
-        double riskScore = Math.min(graphResult.getStructuralComplexity(), 10.0);
-        String riskLevel = riskScore < 4 ? "LOW" : riskScore < 7 ? "MEDIUM" : "HIGH";
-
-        return RiskPredictionResponse.builder()
-                .riskScore(riskScore)
-                .confidence(0.6) // Lower confidence for fallback
-                .riskLevel(riskLevel)
-                .factors(List.of("ML service unavailable - using structural complexity score"))
-                .modelType("FALLBACK")
-                .timestamp(LocalDateTime.now().toString())
+    private RiskPredictionRequest buildMLRequest(ImpactAnalysisRequest request, 
+                                                   Part part, 
+                                                   GraphImpactResult graphResult) {
+        return RiskPredictionRequest.builder()
+                .partNumber(part.getNumber())
+                .changeType(request.getChangeType())
+                .lifecycleState(part.getLifecycleState() != null ? part.getLifecycleState().name() : "INWORK")
+                .bomDepth(graphResult.getBomDepth())
+                .totalAffectedParts(graphResult.getTotalAffectedCount())
+                .releasedAffectedCount(graphResult.getReleasedAffectedCount())
+                .hasActiveChanges(graphResult.getConflictingChangesCount() > 0)
+                .complexStructure(graphResult.isHasComplexStructure())
                 .build();
     }
 
     /**
-     * Generate actionable recommendations based on analysis.
+     * Generate business rule warnings based on graph analysis
      */
-    private List<String> generateRecommendations(GraphImpactResult graphResult, RiskPredictionResponse risk) {
-        List<String> recommendations = new ArrayList<>();
+    private List<String> generateWarnings(GraphImpactResult graphResult, Part part) {
+        List<String> warnings = new ArrayList<>();
 
-        if ("HIGH".equals(risk.getRiskLevel())) {
-            recommendations.add("Create formal ECN with detailed change tasks");
-            recommendations.add("Assign senior engineer or domain expert for review");
-            recommendations.add("Schedule impact review meeting with stakeholders");
-            
-            if (graphResult.getReleasedAffectedCount() > 0) {
-                recommendations.add("Notify all teams owning affected released parts");
-            }
-        } else if ("MEDIUM".equals(risk.getRiskLevel())) {
-            recommendations.add("Document all affected assemblies in change description");
-            recommendations.add("Request peer review before submission");
-            recommendations.add("Verify BOM references are up to date");
-        } else {
-            recommendations.add("Proceed with standard review process");
+        if (graphResult.getReleasedAffectedCount() > 0) {
+            warnings.add(String.format("%d released part(s) will be affected", 
+                    graphResult.getReleasedAffectedCount()));
         }
 
         if (graphResult.getConflictingChangesCount() > 0) {
-            recommendations.add("Coordinate with owners of conflicting changes: " + 
-                    String.join(", ", graphResult.getConflictingChangeNumbers()));
+            warnings.add(String.format("%d conflicting change(s) detected", 
+                    graphResult.getConflictingChangesCount()));
+        }
+
+        if (graphResult.getBomDepth() > 5) {
+            warnings.add("Deep BOM structure detected (depth > 5) - review may take longer");
+        }
+
+        if (graphResult.getTotalAffectedCount() > 20) {
+            warnings.add("Large impact scope - consider phased implementation");
+        }
+
+        if ("RELEASED".equals(part.getLifecycleState() != null ? part.getLifecycleState().name() : "")) {
+            warnings.add("Changing a RELEASED part - ECN required");
+        }
+
+        return warnings;
+    }
+
+    /**
+     * Generate AI recommendations
+     */
+    private List<String> generateRecommendations(GraphImpactResult graphResult, 
+                                                   RiskPredictionResponse risk, 
+                                                   Part part) {
+        List<String> recommendations = new ArrayList<>();
+
+        if (risk.getRiskScore() != null && risk.getRiskScore() > 7.0) {
+            recommendations.add("High risk detected - consider senior engineer review");
+            recommendations.add("Schedule impact assessment meeting with affected teams");
+        } else if (risk.getRiskScore() != null && risk.getRiskScore() > 4.0) {
+            recommendations.add("Medium risk - standard review process recommended");
+        } else {
+            recommendations.add("Low risk - proceed with standard change process");
+        }
+
+        if (graphResult.getReleasedAffectedCount() > 5) {
+            recommendations.add("Multiple released parts affected - notify product management");
+        }
+
+        if (graphResult.getBomDepth() > 3) {
+            recommendations.add("Complex BOM structure - verify all dependencies");
         }
 
         return recommendations;
     }
 
     /**
-     * Generate warnings for potential issues.
+     * Generate blocking conditions
      */
-    private List<String> generateWarnings(GraphImpactResult graphResult, RiskPredictionResponse risk) {
-        List<String> warnings = new ArrayList<>();
-
-        if (graphResult.getReleasedAffectedCount() > 0) {
-            warnings.add(String.format("%d released part(s) will be affected - requires formal change process",
-                    graphResult.getReleasedAffectedCount()));
-        }
-
-        if (graphResult.isHasComplexStructure()) {
-            warnings.add("Complex BOM structure detected - review all dependencies carefully");
-        }
-
-        warnings.addAll(graphResult.getComplianceWarnings());
-
-        return warnings;
-    }
-
-    /**
-     * Identify blocking issues that must be resolved.
-     */
-    private List<String> identifyBlockers(GraphImpactResult graphResult, RiskPredictionResponse risk) {
+    private List<String> generateBlockers(GraphImpactResult graphResult, Part part) {
         List<String> blockers = new ArrayList<>();
 
-        if (graphResult.isHasComplianceIssues()) {
-            blockers.add("Compliance violations detected - resolve before proceeding");
+        if (graphResult.getConflictingChangesCount() > 0 && 
+            graphResult.getConflictingChangeNumbers() != null &&
+            !graphResult.getConflictingChangeNumbers().isEmpty()) {
+            blockers.add("BLOCKER: Active changes exist: " + 
+                    String.join(", ", graphResult.getConflictingChangeNumbers()));
         }
 
-        // Add more business rule checks here
+        if (graphResult.isHasComplianceIssues()) {
+            blockers.add("BLOCKER: Compliance issues detected - resolution required");
+        }
 
         return blockers;
     }
 
     /**
-     * Generate human-readable summary.
+     * Get detailed info about affected parts
      */
-    private String generateSummary(GraphImpactResult graphResult, RiskPredictionResponse risk) {
-        return String.format(
-                "Risk Level: %s (%.1f/10). Affects %d part(s), including %d released. " +
-                "BOM complexity: %d levels deep. %s",
-                risk.getRiskLevel(),
-                risk.getRiskScore(),
+    private List<AffectedPartInfo> getAffectedPartsDetails(List<Long> affectedPartIds) {
+        List<AffectedPartInfo> affectedParts = new ArrayList<>();
+
+        if (affectedPartIds != null && !affectedPartIds.isEmpty()) {
+            List<Part> parts = partRepository.findAllById(affectedPartIds);
+            for (Part part : parts) {
+                AffectedPartInfo info = new AffectedPartInfo();
+                info.setPartId(part.getId());
+                info.setPartNumber(part.getNumber());
+                info.setName(part.getName());
+                info.setLifecycleState(part.getLifecycleState() != null ? 
+                        part.getLifecycleState().name() : "UNKNOWN");
+                info.setVersion(part.getVersionId());
+                affectedParts.add(info);
+            }
+        }
+
+        return affectedParts;
+    }
+
+    /**
+     * Build human-readable impact summary
+     */
+    private String buildImpactSummary(GraphImpactResult graphResult, 
+                                       RiskPredictionResponse risk, 
+                                       Part part) {
+        StringBuilder summary = new StringBuilder();
+        
+        summary.append(String.format("Changing part %s (%s) will affect ", 
+                part.getNumber(), part.getName()));
+        summary.append(String.format("%d total part(s), including %d released part(s). ",
                 graphResult.getTotalAffectedCount(),
-                graphResult.getReleasedAffectedCount(),
-                graphResult.getBomDepth(),
-                graphResult.getConflictingChangesCount() > 0 
-                    ? "Conflicts with " + graphResult.getConflictingChangesCount() + " active change(s)." 
-                    : "No conflicts detected."
-        );
+                graphResult.getReleasedAffectedCount()));
+        
+        if (risk.getRiskScore() != null) {
+            summary.append(String.format("AI predicts %s risk (score: %.1f/10). ",
+                    risk.getRiskLevel(), risk.getRiskScore()));
+        }
+
+        if (graphResult.getBomDepth() > 0) {
+            summary.append(String.format("BOM depth: %d levels. ", graphResult.getBomDepth()));
+        }
+
+        return summary.toString();
     }
 }
