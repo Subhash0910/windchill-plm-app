@@ -34,6 +34,38 @@ services:
       retries: 5
       interval: 10s
 
+  # NEW: ML Service for AI Impact Engine
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: windchill-ml-service
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: windchill_db
+      DB_USER: windchill
+      DB_PASSWORD: windchill123
+      MODEL_PATH: models/risk_model.pkl
+      LOG_LEVEL: INFO
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - windchill-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      timeout: 10s
+      retries: 5
+      interval: 15s
+      start_period: 30s
+    volumes:
+      - ml_models:/app/models
+      - ml_logs:/app/logs
+
   backend:
     build:
       context: ./windchill-backend
@@ -55,10 +87,15 @@ services:
       JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
       SPRING_PROFILES_ACTIVE: docker
       TZ: UTC
+      # ML Service connection
+      ML_SERVICE_URL: http://ml-service:5000
+      ML_SERVICE_ENABLED: true
     depends_on:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ml-service:
         condition: service_healthy
     networks:
       - windchill-network
@@ -95,6 +132,8 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  ml_models:  # NEW: Persist trained ML models
+  ml_logs:    # NEW: Persist ML service logs
 
 networks:
   windchill-network:
