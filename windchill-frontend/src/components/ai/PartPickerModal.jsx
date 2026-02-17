@@ -1,14 +1,12 @@
-import { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
-import axios from 'axios';
-import { getToken } from '../../utils/localStorage';
+import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './PartPickerModal.css';
 
 /**
  * Part Picker Modal - Search and select parts from database
+ * SIMPLIFIED VERSION - uses context ID 1 as fallback
  */
 const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
-  const { user, isAuthenticated } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,88 +14,38 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
   const [selectedPart, setSelectedPart] = useState(null);
 
   useEffect(() => {
-    if (isOpen && isAuthenticated) {
+    if (isOpen) {
       loadParts();
-    } else if (isOpen && !isAuthenticated) {
-      setError('Please login to access parts.');
     }
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen]);
 
   const loadParts = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const token = getToken();
+      // Simple approach: use context ID 1 (SUbhash - PROD001)
+      const contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId') || '1';
       
-      if (!token) {
-        throw new Error('No authentication token found. Please logout and login again.');
-      }
-
-      console.log('✅ User:', user);
-      console.log('✅ Token exists, length:', token.length);
-
-      // Get context ID from user object or storage
-      let contextId = user?.currentContextId || 
-                      sessionStorage.getItem('currentContextId') || 
-                      localStorage.getItem('currentContextId');
+      console.log('Using context ID:', contextId);
       
-      console.log('✅ Context ID:', contextId);
-
-      // Context ID is required by the API
-      if (!contextId) {
-        throw new Error('No workspace context selected. Please visit the Parts page (/plm/parts) to select a Product/Project first.');
-      }
-
-      // Use correct endpoint: /api/v1/plm/parts with required contextId
-      const url = `/api/v1/plm/parts?contextId=${contextId}`;
+      // Call the parts API
+      const response = await api.get(`/api/v1/plm/parts?contextId=${contextId}`);
       
-      console.log('Loading parts from:', url);
+      console.log('Parts response:', response.data);
       
-      // Fetch parts with authentication
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      });
+      const partsList = response.data?.data || [];
       
-      console.log('✅ Parts API response:', response.status, response.data);
+      console.log(`Loaded ${partsList.length} parts`);
+      setParts(partsList);
       
-      // API returns { success: true, data: [...parts] }
-      const partsList = response.data?.data;
-      
-      if (!Array.isArray(partsList)) {
-        console.error('❌ Unexpected response format:', response.data);
-        setError('Invalid response from server');
-        setParts([]);
-      } else {
-        console.log(`✅ Successfully loaded ${partsList.length} parts`);
-        setParts(partsList);
-        
-        if (partsList.length === 0) {
-          setError('No parts found in this context. Create some parts first in the Parts workspace (/plm/parts).');
-        }
+      if (partsList.length === 0) {
+        setError('No parts found. Create some parts first.');
       }
       
     } catch (error) {
-      console.error('❌ Failed to load parts:', error);
-      console.error('Error response:', error.response);
-      
-      // Better error messages
-      if (error.response?.status === 403) {
-        setError('Access denied. Your JWT token might be invalid. Try: 1) Logout and login again, 2) Clear browser cache, 3) Check if you selected a context in Parts page.');
-      } else if (error.response?.status === 401) {
-        setError('Authentication failed. Please logout and login again.');
-      } else if (error.response?.status === 400) {
-        setError('Bad request. Make sure you have selected a Product/Project context in the Parts page first.');
-      } else if (!error.response) {
-        setError('Cannot connect to backend. Backend container might be down.');
-      } else {
-        setError(error.message || 'Failed to load parts. Check console for details.');
-      }
-      
+      console.error('Error loading parts:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to load parts');
       setParts([]);
     } finally {
       setLoading(false);
@@ -106,7 +54,6 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
 
   const filteredParts = parts.filter(part => {
     if (!searchTerm) return true;
-    
     const search = searchTerm.toLowerCase();
     return (
       part.partNumber?.toLowerCase().includes(search) ||
@@ -117,7 +64,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
 
   const handleSelect = () => {
     if (selectedPart) {
-      console.log('✅ Selected part:', selectedPart);
+      console.log('Selected part:', selectedPart);
       onSelect(selectedPart);
       onClose();
     }
@@ -172,7 +119,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
                 <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" strokeLinecap="round"/>
                 <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <p style={{fontSize: '14px', lineHeight: '1.5'}}>{error}</p>
+              <p>{error}</p>
               <button onClick={loadParts} className="btn-retry">Retry</button>
             </div>
           ) : filteredParts.length === 0 ? (
@@ -182,7 +129,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
                 <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <p>No parts found</p>
-              <small>{searchTerm ? 'Try a different search term' : 'Create parts in the Parts workspace first'}</small>
+              <small>{searchTerm ? 'Try a different search term' : 'No parts available'}</small>
             </div>
           ) : (
             filteredParts.map((part) => (
