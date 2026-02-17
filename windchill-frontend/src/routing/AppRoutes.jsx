@@ -13,6 +13,7 @@ import ChangesHomePage from '../pages/plm/ChangesHomePage';
 import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import ChangeTasksPage from '../pages/plm/ChangeTasksPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
+import AIDemo from '../pages/AIDemo';
 
 const AppRoutes = () => {
   return (
@@ -41,6 +42,16 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <UsersAdminPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* AI Demo Page */}
+        <Route
+          path="/ai-demo"
+          element={
+            <PrivateRoute>
+              <AIDemo />
             </PrivateRoute>
           }
         />
