@@ -15,4 +15,6 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
     List<ChangeRequest> findTop50ByContextTypeIgnoreCaseAndContextIdAndIdNotOrderByIdDesc(String contextType, String contextId, Long id);
 
     List<ChangeRequest> findTop50ByTitleContainingIgnoreCaseAndIdNotOrderByIdDesc(String title, Long id);
+
+    List<ChangeRequest> findTop200ByIdNotOrderByIdDesc(Long id);
 }

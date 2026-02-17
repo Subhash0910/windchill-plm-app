@@ -1,18 +1,18 @@
 package com.windchill.change.api.dto;
 
-import com.windchill.change.impact.service.ChangeSimilarityService;
+import com.windchill.change.impact.domain.ImpactSimilarChange;
 
 import java.util.List;
 
 public class ChangeInsightsResponse {
 
     private ImpactReportResponse impact;
-    private List<ChangeSimilarityService.SimilarChange> similar;
+    private List<ImpactSimilarChange> similar;
 
     public ChangeInsightsResponse() {
     }
 
-    public ChangeInsightsResponse(ImpactReportResponse impact, List<ChangeSimilarityService.SimilarChange> similar) {
+    public ChangeInsightsResponse(ImpactReportResponse impact, List<ImpactSimilarChange> similar) {
         this.impact = impact;
         this.similar = similar;
     }
@@ -25,11 +25,11 @@ public class ChangeInsightsResponse {
         this.impact = impact;
     }
 
-    public List<ChangeSimilarityService.SimilarChange> getSimilar() {
+    public List<ImpactSimilarChange> getSimilar() {
         return similar;
     }
 
-    public void setSimilar(List<ChangeSimilarityService.SimilarChange> similar) {
+    public void setSimilar(List<ImpactSimilarChange> similar) {
         this.similar = similar;
     }
 }

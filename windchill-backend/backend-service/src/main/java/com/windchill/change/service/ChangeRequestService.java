@@ -9,6 +9,7 @@ import com.windchill.change.impact.domain.ImpactReport;
 import com.windchill.change.impact.domain.ImpactRiskLevel;
 import com.windchill.change.impact.service.ChangeImpactAnalysisService;
 import com.windchill.change.impact.service.ChangeImpactRoutingPolicy;
+import com.windchill.change.impact.service.ChangeInsightsSnapshotService;
 import com.windchill.change.repository.ChangeNoticeRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
 import com.windchill.change.repository.ChangeTaskRepository;
@@ -30,19 +31,22 @@ public class ChangeRequestService {
     private final ChangeRobotService changeRobotService;
     private final ChangeImpactAnalysisService changeImpactAnalysisService;
     private final ChangeImpactRoutingPolicy changeImpactRoutingPolicy;
+    private final ChangeInsightsSnapshotService changeInsightsSnapshotService;
 
     public ChangeRequestService(ChangeRequestRepository changeRequestRepository,
                                ChangeTaskRepository changeTaskRepository,
                                ChangeNoticeRepository changeNoticeRepository,
                                ChangeRobotService changeRobotService,
                                ChangeImpactAnalysisService changeImpactAnalysisService,
-                               ChangeImpactRoutingPolicy changeImpactRoutingPolicy) {
+                               ChangeImpactRoutingPolicy changeImpactRoutingPolicy,
+                               ChangeInsightsSnapshotService changeInsightsSnapshotService) {
         this.changeRequestRepository = changeRequestRepository;
         this.changeTaskRepository = changeTaskRepository;
         this.changeNoticeRepository = changeNoticeRepository;
         this.changeRobotService = changeRobotService;
         this.changeImpactAnalysisService = changeImpactAnalysisService;
         this.changeImpactRoutingPolicy = changeImpactRoutingPolicy;
+        this.changeInsightsSnapshotService = changeInsightsSnapshotService;
     }
 
     @Transactional
@@ -93,10 +97,12 @@ public class ChangeRequestService {
             changeTaskRepository.save(t);
         }
 
-        // Auto-generate impact report snapshot on submit
         ImpactReport report = changeImpactAnalysisService.analyzeForEcr(ecr.getId());
 
-        // Simple policy-based routing: if risk HIGH, add senior reviewers (if configured)
+        // Snapshot similarities (advisory evidence)
+        changeInsightsSnapshotService.ensureSimilaritiesForReport(report.getId(), ecr.getId(), 5);
+
+        // Risk-based routing
         if (report.getRiskLevel() == ImpactRiskLevel.HIGH) {
             for (String sr : changeImpactRoutingPolicy.getSeniorReviewers()) {
                 if (sr == null || sr.isBlank()) continue;
