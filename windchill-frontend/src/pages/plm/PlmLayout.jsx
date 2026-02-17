@@ -14,8 +14,8 @@ const PlmLayout = () => {
   const isChangesGroup = location.pathname.startsWith('/plm/changes');
   const isChangeTasks = location.pathname.startsWith('/plm/changes/tasks');
   const isChanges = isChangesGroup && !isChangeTasks;
-  const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist && !isChangesGroup;
-  const isAiDemo = location.pathname.startsWith('/ai-demo');
+  const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
+  const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist && !isChangesGroup && !isAiDemo;
 
   return (
     <div className="plm-shell">
@@ -28,7 +28,7 @@ const PlmLayout = () => {
           <Link className={isWorklist ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
           <Link className={isChanges ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
           <Link className={isChangeTasks ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">Change Tasks</Link>
-          <Link className={isAiDemo ? 'plm-link active' : 'plm-link'} to="/ai-demo" style={{color: '#667eea', fontWeight: isAiDemo ? 'bold' : 'normal'}}>⚡ AI Demo</Link>
+          <Link className={isAiDemo ? 'plm-link active' : 'plm-link'} to="/plm/ai-demo" style={{color: '#667eea', fontWeight: isAiDemo ? 'bold' : 'normal'}}>⚡ AI Demo</Link>
         </div>
       </div>
 
