@@ -88,7 +88,7 @@ public class ChangeTaskService {
         }
 
         if (t.getDecision() != ChangeTaskDecision.PENDING) {
-            throw new ResponseStatusException(BAD_REQUEST, "Task already decided"));
+            throw new ResponseStatusException(BAD_REQUEST, "Task already decided");
         }
 
         t.markRejected(actor, comment);
