@@ -5,8 +5,12 @@ import com.windchill.ai.dto.ImpactAnalysisResponse;
 import com.windchill.ai.service.ImpactAnalyzerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * REST API for AI-powered impact analysis.
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/ai/impact")
+@CrossOrigin(origins = "*")
 public class AIImpactController {
 
     @Autowired
@@ -21,28 +26,38 @@ public class AIImpactController {
 
     /**
      * Analyze the impact of a proposed change to a part.
-     * 
-     * @param request Contains partId, changeType, and userId
-     * @return Complete impact analysis with risk score, warnings, recommendations
      */
     @PostMapping("/analyze")
-    public ResponseEntity<ImpactAnalysisResponse> analyzeImpact(
-            @RequestBody ImpactAnalysisRequest request) {
+    public ResponseEntity<?> analyzeImpact(@RequestBody ImpactAnalysisRequest request) {
         
         log.info("Received impact analysis request: partId={}, changeType={}", 
                 request.getPartId(), request.getChangeType());
 
         try {
+            // Validate request
+            if (request.getPartId() == null) {
+                return ResponseEntity.badRequest()
+                        .body(createErrorResponse("Part ID is required"));
+            }
+            
+            if (request.getChangeType() == null || request.getChangeType().trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(createErrorResponse("Change type is required"));
+            }
+
+            // Perform analysis
             ImpactAnalysisResponse response = impactAnalyzerService.analyzeChange(request);
             return ResponseEntity.ok(response);
             
         } catch (IllegalArgumentException e) {
             log.warn("Invalid request: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(createErrorResponse(e.getMessage()));
             
         } catch (Exception e) {
-            log.error("Impact analysis failed", e);
-            return ResponseEntity.internalServerError().build();
+            log.error("Impact analysis failed for partId={}", request.getPartId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Impact analysis failed: " + e.getMessage()));
         }
     }
 
@@ -50,7 +65,18 @@ public class AIImpactController {
      * Health check for AI service.
      */
     @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("AI Impact Analysis service is running");
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("service", "AI Impact Analysis");
+        health.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(health);
+    }
+
+    private Map<String, String> createErrorResponse(String message) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", message);
+        error.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        return error;
     }
 }
