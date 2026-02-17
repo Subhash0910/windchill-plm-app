@@ -4,7 +4,9 @@ import com.windchill.change.api.dto.ChangeInsightsResponse;
 import com.windchill.change.api.dto.ImpactReportResponse;
 import com.windchill.change.impact.domain.ImpactItem;
 import com.windchill.change.impact.domain.ImpactReport;
+import com.windchill.change.impact.domain.ImpactRouteDecision;
 import com.windchill.change.impact.domain.ImpactSimilarChange;
+import com.windchill.change.impact.repository.ImpactRouteDecisionRepository;
 import com.windchill.change.impact.service.ChangeImpactAnalysisService;
 import com.windchill.change.impact.service.ChangeInsightsSnapshotService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +22,14 @@ public class ChangeInsightsController {
 
     private final ChangeImpactAnalysisService changeImpactAnalysisService;
     private final ChangeInsightsSnapshotService changeInsightsSnapshotService;
+    private final ImpactRouteDecisionRepository impactRouteDecisionRepository;
 
     public ChangeInsightsController(ChangeImpactAnalysisService changeImpactAnalysisService,
-                                    ChangeInsightsSnapshotService changeInsightsSnapshotService) {
+                                    ChangeInsightsSnapshotService changeInsightsSnapshotService,
+                                    ImpactRouteDecisionRepository impactRouteDecisionRepository) {
         this.changeImpactAnalysisService = changeImpactAnalysisService;
         this.changeInsightsSnapshotService = changeInsightsSnapshotService;
+        this.impactRouteDecisionRepository = impactRouteDecisionRepository;
     }
 
     @GetMapping("/{id}/insights")
@@ -34,6 +39,8 @@ public class ChangeInsightsController {
         ImpactReportResponse impact = new ImpactReportResponse(report, items);
 
         List<ImpactSimilarChange> similar = changeInsightsSnapshotService.ensureSimilaritiesForReport(report.getId(), ecrId, 5);
-        return new ChangeInsightsResponse(impact, similar);
+        ImpactRouteDecision route = impactRouteDecisionRepository.findTopByReportIdOrderByCreatedAtDesc(report.getId()).orElse(null);
+
+        return new ChangeInsightsResponse(impact, similar, route);
     }
 }

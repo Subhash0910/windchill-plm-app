@@ -6,10 +6,9 @@ import com.windchill.change.domain.ChangeRequestStatus;
 import com.windchill.change.domain.ChangeTask;
 import com.windchill.change.domain.ChangeTaskType;
 import com.windchill.change.impact.domain.ImpactReport;
-import com.windchill.change.impact.domain.ImpactRiskLevel;
 import com.windchill.change.impact.service.ChangeImpactAnalysisService;
-import com.windchill.change.impact.service.ChangeImpactRoutingPolicy;
 import com.windchill.change.impact.service.ChangeInsightsSnapshotService;
+import com.windchill.change.impact.service.ChangeRouteDecisionService;
 import com.windchill.change.repository.ChangeNoticeRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
 import com.windchill.change.repository.ChangeTaskRepository;
@@ -30,23 +29,23 @@ public class ChangeRequestService {
     private final ChangeNoticeRepository changeNoticeRepository;
     private final ChangeRobotService changeRobotService;
     private final ChangeImpactAnalysisService changeImpactAnalysisService;
-    private final ChangeImpactRoutingPolicy changeImpactRoutingPolicy;
     private final ChangeInsightsSnapshotService changeInsightsSnapshotService;
+    private final ChangeRouteDecisionService changeRouteDecisionService;
 
     public ChangeRequestService(ChangeRequestRepository changeRequestRepository,
                                ChangeTaskRepository changeTaskRepository,
                                ChangeNoticeRepository changeNoticeRepository,
                                ChangeRobotService changeRobotService,
                                ChangeImpactAnalysisService changeImpactAnalysisService,
-                               ChangeImpactRoutingPolicy changeImpactRoutingPolicy,
-                               ChangeInsightsSnapshotService changeInsightsSnapshotService) {
+                               ChangeInsightsSnapshotService changeInsightsSnapshotService,
+                               ChangeRouteDecisionService changeRouteDecisionService) {
         this.changeRequestRepository = changeRequestRepository;
         this.changeTaskRepository = changeTaskRepository;
         this.changeNoticeRepository = changeNoticeRepository;
         this.changeRobotService = changeRobotService;
         this.changeImpactAnalysisService = changeImpactAnalysisService;
-        this.changeImpactRoutingPolicy = changeImpactRoutingPolicy;
         this.changeInsightsSnapshotService = changeInsightsSnapshotService;
+        this.changeRouteDecisionService = changeRouteDecisionService;
     }
 
     @Transactional
@@ -102,18 +101,14 @@ public class ChangeRequestService {
         // Snapshot similarities (advisory evidence)
         changeInsightsSnapshotService.ensureSimilaritiesForReport(report.getId(), ecr.getId(), 5);
 
-        // Risk-based routing
-        if (report.getRiskLevel() == ImpactRiskLevel.HIGH) {
-            for (String sr : changeImpactRoutingPolicy.getSeniorReviewers()) {
-                if (sr == null || sr.isBlank()) continue;
-                if (!changeTaskRepository.existsByChangeRequestIdAndTypeAndAssignee(ecr.getId(), ChangeTaskType.REVIEW, sr)) {
-                    ChangeTask t = new ChangeTask();
-                    t.setChangeRequestId(ecr.getId());
-                    t.setType(ChangeTaskType.REVIEW);
-                    t.setAssignee(sr);
-                    changeTaskRepository.save(t);
-                }
-            }
+        // Route decision (audited) + add any extra reviewers
+        ChangeRouteDecisionService.RouteDecisionResult route = changeRouteDecisionService.applyRouting(ecr.getId(), report, reviewers);
+        for (String sr : route.reviewersToAdd()) {
+            ChangeTask t = new ChangeTask();
+            t.setChangeRequestId(ecr.getId());
+            t.setType(ChangeTaskType.REVIEW);
+            t.setAssignee(sr);
+            changeTaskRepository.save(t);
         }
 
         return ecr;
