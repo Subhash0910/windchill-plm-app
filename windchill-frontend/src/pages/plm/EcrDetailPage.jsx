@@ -42,6 +42,23 @@ const Pill = ({ value, type }) => {
   return <span style={{ ...base, background: '#e6f3fb', borderColor: '#b6d8ea', color: '#0f4d6d' }}>{v || '-'}</span>;
 };
 
+const parseReviewersCsv = (csv) => {
+  const raw = String(csv || '')
+    .split(/[,\n\r]+/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // de-dupe (case-insensitive)
+  const seen = new Set();
+  const out = [];
+  raw.forEach((r) => {
+    const k = r.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push(r);
+  });
+  return out;
+};
+
 const EcrDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,8 +73,12 @@ const EcrDetailPage = () => {
 
   const [recomputeLoading, setRecomputeLoading] = useState(false);
 
+  const [reviewersCsv, setReviewersCsv] = useState('');
+  const [submitLoading, setSubmitLoading] = useState(false);
+
   const ecr = details?.ecr;
   const tasks = details?.tasks || [];
+  const ecn = details?.ecn;
 
   const impact = insights?.impact;
   const report = impact?.report;
@@ -101,6 +122,26 @@ const EcrDetailPage = () => {
     }
   };
 
+  const submit = async () => {
+    const reviewers = parseReviewersCsv(reviewersCsv);
+    if (!reviewers.length) {
+      setError('Add at least one reviewer username (CSV).');
+      return;
+    }
+
+    setSubmitLoading(true);
+    setError('');
+    try {
+      await plmApi.submitEcr(id, { reviewers });
+      await load();
+      setActiveTab(TAB.TASKS);
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Submit failed');
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
   const TabBtn = ({ tab, children }) => (
     <button
       type="button"
@@ -116,6 +157,7 @@ const EcrDetailPage = () => {
   if (!ecr) return <div className="plm-muted">ECR not found.</div>;
 
   const title = ecr.title || 'Untitled change';
+  const isDraft = String(ecr.status || '').toUpperCase() === 'DRAFT';
 
   return (
     <div className="ecr-page">
@@ -131,6 +173,7 @@ const EcrDetailPage = () => {
 
         <div className="ecr-actions">
           <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes')}>Back</Button>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>My change tasks</Button>
           <Button variant="secondary" size="sm" onClick={load} disabled={loading}>Refresh</Button>
           <Button variant="primary" size="sm" onClick={recompute} disabled={recomputeLoading}>
             {recomputeLoading ? 'Recomputing…' : 'Recompute impact'}
@@ -164,13 +207,60 @@ const EcrDetailPage = () => {
             <div className="ecr-card-title">Description</div>
             <div className="ecr-text">{ecr.description || <span className="plm-muted">No description.</span>}</div>
           </div>
+
+          {isDraft ? (
+            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
+              <div className="ecr-card-title">Submit for review</div>
+              <div className="plm-muted" style={{ marginBottom: 10 }}>
+                Windchill-style: submitting creates reviewer tasks and runs impact + routing.
+              </div>
+
+              <div className="ecr-submit-grid">
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 6 }}>Reviewers (CSV usernames)</div>
+                  <input
+                    className="plm-input"
+                    value={reviewersCsv}
+                    onChange={(e) => setReviewersCsv(e.target.value)}
+                    placeholder="Example: senior1, senior2"
+                  />
+                </div>
+
+                <div className="ecr-submit-actions">
+                  <Button variant="primary" size="sm" onClick={submit} disabled={submitLoading}>
+                    {submitLoading ? 'Submitting…' : 'Submit ECR'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {ecn ? (
+            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
+              <div className="ecr-card-title">Resulting ECN</div>
+              <div className="ecr-kv">
+                <div className="ecr-k">ECN</div>
+                <div className="ecr-v mono">{ecn.number || `ECN-${String(ecn.id).padStart(6, '0')}`}</div>
+                <div className="ecr-k">Status</div>
+                <div className="ecr-v"><Pill value={ecn.status} /></div>
+                <div className="ecr-k">Created by</div>
+                <div className="ecr-v mono">{ecn.createdBy || '-'}</div>
+              </div>
+              <div className="plm-muted" style={{ marginTop: 8 }}>Implementation task will appear in “My change tasks”.</div>
+            </div>
+          ) : null}
         </div>
       )}
 
       {activeTab === TAB.TASKS && (
         <div className="ecr-card">
-          <div className="ecr-card-title">Review tasks</div>
-          <div className="plm-muted" style={{ marginBottom: 10 }}>Reviewer tasks created on submit (and auto-routing if risk is high).</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <div>
+              <div className="ecr-card-title">Review tasks</div>
+              <div className="plm-muted" style={{ marginBottom: 10 }}>Reviewer tasks created on submit (and auto-routing if risk is high).</div>
+            </div>
+            <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>Open my tasks</Button>
+          </div>
 
           <div style={{ overflowX: 'auto' }}>
             <table className="ecr-table">
