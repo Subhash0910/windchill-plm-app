@@ -1,6 +1,7 @@
 package com.windchill.ai.service;
 
 import com.windchill.ai.dto.*;
+import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
 import com.windchill.repository.PartRepository;
@@ -45,8 +46,8 @@ public class ImpactAnalyzerService {
             Part part = partRepository.findById(request.getPartId())
                     .orElseThrow(() -> new RuntimeException("Part not found: " + request.getPartId()));
 
-            log.info("Analyzing part: {} ({}), state={}, version={}",
-                    part.getNumber(), part.getName(), part.getLifecycleState(), part.getVersionId());
+            log.info("Analyzing part: {} ({}), state={}, iteration={}",
+                    part.getPartNumber(), part.getName(), part.getLifecycleState(), part.getIteration());
 
             // Step 2: Perform graph-based structural analysis
             GraphImpactResult graphResult = graphAnalysisService.analyzePartChange(
@@ -100,7 +101,7 @@ public class ImpactAnalyzerService {
                                                    Part part, 
                                                    GraphImpactResult graphResult) {
         return RiskPredictionRequest.builder()
-                .partNumber(part.getNumber())
+                .partNumber(part.getPartNumber())
                 .changeType(request.getChangeType())
                 .lifecycleState(part.getLifecycleState() != null ? part.getLifecycleState().name() : "INWORK")
                 .bomDepth(graphResult.getBomDepth())
@@ -135,7 +136,7 @@ public class ImpactAnalyzerService {
             warnings.add("Large impact scope - consider phased implementation");
         }
 
-        if ("RELEASED".equals(part.getLifecycleState() != null ? part.getLifecycleState().name() : "")) {
+        if (part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
             warnings.add("Changing a RELEASED part - ECN required");
         }
 
@@ -201,11 +202,11 @@ public class ImpactAnalyzerService {
             for (Part part : parts) {
                 AffectedPartInfo info = new AffectedPartInfo();
                 info.setPartId(part.getId());
-                info.setPartNumber(part.getNumber());
+                info.setPartNumber(part.getPartNumber());
                 info.setName(part.getName());
                 info.setLifecycleState(part.getLifecycleState() != null ? 
                         part.getLifecycleState().name() : "UNKNOWN");
-                info.setVersion(part.getVersionId());
+                info.setVersion(part.getRevision() + "." + part.getIteration());
                 affectedParts.add(info);
             }
         }
@@ -222,7 +223,7 @@ public class ImpactAnalyzerService {
         StringBuilder summary = new StringBuilder();
         
         summary.append(String.format("Changing part %s (%s) will affect ", 
-                part.getNumber(), part.getName()));
+                part.getPartNumber(), part.getName()));
         summary.append(String.format("%d total part(s), including %d released part(s). ",
                 graphResult.getTotalAffectedCount(),
                 graphResult.getReleasedAffectedCount()));
