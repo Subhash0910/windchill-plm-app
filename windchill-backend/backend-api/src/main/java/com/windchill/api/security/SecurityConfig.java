@@ -38,27 +38,37 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // IMPORTANT:
+        // When allowCredentials=true, we must NOT use wildcard "*" for allowed origins.
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost",
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:80",
+                "http://127.0.0.1",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
                 "http://frontend",
-                "http://windchill-frontend",
-                "*"
+                "http://windchill-frontend"
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
 
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+                "Origin"
+        ));
 
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization", "Content-Type", "X-Total-Count"
         ));
 
-        configuration.setAllowCredentials(false);
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
