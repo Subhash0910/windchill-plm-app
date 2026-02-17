@@ -1,15 +1,53 @@
 import { useState } from 'react';
 import ImpactPreview from '../components/ai/ImpactPreview';
+import PartPickerModal from '../components/ai/PartPickerModal';
 import './AIDemo.css';
 
 /**
- * AI Demo Page - Standalone page to test AI Impact Analysis
- * This page allows testing the AI features without integrating into ECR/ECN flow
+ * AI Demo Page with smart Part Picker and intelligent change type suggestions
  */
 const AIDemo = () => {
-  const [partId, setPartId] = useState('');
-  const [changeType, setChangeType] = useState('OBSOLETE');
+  const [selectedPart, setSelectedPart] = useState(null);
+  const [changeType, setChangeType] = useState('MODIFY');
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [showPartPicker, setShowPartPicker] = useState(false);
+
+  // Smart change type suggestions based on lifecycle state
+  const getRecommendedChangeTypes = (lifecycleState) => {
+    const recommendations = {
+      'INWORK': [
+        { value: 'MODIFY', label: 'Modify Part', description: 'Change attributes or design' },
+        { value: 'REVISE', label: 'Revise Part', description: 'Create new revision' },
+        { value: 'DELETE', label: 'Delete Part', description: 'Remove from system' },
+      ],
+      'UNDER_REVIEW': [
+        { value: 'MODIFY', label: 'Modify Part', description: 'Update under review' },
+        { value: 'REVISE', label: 'Revise Part', description: 'Create new revision' },
+      ],
+      'RELEASED': [
+        { value: 'REVISE', label: 'Revise Part (ECN)', description: 'Create new revision via ECN', recommended: true },
+        { value: 'OBSOLETE', label: 'Obsolete Part', description: 'Mark as obsolete' },
+        { value: 'REPLACE', label: 'Replace Part', description: 'Replace with alternate' },
+      ],
+      'OBSOLETE': [
+        { value: 'REPLACE', label: 'Replace Part', description: 'Replace with alternate' },
+      ]
+    };
+    
+    return recommendations[lifecycleState] || recommendations['INWORK'];
+  };
+
+  const handlePartSelect = (part) => {
+    setSelectedPart(part);
+    
+    // Smart default change type based on lifecycle state
+    const recommended = getRecommendedChangeTypes(part.lifecycleState);
+    if (recommended.length > 0) {
+      setChangeType(recommended[0].value);
+    }
+    
+    setAnalysisResult(null);
+  };
 
   const handleAnalysisComplete = (result) => {
     setAnalysisResult(result);
@@ -17,10 +55,20 @@ const AIDemo = () => {
   };
 
   const handleClear = () => {
-    setPartId('');
-    setChangeType('OBSOLETE');
+    setSelectedPart(null);
+    setChangeType('MODIFY');
     setAnalysisResult(null);
   };
+
+  const changeTypeOptions = selectedPart 
+    ? getRecommendedChangeTypes(selectedPart.lifecycleState)
+    : [
+        { value: 'MODIFY', label: 'Modify Part' },
+        { value: 'REVISE', label: 'Revise Part' },
+        { value: 'OBSOLETE', label: 'Obsolete Part' },
+        { value: 'REPLACE', label: 'Replace Part' },
+        { value: 'DELETE', label: 'Delete Part' },
+      ];
 
   return (
     <div className="ai-demo-page">
@@ -39,27 +87,55 @@ const AIDemo = () => {
         <div className="ai-demo-controls">
           <h2>Configure Analysis</h2>
           
+          {/* Part Selector */}
           <div className="form-group">
-            <label htmlFor="partId">
+            <label>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <rect x="3" y="3" width="7" height="7" strokeWidth="2"/>
                 <rect x="14" y="3" width="7" height="7" strokeWidth="2"/>
                 <rect x="14" y="14" width="7" height="7" strokeWidth="2"/>
                 <rect x="3" y="14" width="7" height="7" strokeWidth="2"/>
               </svg>
-              Part ID
+              Select Part
             </label>
-            <input
-              id="partId"
-              type="number"
-              placeholder="Enter part ID (e.g., 1, 2, 3...)"
-              value={partId}
-              onChange={(e) => setPartId(e.target.value)}
-              className="form-input"
-            />
-            <small>Enter the ID of an existing part in your database</small>
+            
+            {selectedPart ? (
+              <div className="selected-part-display">
+                <div className="selected-part-info">
+                  <div className="part-number">{selectedPart.partNumber}</div>
+                  <div className="part-name">{selectedPart.name}</div>
+                  <div className="part-meta">
+                    <span className={`part-state part-state--${selectedPart.lifecycleState?.toLowerCase()}`}>
+                      {selectedPart.lifecycleState}
+                    </span>
+                    <span className="part-version">
+                      {selectedPart.revision}.{selectedPart.iteration}
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowPartPicker(true)}
+                  className="btn-change-part"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowPartPicker(true)}
+                className="btn-select-part"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="11" cy="11" r="8" strokeWidth="2"/>
+                  <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Search & Select Part
+              </button>
+            )}
+            <small>Select a part from your database to analyze</small>
           </div>
 
+          {/* Change Type */}
           <div className="form-group">
             <label htmlFor="changeType">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -67,27 +143,38 @@ const AIDemo = () => {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Change Type
+              {selectedPart && selectedPart.lifecycleState === 'RELEASED' && (
+                <span className="badge-warning">⚠️ Released Part</span>
+              )}
             </label>
             <select
               id="changeType"
               value={changeType}
               onChange={(e) => setChangeType(e.target.value)}
               className="form-select"
+              disabled={!selectedPart}
             >
-              <option value="OBSOLETE">Obsolete Part</option>
-              <option value="MODIFY">Modify Part</option>
-              <option value="REVISE">Revise Part</option>
-              <option value="REPLACE">Replace Part</option>
-              <option value="DELETE">Delete Part</option>
+              {changeTypeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                  {option.recommended ? ' ⭐ Recommended' : ''}
+                  {option.description ? ` - ${option.description}` : ''}
+                </option>
+              ))}
             </select>
-            <small>Select the type of change you want to analyze</small>
+            <small>
+              {selectedPart
+                ? `Smart suggestions based on ${selectedPart.lifecycleState} state`
+                : 'Select a part first to see appropriate change types'
+              }
+            </small>
           </div>
 
           <div className="demo-actions">
             <button 
               onClick={handleClear}
               className="btn-secondary"
-              disabled={!partId}
+              disabled={!selectedPart}
             >
               Clear
             </button>
@@ -103,17 +190,17 @@ const AIDemo = () => {
               How It Works
             </h3>
             <ol>
-              <li>Enter a part ID from your database</li>
-              <li>Select the type of change</li>
-              <li>AI analyzes:
+              <li>Search and select a part from your database</li>
+              <li>AI suggests appropriate change types based on lifecycle state</li>
+              <li>Real-time analysis of:
                 <ul>
-                  <li>BOM structure impact</li>
-                  <li>Where-used dependencies</li>
-                  <li>Lifecycle state conflicts</li>
-                  <li>Risk prediction (ML model)</li>
+                  <li>BOM structure impact (where-used)</li>
+                  <li>Released parts dependencies</li>
+                  <li>Conflicting active changes</li>
+                  <li>ML-based risk prediction</li>
                 </ul>
               </li>
-              <li>Get recommendations and warnings</li>
+              <li>Get actionable recommendations and warnings</li>
             </ol>
           </div>
 
@@ -126,7 +213,7 @@ const AIDemo = () => {
                 onClick={() => navigator.clipboard.writeText(JSON.stringify(analysisResult, null, 2))}
                 className="btn-copy"
               >
-                Copy JSON
+                📋 Copy JSON
               </button>
             </div>
           )}
@@ -135,34 +222,19 @@ const AIDemo = () => {
         {/* Impact Preview */}
         <div className="ai-demo-preview">
           <ImpactPreview 
-            partId={partId} 
+            partId={selectedPart?.id} 
             changeType={changeType}
             onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       </div>
 
-      {/* Quick Test Section */}
-      <div className="quick-test-section">
-        <h2>Quick Test Scenarios</h2>
-        <div className="test-scenarios">
-          <div className="scenario-card" onClick={() => { setPartId('1'); setChangeType('OBSOLETE'); }}>
-            <h4>🔴 High Risk</h4>
-            <p>Obsolete a released part with many dependencies</p>
-            <code>Part ID: 1, Type: OBSOLETE</code>
-          </div>
-          <div className="scenario-card" onClick={() => { setPartId('2'); setChangeType('MODIFY'); }}>
-            <h4>🟡 Medium Risk</h4>
-            <p>Modify a part under review</p>
-            <code>Part ID: 2, Type: MODIFY</code>
-          </div>
-          <div className="scenario-card" onClick={() => { setPartId('3'); setChangeType('REVISE'); }}>
-            <h4>🟢 Low Risk</h4>
-            <p>Revise a work-in-progress part</p>
-            <code>Part ID: 3, Type: REVISE</code>
-          </div>
-        </div>
-      </div>
+      {/* Part Picker Modal */}
+      <PartPickerModal
+        isOpen={showPartPicker}
+        onClose={() => setShowPartPicker(false)}
+        onSelect={handlePartSelect}
+      />
     </div>
   );
 };
