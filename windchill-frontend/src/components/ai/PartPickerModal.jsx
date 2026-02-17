@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/api';
+import axios from 'axios';
+import { getToken } from '../../utils/localStorage';
 import './PartPickerModal.css';
 
 /**
  * Part Picker Modal - Search and select parts from database
+ * Uses direct axios (not api wrapper) to avoid auto-redirect on errors
  */
 const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +25,14 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
+      const token = getToken();
+      
+      if (!token) {
+        throw new Error('No authentication token found. Please login.');
+      }
+
+      console.log('✅ Token exists, making request...');
+
       // Get context ID - REQUIRED by the API
       let contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
       
@@ -30,29 +40,40 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       if (!contextId) {
         try {
           console.log('Fetching user context from /api/v1/auth/me...');
-          const userResponse = await api.get('/api/v1/auth/me');
+          
+          const userResponse = await axios.get('/api/v1/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true
+          });
+          
+          console.log('User response:', userResponse.data);
           
           if (userResponse.data?.data) {
-            // API returns { success: true, data: { ...userData } }
             const userData = userResponse.data.data;
             contextId = userData.currentContextId;
             
             if (contextId) {
               sessionStorage.setItem('currentContextId', contextId);
-              console.log('✅ Context ID:', contextId);
-            } else {
-              console.warn('⚠️ User has no currentContextId');
+              console.log('✅ Context ID from user:', contextId);
             }
           }
         } catch (err) {
-          console.error('❌ Failed to fetch user context:', err);
-          throw new Error('Could not determine your workspace context. Please select a context first.');
+          console.error('❌ Failed to fetch user context:', err.response?.status, err.response?.data);
+          
+          if (err.response?.status === 403 || err.response?.status === 401) {
+            throw new Error('Session expired or invalid. Please logout and login again.');
+          }
+          
+          throw new Error('Could not determine your workspace context.');
         }
       }
 
-      // Context ID is required - fail if not available
+      // Context ID is required
       if (!contextId) {
-        throw new Error('No workspace context selected. Please go to Parts page and select a Product/Project first.');
+        throw new Error('No workspace context selected. Please visit the Parts page first to select a Product/Project.');
       }
 
       // Use correct endpoint: /api/v1/plm/parts with required contextId
@@ -60,10 +81,16 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       
       console.log('Loading parts from:', url);
       
-      // Fetch parts using axios API wrapper (handles auth automatically)
-      const response = await api.get(url);
+      // Fetch parts with direct axios call (no interceptors)
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
       
-      console.log('✅ Parts API response:', response.status);
+      console.log('✅ Parts API response:', response.status, response.data);
       
       // API returns { success: true, data: [...parts] }
       const partsList = response.data?.data;
@@ -84,11 +111,11 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     } catch (error) {
       console.error('❌ Failed to load parts:', error);
       
-      // Better error messages
+      // Better error messages WITHOUT triggering redirect
       if (error.response?.status === 403) {
-        setError('Access denied. Please ensure you have selected a valid Product/Project context.');
+        setError('Access denied. You may not have permission to view parts in this context.');
       } else if (error.response?.status === 401) {
-        setError('Session expired. Please logout and login again.');
+        setError('Authentication failed. Try logging out and back in.');
       } else if (error.response?.status === 400) {
         setError('Invalid request. Context ID is required.');
       } else if (!error.response) {
