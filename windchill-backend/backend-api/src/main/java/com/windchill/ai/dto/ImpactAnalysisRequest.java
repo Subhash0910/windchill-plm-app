@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import javax.validation.constraints.NotNull;
 
 /**
  * Request DTO for impact analysis.
@@ -16,10 +15,8 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 public class ImpactAnalysisRequest {
 
-    @NotNull(message = "Part ID is required")
     private Long partId;
 
-    @NotNull(message = "Change type is required")
     private String changeType; // OBSOLETE, REVISE, PROMOTE, etc.
 
     private String proposedState; // Target lifecycle state if applicable
