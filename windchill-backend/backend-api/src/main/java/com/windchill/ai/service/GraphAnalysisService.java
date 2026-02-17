@@ -37,11 +37,6 @@ public class GraphAnalysisService {
             Part targetPart = partRepository.findById(partId)
                     .orElseThrow(() -> new RuntimeException("Part not found: " + partId));
 
-            GraphImpactResult result = new GraphImpactResult();
-            result.setTargetPartId(partId);
-            result.setTargetPartNumber(targetPart.getPartNumber());
-            result.setChangeType(changeType);
-
             // Find all parent assemblies (where-used analysis)
             Set<Long> affectedPartIds = new HashSet<>();
             int maxDepth = findAffectedParents(partId, affectedPartIds, 0);
@@ -57,15 +52,20 @@ public class GraphAnalysisService {
             // Analyze BOM structure complexity
             boolean complexStructure = affectedPartIds.size() > 10 || maxDepth > 5;
 
-            // Build result
-            result.setAffectedPartIds(new ArrayList<>(affectedPartIds));
-            result.setTotalAffectedCount(affectedPartIds.size());
-            result.setReleasedAffectedCount((int) releasedCount);
-            result.setBomDepth(maxDepth);
-            result.setHasComplexStructure(complexStructure);
-            result.setConflictingChangesCount(0); // TODO: Check active ECRs/ECNs
-            result.setConflictingChangeNumbers(Collections.emptyList());
-            result.setHasComplianceIssues(false); // TODO: Check compliance rules
+            // Build result using builder pattern
+            GraphImpactResult result = GraphImpactResult.builder()
+                    .totalAffectedCount(affectedPartIds.size())
+                    .releasedAffectedCount((int) releasedCount)
+                    .bomDepth(maxDepth)
+                    .hasComplexStructure(complexStructure)
+                    .conflictingChangesCount(0)
+                    .conflictingChangeNumbers(Collections.emptyList())
+                    .hasComplianceIssues(false)
+                    .currentLifecycleState(targetPart.getLifecycleState() != null ? 
+                            targetPart.getLifecycleState().name() : "UNKNOWN")
+                    .currentVersion(targetPart.getRevision() + "." + targetPart.getIteration())
+                    .structuralComplexity(calculateComplexity(affectedPartIds.size(), maxDepth))
+                    .build();
 
             log.info("Graph analysis completed: {} affected parts, {} released, depth {}",
                     affectedPartIds.size(), releasedCount, maxDepth);
@@ -76,6 +76,27 @@ public class GraphAnalysisService {
             log.error("Graph analysis failed for partId={}", partId, e);
             throw new RuntimeException("Graph analysis failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Calculate structural complexity score (0-10)
+     */
+    private double calculateComplexity(int affectedCount, int depth) {
+        double score = 0;
+        
+        // Factor 1: Number of affected parts
+        if (affectedCount > 50) score += 5;
+        else if (affectedCount > 20) score += 3;
+        else if (affectedCount > 10) score += 2;
+        else if (affectedCount > 5) score += 1;
+        
+        // Factor 2: BOM depth
+        if (depth > 7) score += 5;
+        else if (depth > 5) score += 3;
+        else if (depth > 3) score += 2;
+        else if (depth > 1) score += 1;
+        
+        return Math.min(10, score);
     }
 
     /**
