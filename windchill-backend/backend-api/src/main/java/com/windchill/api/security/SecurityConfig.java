@@ -38,8 +38,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // IMPORTANT:
-        // When allowCredentials=true, we must NOT use wildcard "*" for allowed origins.
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost",
                 "http://localhost:3000",
@@ -106,8 +104,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/ai/**").permitAll()  // Allow AI endpoints for demo
-                        .requestMatchers(HttpMethod.GET, "/api/v1/plm/parts").permitAll()  // Allow parts GET for AI Demo
+                        .requestMatchers("/api/v1/ai/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
