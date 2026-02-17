@@ -11,6 +11,13 @@ const TAB = {
   INSIGHTS: 'INSIGHTS',
 };
 
+const ROLE_MODE = {
+  APPROVERS: 'APPROVERS',
+  ALL: 'ALL',
+};
+
+const APPROVER_ROLES = new Set(['ADMIN', 'MANAGER', 'APPROVER']);
+
 const safeJson = (raw) => {
   if (!raw) return null;
   try {
@@ -63,6 +70,7 @@ const EcrDetailPage = () => {
   // Reviewer picker (Windchill-ish)
   const [memberLoading, setMemberLoading] = useState(false);
   const [members, setMembers] = useState([]);
+  const [roleMode, setRoleMode] = useState(ROLE_MODE.APPROVERS);
   const [reviewers, setReviewers] = useState([]); // usernames
   const [reviewerQuery, setReviewerQuery] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -167,6 +175,29 @@ const EcrDetailPage = () => {
     return out;
   }, [reviewers]);
 
+  const memberByUsername = useMemo(() => {
+    const map = new Map();
+    (members || []).forEach((m) => {
+      const u = String(m.username || '').trim();
+      if (!u) return;
+      map.set(u.toLowerCase(), m);
+    });
+    return map;
+  }, [members]);
+
+  const reviewerPreview = useMemo(() => {
+    return normalizedReviewers.map((u) => {
+      const m = memberByUsername.get(String(u).toLowerCase());
+      return {
+        username: u,
+        inTeam: !!m,
+        role: m?.role,
+        fullName: m?.fullName,
+        email: m?.email,
+      };
+    });
+  }, [normalizedReviewers, memberByUsername]);
+
   const parseCsv = (csv) => {
     const raw = String(csv || '')
       .split(/[,\n\r]+/g)
@@ -200,10 +231,12 @@ const EcrDetailPage = () => {
     if (!q) return [];
 
     const already = new Set(normalizedReviewers.map((r) => r.toLowerCase()));
-    const list = members || [];
 
-    return list
+    return (members || [])
       .filter((m) => {
+        const role = String(m.role || '').toUpperCase();
+        if (roleMode === ROLE_MODE.APPROVERS && !APPROVER_ROLES.has(role)) return false;
+
         const u = String(m.username || '').toLowerCase();
         const e = String(m.email || '').toLowerCase();
         const f = String(m.fullName || '').toLowerCase();
@@ -213,7 +246,7 @@ const EcrDetailPage = () => {
         return true;
       })
       .slice(0, 8);
-  }, [members, reviewerQuery, normalizedReviewers]);
+  }, [members, reviewerQuery, normalizedReviewers, roleMode]);
 
   const canAddFreeText = useMemo(() => {
     const t = String(reviewerQuery || '').trim();
@@ -271,6 +304,7 @@ const EcrDetailPage = () => {
   const approxTotal = Math.min(100, Math.max(0, structural + releasedPenalty + rootPenalty));
 
   const showDropdown = !!reviewerQuery.trim() && (filteredMembers.length > 0 || canAddFreeText);
+  const unknownReviewersCount = reviewerPreview.filter((r) => !r.inTeam).length;
 
   return (
     <div className="ecr-page">
@@ -329,7 +363,26 @@ const EcrDetailPage = () => {
               </div>
 
               <div className="rvp" ref={dropdownRef}>
-                <div className="rvp-label">Reviewers</div>
+                <div className="rvp-top">
+                  <div className="rvp-label">Reviewers</div>
+                  <div className="rvp-filter">
+                    <button
+                      type="button"
+                      className={roleMode === ROLE_MODE.APPROVERS ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
+                      onClick={() => setRoleMode(ROLE_MODE.APPROVERS)}
+                      title="Recommended: pick only roles that typically approve changes"
+                    >
+                      Approvers only
+                    </button>
+                    <button
+                      type="button"
+                      className={roleMode === ROLE_MODE.ALL ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
+                      onClick={() => setRoleMode(ROLE_MODE.ALL)}
+                    >
+                      All team
+                    </button>
+                  </div>
+                </div>
 
                 <div className="rvp-chips">
                   {normalizedReviewers.map((r) => (
@@ -388,6 +441,31 @@ const EcrDetailPage = () => {
                     ) : null}
                   </div>
                 ) : null}
+
+                <div className="rvp-preview">
+                  <div className="rvp-preview-head">
+                    <div className="rvp-preview-title">Selected ({normalizedReviewers.length})</div>
+                    {unknownReviewersCount > 0 ? (
+                      <div className="rvp-warn">{unknownReviewersCount} not in team</div>
+                    ) : null}
+                  </div>
+
+                  {normalizedReviewers.length === 0 ? (
+                    <div className="plm-muted">Add reviewers to see a preview.</div>
+                  ) : (
+                    <div className="rvp-preview-list">
+                      {reviewerPreview.map((r) => (
+                        <div key={r.username} className={r.inTeam ? 'rvp-prev-row' : 'rvp-prev-row rvp-prev-row-warn'}>
+                          <div className="rvp-prev-main">
+                            <div className="mono" style={{ fontWeight: 950 }}>{r.username}</div>
+                            <div className="rvp-prev-sub">{r.fullName || r.email || (r.inTeam ? '' : 'Not found in current team')}</div>
+                          </div>
+                          <div className="rvp-tag">{r.role || (r.inTeam ? 'VIEWER' : 'Manual')}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="rvp-advRow">
                   <button type="button" className="rvp-link" onClick={() => setShowAdvanced((v) => !v)}>
