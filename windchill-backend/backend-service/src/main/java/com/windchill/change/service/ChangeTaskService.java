@@ -1,10 +1,13 @@
 package com.windchill.change.service;
 
+import com.windchill.change.domain.ChangeNotice;
+import com.windchill.change.domain.ChangeNoticeStatus;
 import com.windchill.change.domain.ChangeRequest;
 import com.windchill.change.domain.ChangeRequestStatus;
 import com.windchill.change.domain.ChangeTask;
 import com.windchill.change.domain.ChangeTaskDecision;
 import com.windchill.change.domain.ChangeTaskType;
+import com.windchill.change.repository.ChangeNoticeRepository;
 import com.windchill.change.repository.ChangeRequestRepository;
 import com.windchill.change.repository.ChangeTaskRepository;
 import org.springframework.stereotype.Service;
@@ -22,13 +25,16 @@ public class ChangeTaskService {
 
     private final ChangeTaskRepository changeTaskRepository;
     private final ChangeRequestRepository changeRequestRepository;
+    private final ChangeNoticeRepository changeNoticeRepository;
     private final ChangeRequestService changeRequestService;
 
     public ChangeTaskService(ChangeTaskRepository changeTaskRepository,
                              ChangeRequestRepository changeRequestRepository,
+                             ChangeNoticeRepository changeNoticeRepository,
                              ChangeRequestService changeRequestService) {
         this.changeTaskRepository = changeTaskRepository;
         this.changeRequestRepository = changeRequestRepository;
+        this.changeNoticeRepository = changeNoticeRepository;
         this.changeRequestService = changeRequestService;
     }
 
@@ -61,6 +67,14 @@ public class ChangeTaskService {
             evaluateEcrState(t.getChangeRequestId());
         }
 
+        if (t.getType() == ChangeTaskType.IMPLEMENT && t.getChangeNoticeId() != null) {
+            ChangeNotice ecn = changeNoticeRepository.findById(t.getChangeNoticeId())
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ECN not found"));
+            ecn.setStatus(ChangeNoticeStatus.DONE);
+            ecn.touchUpdatedAt();
+            changeNoticeRepository.save(ecn);
+        }
+
         return saved;
     }
 
@@ -74,7 +88,7 @@ public class ChangeTaskService {
         }
 
         if (t.getDecision() != ChangeTaskDecision.PENDING) {
-            throw new ResponseStatusException(BAD_REQUEST, "Task already decided");
+            throw new ResponseStatusException(BAD_REQUEST, "Task already decided"));
         }
 
         t.markRejected(actor, comment);
@@ -86,6 +100,14 @@ public class ChangeTaskService {
             ecr.setStatus(ChangeRequestStatus.REJECTED);
             ecr.touchUpdatedAt();
             changeRequestRepository.save(ecr);
+        }
+
+        if (t.getType() == ChangeTaskType.IMPLEMENT && t.getChangeNoticeId() != null) {
+            ChangeNotice ecn = changeNoticeRepository.findById(t.getChangeNoticeId())
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ECN not found"));
+            ecn.setStatus(ChangeNoticeStatus.IN_WORK);
+            ecn.touchUpdatedAt();
+            changeNoticeRepository.save(ecn);
         }
 
         return saved;
