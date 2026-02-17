@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import './ImpactPreview.css';
 
 /**
@@ -309,12 +308,6 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
       )}
     </div>
   );
-};
-
-ImpactPreview.propTypes = {
-  partId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  changeType: PropTypes.string,
-  onAnalysisComplete: PropTypes.func
 };
 
 export default ImpactPreview;
