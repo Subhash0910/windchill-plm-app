@@ -72,6 +72,143 @@
   font-size: 14px;
 }
 
+.badge-warning {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Part Picker Button */
+.btn-select-part {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-select-part:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-select-part svg {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Selected Part Display */
+.selected-part-display {
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all 0.2s;
+}
+
+.selected-part-display:hover {
+  border-color: #cbd5e0;
+}
+
+.selected-part-info {
+  flex: 1;
+}
+
+.selected-part-info .part-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.selected-part-info .part-name {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 8px;
+}
+
+.selected-part-info .part-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.part-state {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.part-state--inwork {
+  background: #fef5e7;
+  color: #d68910;
+}
+
+.part-state--released {
+  background: #d4edda;
+  color: #155724;
+}
+
+.part-state--under_review,
+.part-state--underreview {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.part-state--obsolete {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.part-version {
+  font-size: 12px;
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.btn-change-part {
+  padding: 8px 16px;
+  background: white;
+  color: #4299e1;
+  border: 2px solid #4299e1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-change-part:hover {
+  background: #4299e1;
+  color: white;
+}
+
 .form-input,
 .form-select {
   width: 100%;
@@ -88,6 +225,12 @@
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-select:disabled {
+  background: #f7fafc;
+  color: #a0aec0;
+  cursor: not-allowed;
 }
 
 .form-group small {
