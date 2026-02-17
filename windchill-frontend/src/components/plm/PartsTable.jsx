@@ -14,6 +14,12 @@ const PartsTable = ({ parts }) => {
 
   const hiddenCount = (parts || []).length - (visibleParts || []).length;
 
+  // Helper to format folder display
+  const getFolderDisplay = (part) => {
+    if (!part.folderPath || part.folderPath === '/') return 'Root';
+    return part.folderPath;
+  };
+
   return (
     <div className="parts-table-wrap">
       <div className="parts-table-toolbar" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
@@ -35,6 +41,7 @@ const PartsTable = ({ parts }) => {
           <tr>
             <th>Number</th>
             <th>Name</th>
+            <th>Folder</th>
             <th>Rev</th>
             <th>Iter</th>
             <th>State</th>
@@ -46,6 +53,11 @@ const PartsTable = ({ parts }) => {
             <tr key={p.id}>
               <td className="mono">{p.partNumber}</td>
               <td>{p.name}</td>
+              <td>
+                <span style={{ color: '#64748b', fontSize: '0.9em' }}>
+                  📁 {getFolderDisplay(p)}
+                </span>
+              </td>
               <td>{p.revision}</td>
               <td>{p.iteration}</td>
               <td>
@@ -58,7 +70,7 @@ const PartsTable = ({ parts }) => {
           ))}
           {(visibleParts || []).length === 0 && (
             <tr>
-              <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>
+              <td colSpan={7} className="plm-muted" style={{ padding: 12 }}>
                 No parts.
               </td>
             </tr>
