@@ -111,6 +111,11 @@ public class ChangeImpactAnalysisService {
     }
 
     @Transactional(readOnly = true)
+    public ImpactReport getLatestReportOrNull(Long ecrId) {
+        return impactReportRepository.findTopByEcrIdOrderByCreatedAtDesc(ecrId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public List<ImpactItem> getItems(Long reportId) {
         return impactItemRepository.findByReportIdOrderByDepthAscIdAsc(reportId);
     }

@@ -34,7 +34,13 @@ public class ChangeInsightsController {
 
     @GetMapping("/{id}/insights")
     public ChangeInsightsResponse insights(@PathVariable("id") Long ecrId) {
-        ImpactReport report = changeImpactAnalysisService.getLatestReport(ecrId);
+        ImpactReport report = changeImpactAnalysisService.getLatestReportOrNull(ecrId);
+
+        // Draft/new ECR: no report yet. Return empty insights instead of 404 so UI can still load.
+        if (report == null) {
+            return new ChangeInsightsResponse(null, List.of(), null);
+        }
+
         List<ImpactItem> items = changeImpactAnalysisService.getItems(report.getId());
         ImpactReportResponse impact = new ImpactReportResponse(report, items);
 
