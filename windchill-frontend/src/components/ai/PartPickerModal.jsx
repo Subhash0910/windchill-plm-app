@@ -23,31 +23,40 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
-      // Try to get current context from storage
+      // Get context ID - REQUIRED by the API
       let contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
       
-      // Fallback: fetch from user profile if no context
+      // Fallback: fetch from user profile
       if (!contextId) {
         try {
-          console.log('Fetching user context...');
+          console.log('Fetching user context from /api/v1/auth/me...');
           const userResponse = await api.get('/api/v1/auth/me');
           
-          if (userResponse.data) {
-            contextId = userResponse.data.currentContextId;
+          if (userResponse.data?.data) {
+            // API returns { success: true, data: { ...userData } }
+            const userData = userResponse.data.data;
+            contextId = userData.currentContextId;
+            
             if (contextId) {
               sessionStorage.setItem('currentContextId', contextId);
               console.log('✅ Context ID:', contextId);
+            } else {
+              console.warn('⚠️ User has no currentContextId');
             }
           }
         } catch (err) {
-          console.warn('⚠️ Could not fetch user context:', err.message);
+          console.error('❌ Failed to fetch user context:', err);
+          throw new Error('Could not determine your workspace context. Please select a context first.');
         }
       }
 
-      // Build URL with or without context filter
-      const url = contextId 
-        ? `/api/v1/parts?contextId=${contextId}&size=100`
-        : '/api/v1/parts?size=100';
+      // Context ID is required - fail if not available
+      if (!contextId) {
+        throw new Error('No workspace context selected. Please go to Parts page and select a Product/Project first.');
+      }
+
+      // Use correct endpoint: /api/v1/plm/parts with required contextId
+      const url = `/api/v1/plm/parts?contextId=${contextId}`;
       
       console.log('Loading parts from:', url);
       
@@ -56,8 +65,8 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       
       console.log('✅ Parts API response:', response.status);
       
-      // Handle both paginated and direct array responses
-      const partsList = response.data.content || response.data;
+      // API returns { success: true, data: [...parts] }
+      const partsList = response.data?.data;
       
       if (!Array.isArray(partsList)) {
         console.error('❌ Unexpected response format:', response.data);
@@ -68,7 +77,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
         setParts(partsList);
         
         if (partsList.length === 0) {
-          setError('No parts found. Create some parts first in the Parts workspace.');
+          setError('No parts found in this context. Create some parts first in the Parts workspace.');
         }
       }
       
@@ -77,9 +86,11 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
       
       // Better error messages
       if (error.response?.status === 403) {
-        setError('Access denied. Your session may have expired. Please logout and login again.');
+        setError('Access denied. Please ensure you have selected a valid Product/Project context.');
       } else if (error.response?.status === 401) {
-        setError('Unauthorized. Please logout and login again.');
+        setError('Session expired. Please logout and login again.');
+      } else if (error.response?.status === 400) {
+        setError('Invalid request. Context ID is required.');
       } else if (!error.response) {
         setError('Cannot connect to backend. Is the server running?');
       } else {
@@ -170,7 +181,7 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
                 <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               <p>No parts found</p>
-              <small>{searchTerm ? 'Try a different search term' : 'No parts in this context'}</small>
+              <small>{searchTerm ? 'Try a different search term' : 'Create parts in the Parts workspace first'}</small>
             </div>
           ) : (
             filteredParts.map((part) => (
