@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import { plmApi } from '../../services/plmApi';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './EcrDetailPage.css';
 
 const TAB = {
@@ -42,28 +43,12 @@ const Pill = ({ value, type }) => {
   return <span style={{ ...base, background: '#e6f3fb', borderColor: '#b6d8ea', color: '#0f4d6d' }}>{v || '-'}</span>;
 };
 
-const parseReviewersCsv = (csv) => {
-  const raw = String(csv || '')
-    .split(/[,\n\r]+/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  // de-dupe (case-insensitive)
-  const seen = new Set();
-  const out = [];
-  raw.forEach((r) => {
-    const k = r.toLowerCase();
-    if (seen.has(k)) return;
-    seen.add(k);
-    out.push(r);
-  });
-  return out;
-};
-
 const isReleased = (rootState) => String(rootState || '').toUpperCase() === 'RELEASED';
 
 const EcrDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { selectedContextId } = useContext(PlmWorkspaceContext);
 
   const [activeTab, setActiveTab] = useState(TAB.INSIGHTS);
 
@@ -75,8 +60,16 @@ const EcrDetailPage = () => {
 
   const [recomputeLoading, setRecomputeLoading] = useState(false);
 
-  const [reviewersCsv, setReviewersCsv] = useState('');
+  // Reviewer picker (Windchill-ish)
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [reviewers, setReviewers] = useState([]); // usernames
+  const [reviewerQuery, setReviewerQuery] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [reviewersCsv, setReviewersCsv] = useState('');
+
+  const dropdownRef = useRef(null);
 
   const ecr = details?.ecr;
   const tasks = details?.tasks || [];
@@ -85,6 +78,8 @@ const EcrDetailPage = () => {
   const impact = insights?.impact;
   const report = impact?.report;
   const factors = useMemo(() => safeJson(report?.factorsJson), [report?.factorsJson]);
+
+  const isDraft = useMemo(() => String(ecr?.status || '').toUpperCase() === 'DRAFT', [ecr?.status]);
 
   const load = async () => {
     setLoading(true);
@@ -105,10 +100,44 @@ const EcrDetailPage = () => {
     }
   };
 
+  const loadMembers = async () => {
+    if (!selectedContextId) {
+      setMembers([]);
+      return;
+    }
+    setMemberLoading(true);
+    try {
+      const data = await plmApi.listContextMembers(selectedContextId);
+      setMembers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setMembers([]);
+    } finally {
+      setMemberLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!isDraft) return;
+    loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContextId, isDraft]);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(e.target)) {
+        // click outside
+        setReviewerQuery('');
+      }
+    };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, []);
 
   const recompute = async () => {
     setRecomputeLoading(true);
@@ -124,17 +153,88 @@ const EcrDetailPage = () => {
     }
   };
 
+  const normalizedReviewers = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    (reviewers || []).forEach((r) => {
+      const t = String(r || '').trim();
+      if (!t) return;
+      const k = t.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(t);
+    });
+    return out;
+  }, [reviewers]);
+
+  const parseCsv = (csv) => {
+    const raw = String(csv || '')
+      .split(/[,\n\r]+/g)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const seen = new Set();
+    const out = [];
+    raw.forEach((r) => {
+      const k = r.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(r);
+    });
+    return out;
+  };
+
+  const addReviewer = (username) => {
+    const t = String(username || '').trim();
+    if (!t) return;
+    setReviewers((prev) => [...(prev || []), t]);
+    setReviewerQuery('');
+  };
+
+  const removeReviewer = (username) => {
+    const k = String(username || '').toLowerCase();
+    setReviewers((prev) => (prev || []).filter((r) => String(r || '').toLowerCase() !== k));
+  };
+
+  const filteredMembers = useMemo(() => {
+    const q = String(reviewerQuery || '').trim().toLowerCase();
+    if (!q) return [];
+
+    const already = new Set(normalizedReviewers.map((r) => r.toLowerCase()));
+    const list = members || [];
+
+    return list
+      .filter((m) => {
+        const u = String(m.username || '').toLowerCase();
+        const e = String(m.email || '').toLowerCase();
+        const f = String(m.fullName || '').toLowerCase();
+        const hit = u.includes(q) || e.includes(q) || f.includes(q);
+        if (!hit) return false;
+        if (already.has(u)) return false;
+        return true;
+      })
+      .slice(0, 8);
+  }, [members, reviewerQuery, normalizedReviewers]);
+
+  const canAddFreeText = useMemo(() => {
+    const t = String(reviewerQuery || '').trim();
+    if (!t) return false;
+    const already = new Set(normalizedReviewers.map((r) => r.toLowerCase()));
+    return !already.has(t.toLowerCase());
+  }, [reviewerQuery, normalizedReviewers]);
+
   const submit = async () => {
-    const reviewers = parseReviewersCsv(reviewersCsv);
-    if (!reviewers.length) {
-      setError('Add at least one reviewer username (CSV).');
+    const adv = showAdvanced ? parseCsv(reviewersCsv) : [];
+    const finalReviewers = [...normalizedReviewers, ...adv];
+
+    if (!finalReviewers.length) {
+      setError('Add at least one reviewer (use the picker or CSV).');
       return;
     }
 
     setSubmitLoading(true);
     setError('');
     try {
-      await plmApi.submitEcr(id, { reviewers });
+      await plmApi.submitEcr(id, { reviewers: finalReviewers });
       await load();
       setActiveTab(TAB.TASKS);
     } catch (e) {
@@ -159,10 +259,8 @@ const EcrDetailPage = () => {
   if (!ecr) return <div className="plm-muted">ECR not found.</div>;
 
   const title = ecr.title || 'Untitled change';
-  const isDraft = String(ecr.status || '').toUpperCase() === 'DRAFT';
 
-  // Score explanation (kept aligned with backend):
-  // score = impactedParents*4 + maxDepth*8 + releasedParents*15 + (rootReleased?20:0) + (maxNodesHit?10:0), clamped 0..100
+  // Score explanation (aligned with backend):
   const impactedParents = Number(factors?.impactedParentsCount ?? 0);
   const releasedParents = Number(factors?.releasedParentsCount ?? 0);
   const maxDepth = Number(factors?.maxDepth ?? 0);
@@ -171,6 +269,8 @@ const EcrDetailPage = () => {
   const structural = impactedParents * 4 + maxDepth * 8;
   const releasedPenalty = releasedParents * 15;
   const approxTotal = Math.min(100, Math.max(0, structural + releasedPenalty + rootPenalty));
+
+  const showDropdown = !!reviewerQuery.trim() && (filteredMembers.length > 0 || canAddFreeText);
 
   return (
     <div className="ecr-page">
@@ -225,25 +325,96 @@ const EcrDetailPage = () => {
             <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
               <div className="ecr-card-title">Submit for review</div>
               <div className="plm-muted" style={{ marginBottom: 10 }}>
-                Submitting creates reviewer tasks and runs impact + routing.
+                Pick reviewers from the context team (search by name/username/email), then submit.
               </div>
 
-              <div className="ecr-submit-grid">
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 6 }}>Reviewers (CSV usernames)</div>
-                  <input
-                    className="plm-input"
-                    value={reviewersCsv}
-                    onChange={(e) => setReviewersCsv(e.target.value)}
-                    placeholder="Example: subhash1, subhash2"
-                  />
-                  <div className="plm-muted" style={{ marginTop: 6 }}>Tip: matching is case-insensitive, but use the login username for best results.</div>
+              <div className="rvp" ref={dropdownRef}>
+                <div className="rvp-label">Reviewers</div>
+
+                <div className="rvp-chips">
+                  {normalizedReviewers.map((r) => (
+                    <button key={r} type="button" className="rvp-chip" onClick={() => removeReviewer(r)} title="Remove">
+                      <span className="mono">{r}</span>
+                      <span className="rvp-x">×</span>
+                    </button>
+                  ))}
+                  {normalizedReviewers.length === 0 ? (
+                    <span className="plm-muted">No reviewers selected.</span>
+                  ) : null}
                 </div>
 
-                <div className="ecr-submit-actions">
+                <div className="rvp-inputRow">
+                  <input
+                    className="plm-input"
+                    value={reviewerQuery}
+                    onChange={(e) => setReviewerQuery(e.target.value)}
+                    placeholder={memberLoading ? 'Loading team…' : (selectedContextId ? 'Search reviewer…' : 'Select a context to search members…')}
+                    disabled={!selectedContextId || memberLoading}
+                  />
+                  <Button variant="secondary" size="sm" onClick={loadMembers} disabled={!selectedContextId || memberLoading}>
+                    {memberLoading ? 'Loading…' : 'Reload'}
+                  </Button>
+                </div>
+
+                {showDropdown ? (
+                  <div className="rvp-dd">
+                    {filteredMembers.map((m) => (
+                      <button
+                        key={m.userId || m.username}
+                        type="button"
+                        className="rvp-item"
+                        onClick={() => addReviewer(m.username)}
+                      >
+                        <div className="rvp-main">
+                          <div className="rvp-u mono">{m.username}</div>
+                          <div className="rvp-sub">{m.fullName || m.email || ''}</div>
+                        </div>
+                        <div className="rvp-tag">{m.role || 'VIEWER'}</div>
+                      </button>
+                    ))}
+
+                    {canAddFreeText ? (
+                      <button
+                        type="button"
+                        className="rvp-item rvp-item-add"
+                        onClick={() => addReviewer(reviewerQuery.trim())}
+                      >
+                        <div className="rvp-main">
+                          <div className="rvp-u mono">Add “{reviewerQuery.trim()}”</div>
+                          <div className="rvp-sub">Not found in team list (still allowed)</div>
+                        </div>
+                        <div className="rvp-tag">Manual</div>
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="rvp-advRow">
+                  <button type="button" className="rvp-link" onClick={() => setShowAdvanced((v) => !v)}>
+                    {showAdvanced ? 'Hide advanced CSV' : 'Advanced: paste CSV'}
+                  </button>
+                </div>
+
+                {showAdvanced ? (
+                  <div className="rvp-adv">
+                    <textarea
+                      className="plm-input"
+                      rows={3}
+                      value={reviewersCsv}
+                      onChange={(e) => setReviewersCsv(e.target.value)}
+                      placeholder="Example: senior1, senior2"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="ecr-submit-actions" style={{ marginTop: 10 }}>
                   <Button variant="primary" size="sm" onClick={submit} disabled={submitLoading}>
                     {submitLoading ? 'Submitting…' : 'Submit ECR'}
                   </Button>
+                </div>
+
+                <div className="plm-muted" style={{ marginTop: 8 }}>
+                  Tip: reviewers must match real login usernames. Matching is case-insensitive.
                 </div>
               </div>
             </div>
