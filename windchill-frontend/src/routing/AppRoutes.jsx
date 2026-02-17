@@ -9,6 +9,8 @@ import PlmLayout from '../pages/plm/PlmLayout';
 import PartsPage from '../pages/plm/PartsPage';
 import PartDetailPage from '../pages/plm/PartDetailPage';
 import WorklistPage from '../pages/plm/WorklistPage';
+import ChangesHomePage from '../pages/plm/ChangesHomePage';
+import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
 
 const AppRoutes = () => {
@@ -54,6 +56,8 @@ const AppRoutes = () => {
           <Route path="parts" element={<PartsPage />} />
           <Route path="parts/:id" element={<PartDetailPage />} />
           <Route path="worklist" element={<WorklistPage />} />
+          <Route path="changes" element={<ChangesHomePage />} />
+          <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

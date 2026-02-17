@@ -109,4 +109,18 @@ export const plmApi = {
     const res = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });
     return res.data.data;
   },
+
+  // Changes (ECR)
+  getEcrDetails: async (id) => {
+    const res = await api.get(`/api/changes/ecr/${id}/details`);
+    return res.data;
+  },
+  getEcrInsights: async (id) => {
+    const res = await api.get(`/api/changes/ecr/${id}/insights`);
+    return res.data;
+  },
+  analyzeEcr: async (id) => {
+    const res = await api.post(`/api/changes/ecr/${id}/analyze`);
+    return res.data;
+  },
 };

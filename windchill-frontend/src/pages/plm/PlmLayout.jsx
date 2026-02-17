@@ -11,7 +11,8 @@ const PlmLayout = () => {
 
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isWorklist = location.pathname.startsWith('/plm/worklist');
-  const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist;
+  const isChanges = location.pathname.startsWith('/plm/changes');
+  const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist && !isChanges;
 
   return (
     <div className="plm-shell">
@@ -22,6 +23,7 @@ const PlmLayout = () => {
           <Link className={isDashboard ? 'plm-link active' : 'plm-link'} to="/dashboard">Dashboard</Link>
           <Link className={isWorkspace ? 'plm-link active' : 'plm-link'} to="/plm">Workspace</Link>
           <Link className={isWorklist ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
+          <Link className={isChanges ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
         </div>
       </div>
 
