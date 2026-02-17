@@ -1,47 +1,40 @@
 package com.windchill.ai.dto;
 
-import com.windchill.ai.model.AffectedPart;
-import com.windchill.ai.model.GraphMetrics;
-import com.windchill.ai.model.RiskAssessment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.util.List;
+import java.time.LocalDateTime;
 
 /**
- * Response DTO containing complete AI impact analysis.
- * 
- * Combines graph analysis, ML risk prediction, and recommendations.
+ * Response DTO containing complete impact analysis results.
+ * Combines graph analysis and ML risk prediction.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ImpactAnalysisResponse {
-    
-    // Basic part info
+
+    // Identification
     private Long partId;
     private String partNumber;
-    private String currentLifecycleState;
-    
-    // Affected items from graph analysis
-    private List<AffectedPart> affectedParts;
-    
-    // Graph metrics
-    private GraphMetrics graphMetrics;
-    
-    // AI risk assessment
-    private RiskAssessment riskAssessment;
-    
-    // Actionable recommendations
+    private String changeType;
+
+    // Graph Analysis Results
+    private GraphImpactResult graphAnalysis;
+
+    // ML Risk Prediction
+    private RiskPredictionResponse riskPrediction;
+
+    // High-level summary
+    private String impactSummary;
     private List<String> recommendations;
-    
-    // Optional: LLM-generated explanation (Phase 2A)
-    private String explanation;
-    
+    private List<String> warnings;
+    private List<String> blockers; // Issues that must be resolved before proceeding
+
     // Metadata
-    private Long analysisTimestamp;
-    private Integer analysisTimeMs;
+    private LocalDateTime analyzedAt;
+    private Long analyzedBy;
 }

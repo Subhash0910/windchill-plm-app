@@ -1,213 +1,143 @@
 package com.windchill.ai.service;
 
-import com.windchill.ai.model.AffectedPart;
-import com.windchill.ai.model.GraphMetrics;
+import com.windchill.ai.dto.GraphImpactResult;
+import com.windchill.api.model.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Service for graph-based analysis of BOM and where-used relationships.
- * 
- * Layer 1 of AI Impact Engine: Pure algorithmic analysis.
- * 
- * TODO: Wire in your existing BomService, WhereUsedService, PartService
+ * Service for graph-based structural analysis of PLM data.
+ * Analyzes BOM structure, where-used relationships, and dependencies.
  */
 @Slf4j
 @Service
 public class GraphAnalysisService {
-    
-    // TODO: @Autowired private BomService bomService;
-    // TODO: @Autowired private WhereUsedService whereUsedService;
-    // TODO: @Autowired private PartService partService;
-    // TODO: @Autowired private EcrRepository ecrRepository;
-    // TODO: @Autowired private EcnRepository ecnRepository;
-    
+
+    // TODO: Inject your actual services once we integrate
+    // @Autowired private PartService partService;
+    // @Autowired private BomService bomService;
+    // @Autowired private WhereUsedService whereUsedService;
+    // @Autowired private ChangeService changeService;
+
     /**
-     * Analyze structural impact of changing a part.
+     * Analyze the impact of changing a specific part.
      * 
-     * @param partId ID of part being changed
-     * @param changeType Type of change (REVISE, OBSOLETE, etc.)
-     * @return Graph metrics and affected parts
+     * @param partId ID of the part to analyze
+     * @param changeType Type of change (OBSOLETE, REVISE, etc.)
+     * @return Complete graph impact analysis
      */
-    public GraphAnalysisResult analyzePartChange(Long partId, String changeType) {
-        log.info("Starting graph analysis for part_id={}, change_type={}", partId, changeType);
-        
-        long startTime = System.currentTimeMillis();
-        
+    public GraphImpactResult analyzePartChange(Long partId, String changeType) {
+        log.info("Starting graph analysis for partId={}, changeType={}", partId, changeType);
+
         try {
-            // Step 1: Analyze BOM (downward)
-            BomAnalysisResult bomResult = analyzeBomStructure(partId);
-            
-            // Step 2: Analyze where-used (upward)
-            WhereUsedAnalysisResult whereUsedResult = analyzeWhereUsed(partId);
-            
-            // Step 3: Detect conflicts
-            List<AffectedPart> conflictingParts = detectConflictingChanges(whereUsedResult.getAffectedParts());
-            
-            // Step 4: Calculate complexity
-            int complexity = calculateStructuralComplexity(bomResult, whereUsedResult);
-            
-            // Build metrics
-            GraphMetrics metrics = GraphMetrics.builder()
-                    .bomDepth(bomResult.getMaxDepth())
-                    .bomWidth(bomResult.getDirectChildren())
-                    .bomTotalParts(bomResult.getTotalParts())
-                    .whereUsedCount(whereUsedResult.getParentCount())
-                    .whereUsedDepth(whereUsedResult.getMaxDepth())
-                    .releasedAffected(whereUsedResult.getReleasedCount())
-                    .underReviewAffected(whereUsedResult.getUnderReviewCount())
-                    .conflictingChanges(conflictingParts.size())
+            // TODO: Replace with actual service calls
+            // This is a template - will integrate with your existing services
+
+            // Step 1: Get current part info
+            // Part part = partService.findById(partId);
+
+            // Step 2: Analyze where-used (parent assemblies)
+            // List<Part> affectedParts = whereUsedService.getAllParentAssemblies(partId);
+            List<GraphImpactResult.AffectedPartInfo> affectedParts = new ArrayList<>();
+            // For now, return mock data structure
+
+            // Step 3: Analyze BOM (child components)
+            // BomTree bomTree = bomService.explodeBom(partId, maxDepth: 5);
+            int bomDepth = 0;
+            int totalBomItems = 0;
+
+            // Step 4: Check for conflicting changes
+            // List<Change> conflicts = changeService.findActiveChangesForPart(partId);
+            int conflictingChanges = 0;
+            List<String> conflictingChangeNumbers = new ArrayList<>();
+
+            // Step 5: Count released parts affected
+            int releasedCount = 0;
+            // releasedCount = affectedParts.stream()
+            //     .filter(p -> "RELEASED".equals(p.getLifecycleState()))
+            //     .count();
+
+            // Step 6: Check compliance
+            boolean hasComplianceIssues = false;
+            List<String> complianceWarnings = new ArrayList<>();
+            // Add compliance checks based on your business rules
+
+            // Step 7: Calculate structural complexity (0-10 scale)
+            double complexity = calculateComplexity(bomDepth, affectedParts.size(), releasedCount);
+
+            return GraphImpactResult.builder()
+                    .affectedParts(affectedParts)
+                    .totalAffectedCount(affectedParts.size())
+                    .releasedAffectedCount(releasedCount)
+                    .underReviewCount(0) // TODO: Implement
+                    .bomDepth(bomDepth)
+                    .totalBomItems(totalBomItems)
+                    .hasComplexStructure(bomDepth > 3 || totalBomItems > 20)
+                    .conflictingChangesCount(conflictingChanges)
+                    .conflictingChangeNumbers(conflictingChangeNumbers)
+                    .hasComplianceIssues(hasComplianceIssues)
+                    .complianceWarnings(complianceWarnings)
+                    .currentLifecycleState("INWORK") // TODO: Get from part
+                    .currentVersion("A") // TODO: Get from part
                     .structuralComplexity(complexity)
                     .build();
-            
-            long duration = System.currentTimeMillis() - startTime;
-            log.info("Graph analysis complete in {}ms: {} affected parts", 
-                    duration, whereUsedResult.getAffectedParts().size());
-            
-            return GraphAnalysisResult.builder()
-                    .metrics(metrics)
-                    .affectedParts(whereUsedResult.getAffectedParts())
-                    .conflictingParts(conflictingParts)
-                    .analysisTimeMs((int) duration)
-                    .build();
-            
+
         } catch (Exception e) {
-            log.error("Graph analysis failed for part_id={}", partId, e);
-            throw new RuntimeException("Graph analysis failed", e);
+            log.error("Error during graph analysis for partId={}", partId, e);
+            throw new RuntimeException("Graph analysis failed: " + e.getMessage(), e);
         }
     }
-    
+
     /**
-     * Analyze BOM structure (downward explosion).
+     * Calculate structural complexity score (0-10).
+     * Higher score = more complex = higher risk.
      */
-    private BomAnalysisResult analyzeBomStructure(Long partId) {
-        // TODO: Replace with actual BOM traversal using your BomService
-        // This is placeholder logic - wire in your existing services
-        
-        log.debug("Analyzing BOM for part_id={}", partId);
-        
-        // Placeholder: In real implementation, use BFS/DFS on BOM table
-        // Example query:
-        // SELECT child_id, find_number FROM bom_lines WHERE parent_id = ?
-        // Then recurse for each child
-        
-        int maxDepth = 0;  // TODO: Calculate from actual BOM traversal
-        int directChildren = 0;  // TODO: Count direct children
-        int totalParts = 0;  // TODO: Count all descendants
-        
-        return BomAnalysisResult.builder()
-                .maxDepth(maxDepth)
-                .directChildren(directChildren)
-                .totalParts(totalParts)
-                .build();
+    private double calculateComplexity(int bomDepth, int whereUsedCount, int releasedCount) {
+        double score = 0.0;
+
+        // BOM depth contribution (0-3 points)
+        if (bomDepth > 5) {
+            score += 3.0;
+        } else if (bomDepth > 3) {
+            score += 2.0;
+        } else if (bomDepth > 1) {
+            score += 1.0;
+        }
+
+        // Where-used contribution (0-4 points)
+        if (whereUsedCount > 10) {
+            score += 4.0;
+        } else if (whereUsedCount > 5) {
+            score += 2.5;
+        } else if (whereUsedCount > 0) {
+            score += 1.0;
+        }
+
+        // Released parts contribution (0-3 points)
+        if (releasedCount > 5) {
+            score += 3.0;
+        } else if (releasedCount > 2) {
+            score += 2.0;
+        } else if (releasedCount > 0) {
+            score += 1.0;
+        }
+
+        return Math.min(score, 10.0);
     }
-    
+
     /**
-     * Analyze where-used relationships (upward traversal).
+     * Check if a part has active ECN/ECR.
+     * TODO: Implement using your ChangeService.
      */
-    private WhereUsedAnalysisResult analyzeWhereUsed(Long partId) {
-        // TODO: Replace with actual where-used traversal using your WhereUsedService
-        
-        log.debug("Analyzing where-used for part_id={}", partId);
-        
-        List<AffectedPart> affectedParts = new ArrayList<>();
-        
-        // Placeholder: In real implementation, query parent assemblies
-        // Example query:
-        // SELECT DISTINCT p.id, p.number, p.name, p.lifecycle_state
-        // FROM parts p
-        // JOIN bom_lines bl ON p.id = bl.parent_id
-        // WHERE bl.child_id = ?
-        // Then recurse upward
-        
-        // TODO: For each parent, create AffectedPart object
-        // AffectedPart parent = AffectedPart.builder()
-        //     .id(parentId)
-        //     .number(parentNumber)
-        //     .lifecycleState(parentState)
-        //     .relationshipType("PARENT")
-        //     .depth(currentDepth)
-        //     .hasActiveChanges(checkForActiveChanges(parentId))
-        //     .build();
-        // affectedParts.add(parent);
-        
-        int releasedCount = (int) affectedParts.stream()
-                .filter(p -> "RELEASED".equals(p.getLifecycleState()))
-                .count();
-        
-        int underReviewCount = (int) affectedParts.stream()
-                .filter(p -> "UNDERREVIEW".equals(p.getLifecycleState()))
-                .count();
-        
-        return WhereUsedAnalysisResult.builder()
-                .affectedParts(affectedParts)
-                .parentCount(affectedParts.size())
-                .maxDepth(3)  // TODO: Calculate actual max depth
-                .releasedCount(releasedCount)
-                .underReviewCount(underReviewCount)
-                .build();
-    }
-    
-    /**
-     * Detect parts that have active changes (ECR/ECN).
-     */
-    private List<AffectedPart> detectConflictingChanges(List<AffectedPart> affectedParts) {
-        // TODO: Query ECR/ECN tables to find active changes
-        
-        // Example query:
-        // SELECT part_id, ecr_number FROM ecr WHERE part_id IN (...) AND status IN ('INWORK', 'UNDERREVIEW')
-        // UNION
-        // SELECT part_id, ecn_number FROM ecn WHERE part_id IN (...) AND status IN ('INWORK', 'UNDERREVIEW')
-        
-        return affectedParts.stream()
-                .filter(part -> part.getHasActiveChanges() != null && part.getHasActiveChanges())
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Calculate overall structural complexity score.
-     */
-    private int calculateStructuralComplexity(BomAnalysisResult bom, WhereUsedAnalysisResult whereUsed) {
-        // Simple heuristic: combine depth and breadth
-        int score = 0;
-        
-        score += bom.getMaxDepth() * 10;  // Depth weight
-        score += bom.getTotalParts();  // Part count
-        score += whereUsed.getParentCount() * 5;  // Reuse factor
-        score += whereUsed.getReleasedCount() * 15;  // Released impact
-        
-        return Math.min(score, 100);  // Cap at 100
-    }
-    
-    // ==================== Inner Result Classes ====================
-    
-    @lombok.Data
-    @lombok.Builder
-    public static class GraphAnalysisResult {
-        private GraphMetrics metrics;
-        private List<AffectedPart> affectedParts;
-        private List<AffectedPart> conflictingParts;
-        private Integer analysisTimeMs;
-    }
-    
-    @lombok.Data
-    @lombok.Builder
-    private static class BomAnalysisResult {
-        private Integer maxDepth;
-        private Integer directChildren;
-        private Integer totalParts;
-    }
-    
-    @lombok.Data
-    @lombok.Builder
-    private static class WhereUsedAnalysisResult {
-        private List<AffectedPart> affectedParts;
-        private Integer parentCount;
-        private Integer maxDepth;
-        private Integer releasedCount;
-        private Integer underReviewCount;
+    private boolean hasActiveChange(Long partId) {
+        // return changeService.hasActiveChange(partId);
+        return false;
     }
 }
