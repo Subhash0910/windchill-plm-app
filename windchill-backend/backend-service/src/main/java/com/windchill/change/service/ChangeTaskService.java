@@ -71,7 +71,6 @@ public class ChangeTaskService {
             ChangeNotice ecn = changeNoticeRepository.findById(t.getChangeNoticeId())
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ECN not found"));
             ecn.setStatus(ChangeNoticeStatus.DONE);
-            ecn.touchUpdatedAt();
             changeNoticeRepository.save(ecn);
         }
 
@@ -106,7 +105,6 @@ public class ChangeTaskService {
             ChangeNotice ecn = changeNoticeRepository.findById(t.getChangeNoticeId())
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "ECN not found"));
             ecn.setStatus(ChangeNoticeStatus.IN_WORK);
-            ecn.touchUpdatedAt();
             changeNoticeRepository.save(ecn);
         }
 
