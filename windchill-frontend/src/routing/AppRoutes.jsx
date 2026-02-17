@@ -46,16 +46,6 @@ const AppRoutes = () => {
           }
         />
 
-        {/* AI Demo Page */}
-        <Route
-          path="/ai-demo"
-          element={
-            <PrivateRoute>
-              <AIDemo />
-            </PrivateRoute>
-          }
-        />
-
         <Route
           path="/plm"
           element={
@@ -71,6 +61,8 @@ const AppRoutes = () => {
           <Route path="changes" element={<ChangesHomePage />} />
           <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
           <Route path="changes/tasks" element={<ChangeTasksPage />} />
+          {/* AI Demo now inside PlmLayout to share context */}
+          <Route path="ai-demo" element={<AIDemo />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
