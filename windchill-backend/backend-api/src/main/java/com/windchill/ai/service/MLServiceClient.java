@@ -116,12 +116,8 @@ public class MLServiceClient {
                         "ML service unavailable - conservative estimate",
                         "Manual review recommended"
                 ))
-                .recommendations(Arrays.asList(
-                        "ML service is offline - proceed with caution",
-                        "Consider manual impact assessment"
-                ))
-                .modelVersion("FALLBACK")
-                .predictionTimeMs(0.0)
+                .modelType("FALLBACK")
+                .timestamp(java.time.Instant.now().toString())
                 .build();
     }
 }
