@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-
 /**
  * REST API for AI-powered engineering impact analysis.
  * Provides endpoints for analyzing change impact and risk prediction.
@@ -38,7 +36,7 @@ public class ImpactAnalysisController {
                      "Returns affected parts, risk score, recommendations, and warnings."
     )
     public ResponseEntity<ImpactAnalysisResponse> analyzeChange(
-            @Valid @RequestBody ImpactAnalysisRequest request) {
+            @RequestBody ImpactAnalysisRequest request) {
         
         log.info("Received impact analysis request: partId={}, changeType={}", 
                 request.getPartId(), request.getChangeType());
