@@ -23,63 +23,89 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
     setError(null);
     
     try {
-      // Use the correct auth token from sessionStorage
+      // Get auth token from sessionStorage
       const token = getToken();
       
       if (!token) {
+        console.error('❌ No auth token found');
         setError('Not authenticated. Please login again.');
         setLoading(false);
         return;
       }
 
-      // Try to get current context first
+      console.log('✅ Token found, length:', token.length);
+
+      // Try to get current context
       let contextId = sessionStorage.getItem('currentContextId') || localStorage.getItem('currentContextId');
       
-      // Fallback: try to get from user profile
+      // Fallback: fetch from user profile
       if (!contextId) {
         try {
+          console.log('Fetching user context...');
           const userResponse = await fetch('/api/v1/auth/me', {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
           });
+          
           if (userResponse.ok) {
             const userData = await userResponse.json();
             contextId = userData.currentContextId;
             if (contextId) {
               sessionStorage.setItem('currentContextId', contextId);
+              console.log('✅ Context ID:', contextId);
             }
+          } else {
+            console.warn('⚠️ Could not fetch user context:', userResponse.status);
           }
         } catch (err) {
-          console.warn('Could not fetch user context:', err);
+          console.warn('⚠️ Error fetching user context:', err);
         }
       }
 
-      // Load parts from API
+      // Build URL with or without context filter
       const url = contextId 
         ? `/api/v1/parts?contextId=${contextId}&size=100`
         : '/api/v1/parts?size=100';
       
       console.log('Loading parts from:', url);
       
+      // Fetch parts with proper authentication
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
       });
       
+      console.log('Parts API response status:', response.status);
+      
+      if (response.status === 403) {
+        throw new Error('Access denied. Your session may have expired. Please login again.');
+      }
+      
+      if (response.status === 401) {
+        throw new Error('Unauthorized. Please login again.');
+      }
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Parts API error response:', errorText);
         throw new Error(`Failed to load parts: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('Parts API response:', data);
       
       // Handle both paginated and direct array responses
       const partsList = data.content || data;
       
       if (!Array.isArray(partsList)) {
-        console.error('Unexpected response format:', data);
+        console.error('❌ Unexpected response format:', data);
         setError('Invalid response from server');
         setParts([]);
       } else {
@@ -87,13 +113,13 @@ const PartPickerModal = ({ isOpen, onClose, onSelect }) => {
         setParts(partsList);
         
         if (partsList.length === 0) {
-          setError('No parts found in current context. Create some parts first.');
+          setError('No parts found. Create some parts first in the Parts workspace.');
         }
       }
       
     } catch (error) {
       console.error('❌ Failed to load parts:', error);
-      setError(`Failed to load parts: ${error.message}`);
+      setError(error.message || 'Failed to load parts. Please try again.');
       setParts([]);
     } finally {
       setLoading(false);
