@@ -194,6 +194,27 @@ public class PartServiceImpl implements IPartService {
         return filtered;
     }
 
+    @Override
+    public void deletePart(Long id) {
+        Part part = getPart(id);
+        acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+
+        // Check if part is used in any BOMs as a child (prevent orphaned references)
+        List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(id);
+        if (parentIds != null && !parentIds.isEmpty()) {
+            throw new BusinessException("Cannot delete part. It is used in " + parentIds.size() + " BOM(s). Remove from BOMs first.");
+        }
+
+        // Delete associated BOM lines where this part is the parent
+        bomLineRepository.deleteByParentPartId(id);
+
+        // Delete the part
+        partRepository.deleteById(id);
+        
+        auditService.log(PlmEntityTypeEnum.PART, id, "DELETE", "Part deleted: " + part.getPartNumber());
+        log.info("Part deleted: id={} partNumber={}", id, part.getPartNumber());
+    }
+
     private String incrementRevision(String current) {
         if (current == null || current.isBlank()) return "A";
         String c = current.trim().toUpperCase();
