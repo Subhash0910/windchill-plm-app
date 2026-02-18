@@ -37,6 +37,15 @@ public class FolderController {
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(folders).build());
     }
 
+    @DeleteMapping("/{folderId}")
+    public ResponseEntity<ApiResponse<?>> delete(
+            @PathVariable Long contextId,
+            @PathVariable Long folderId
+    ) {
+        folderService.deleteFolder(contextId, folderId);
+        return ResponseEntity.ok(ApiResponse.builder().success(true).message("Folder deleted successfully").data(null).build());
+    }
+
     @Data
     public static class CreateFolderRequest {
         private Long parentId;
