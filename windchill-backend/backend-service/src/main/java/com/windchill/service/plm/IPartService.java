@@ -14,4 +14,6 @@ public interface IPartService {
     Part revise(Long id);
 
     List<Part> whereUsed(Long partId);
+    
+    void deletePart(Long id);
 }
