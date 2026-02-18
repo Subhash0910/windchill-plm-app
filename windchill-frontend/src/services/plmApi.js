@@ -38,6 +38,10 @@ export const plmApi = {
     const res = await api.post(`/api/v1/plm/contexts/${contextId}/folders`, payload);
     return res.data.data;
   },
+  deleteFolder: async (contextId, folderId) => {
+    const res = await api.delete(`/api/v1/plm/contexts/${contextId}/folders/${folderId}`);
+    return res.data.data;
+  },
 
   // Parts
   listParts: async (contextId) => {
@@ -54,6 +58,10 @@ export const plmApi = {
   },
   updatePart: async (id, payload) => {
     const res = await api.put(`/api/v1/plm/parts/${id}`, payload);
+    return res.data.data;
+  },
+  deletePart: async (id) => {
+    const res = await api.delete(`/api/v1/plm/parts/${id}`);
     return res.data.data;
   },
   promotePart: async (id, target) => {
