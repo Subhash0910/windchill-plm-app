@@ -46,6 +46,12 @@ public class PartController {
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(updated).build());
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
+        partService.deletePart(id);
+        return ResponseEntity.ok(ApiResponse.builder().success(true).message("Part deleted successfully").data(null).build());
+    }
+
     @PostMapping("/{id}/promote")
     public ResponseEntity<ApiResponse<?>> promote(@PathVariable Long id, @RequestParam LifecycleStateEnum target) {
         Part updated = partService.promote(id, target);
