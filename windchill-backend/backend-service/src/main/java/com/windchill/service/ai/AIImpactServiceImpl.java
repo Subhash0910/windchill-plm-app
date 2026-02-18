@@ -23,10 +23,15 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * AI Impact Analysis Service
+ * 
+ * FIXED: Removed @Transactional(readOnly = true) because service needs to write audit logs.
+ * This method performs mostly READ operations but also logs to audit_logs table.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional(readOnly = true)
 public class AIImpactServiceImpl implements IAIImpactService {
 
     private final PartRepository partRepository;
@@ -38,6 +43,7 @@ public class AIImpactServiceImpl implements IAIImpactService {
     private String mlServiceUrl;
 
     @Override
+    @Transactional  // FIXED: Removed readOnly=true to allow audit log writes
     public AIImpactAnalysis analyzeImpact(Long partId, String changeType) {
         long startTime = System.currentTimeMillis();
         
@@ -95,11 +101,16 @@ public class AIImpactServiceImpl implements IAIImpactService {
             .analysisTimeMs(analysisTime)
             .build();
         
-        // 8. Audit log
-        auditService.log(PlmEntityTypeEnum.PART, partId, "AI_ANALYSIS", 
-            String.format("Risk: %s (%.1f/10), Model: %s, Time: %dms", 
-                mlResponse.getRiskLevel(), mlResponse.getRiskScore(), 
-                mlResponse.getModelType(), analysisTime));
+        // 8. Audit log (this writes to database - reason we removed readOnly=true)
+        try {
+            auditService.log(PlmEntityTypeEnum.PART, partId, "AI_ANALYSIS", 
+                String.format("Risk: %s (%.1f/10), Model: %s, Time: %dms", 
+                    mlResponse.getRiskLevel(), mlResponse.getRiskScore(), 
+                    mlResponse.getModelType(), analysisTime));
+        } catch (Exception e) {
+            // Don't fail entire analysis if audit logging fails
+            log.warn("Audit logging failed for AI analysis: {}", e.getMessage());
+        }
         
         log.info("AI analysis completed: partId={}, risk={}, time={}ms", 
             partId, mlResponse.getRiskLevel(), analysisTime);
