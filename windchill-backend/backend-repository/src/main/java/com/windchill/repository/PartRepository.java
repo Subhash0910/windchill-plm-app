@@ -14,4 +14,6 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     List<Part> findByLifecycleStateAndIsDeletedFalse(LifecycleStateEnum state);
 
     List<Part> findByIdInAndIsDeletedFalseOrderByPartNumberAsc(List<Long> ids);
+    
+    long countByFolderIdAndIsDeletedFalse(Long folderId);
 }
