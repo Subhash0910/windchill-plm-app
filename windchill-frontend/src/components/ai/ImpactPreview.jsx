@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import './ImpactPreview.css';
 
 /**
  * ImpactPreview - Real-time AI impact analysis component
  * Shows risk score, affected parts, warnings, and recommendations
+ * 
+ * FIXED: 
+ * - Uses correct backend endpoint: /api/v1/ai/analyze-impact
+ * - Maps backend AIImpactAnalysis response to frontend expected format
+ * - Uses api utility for auth token handling
  */
 export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
   const [analysis, setAnalysis] = useState(null);
@@ -23,33 +29,79 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/ai/impact/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          partId: parseInt(partId),
-          changeType: changeType,
-          userId: JSON.parse(localStorage.getItem('user'))?.id || 1
-        })
+      // Call CORRECT backend endpoint
+      const response = await api.post('/api/v1/ai/analyze-impact', {
+        partId: parseInt(partId),
+        changeType: changeType
       });
 
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.status}`);
+      console.log('AI Analysis Response:', response.data);
+
+      // Backend returns: { success: true, data: AIImpactAnalysis }
+      const backendData = response.data?.data;
+      
+      if (!backendData) {
+        throw new Error('Invalid response format from backend');
       }
 
-      const data = await response.json();
-      setAnalysis(data);
+      // Transform backend flat structure to frontend nested structure
+      const transformedData = {
+        // Risk prediction section
+        riskPrediction: {
+          riskScore: backendData.riskScore || 0,
+          riskLevel: backendData.riskLevel || 'UNKNOWN',
+          confidence: backendData.confidence || 0,
+          modelType: backendData.modelType || 'UNKNOWN'
+        },
+        
+        // Graph analysis section
+        graphAnalysis: {
+          bomDepth: backendData.bomDepth || 0,
+          totalAffectedCount: backendData.whereUsedCount || 0,
+          releasedAffectedCount: backendData.releasedAffected || 0,
+          conflictingChangesCount: backendData.conflictingChanges || 0
+        },
+        
+        // Warnings (derived from risk factors if high/medium risk)
+        warnings: backendData.riskLevel === 'HIGH' || backendData.riskLevel === 'MEDIUM'
+          ? (backendData.riskFactors || [])
+          : [],
+        
+        // Blockers (critical items that must be addressed)
+        blockers: backendData.releasedAffected > 0 
+          ? [`${backendData.releasedAffected} RELEASED parts affected - ECN process required`]
+          : [],
+        
+        // Recommendations (from backend)
+        recommendations: backendData.suggestedActions || [],
+        
+        // Affected parts list (from backend part numbers)
+        affectedParts: (backendData.affectedPartNumbers || []).map((partNum, idx) => ({
+          id: idx,
+          partNumber: partNum,
+          name: 'Assembly using this part',
+          lifecycleState: 'UNKNOWN' // Backend doesn't return full part details yet
+        })),
+        
+        // Impact summary text
+        impactSummary: backendData.recommendation || 'No recommendation available',
+        
+        // Metadata
+        estimatedCycleTimeDays: backendData.estimatedCycleTimeDays,
+        analyzedAt: backendData.analyzedAt,
+        analysisTimeMs: backendData.analysisTimeMs
+      };
+
+      console.log('Transformed analysis:', transformedData);
+      
+      setAnalysis(transformedData);
       
       if (onAnalysisComplete) {
-        onAnalysisComplete(data);
+        onAnalysisComplete(transformedData);
       }
     } catch (err) {
       console.error('Impact analysis error:', err);
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Analysis failed');
     } finally {
       setLoading(false);
     }
@@ -184,8 +236,11 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
               {getRiskIcon(risk.riskLevel)} {risk.riskLevel || 'UNKNOWN'}
             </span>
             <small>Risk Score (0-10)</small>
-            {risk.confidence && (
+            {risk.confidence > 0 && (
               <small className="confidence">Confidence: {(risk.confidence * 100).toFixed(0)}%</small>
+            )}
+            {risk.modelType && (
+              <small className="model-type">Model: {risk.modelType}</small>
             )}
           </div>
         </div>
@@ -195,13 +250,13 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
       <div className="impact-preview__summary">
         <div className="summary-stat">
           <span className="stat-value">{graph.totalAffectedCount || 0}</span>
-          <span className="stat-label">Total Affected</span>
+          <span className="stat-label">Where Used</span>
         </div>
         <div className="summary-stat">
           <span className="stat-value" style={{ color: '#e53e3e' }}>
             {graph.releasedAffectedCount || 0}
           </span>
-          <span className="stat-label">Released Parts</span>
+          <span className="stat-label">Released</span>
         </div>
         <div className="summary-stat">
           <span className="stat-value" style={{ color: '#ed8936' }}>
@@ -242,7 +297,7 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
               <line x1="12" y1="9" x2="12" y2="13" strokeWidth="2" strokeLinecap="round"/>
               <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            Warnings
+            Risk Factors
           </h4>
           <ul>
             {warnings.map((warning, i) => (
@@ -261,7 +316,7 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            AI Recommendations
+            Suggested Actions
           </h4>
           <ul>
             {recommendations.map((rec, i) => (
@@ -281,16 +336,13 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
               <rect x="14" y="14" width="7" height="7" strokeWidth="2"/>
               <rect x="3" y="14" width="7" height="7" strokeWidth="2"/>
             </svg>
-            Affected Parts ({analysis.affectedParts.length})
+            Parent Assemblies ({analysis.affectedParts.length})
           </h4>
           <div className="affected-parts-list">
             {analysis.affectedParts.slice(0, 5).map((part, i) => (
               <div key={i} className="affected-part-item">
                 <span className="part-number">{part.partNumber}</span>
                 <span className="part-name">{part.name}</span>
-                <span className={`part-state part-state--${part.lifecycleState?.toLowerCase()}`}>
-                  {part.lifecycleState}
-                </span>
               </div>
             ))}
             {analysis.affectedParts.length > 5 && (
@@ -304,6 +356,18 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
       {analysis.impactSummary && (
         <div className="impact-preview__summary-text">
           <p>{analysis.impactSummary}</p>
+          {analysis.estimatedCycleTimeDays && (
+            <p className="cycle-time">
+              <strong>Estimated Cycle Time:</strong> {analysis.estimatedCycleTimeDays} days
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Performance Metrics */}
+      {analysis.analysisTimeMs && (
+        <div className="impact-preview__metadata">
+          <small>Analysis completed in {analysis.analysisTimeMs}ms</small>
         </div>
       )}
     </div>
