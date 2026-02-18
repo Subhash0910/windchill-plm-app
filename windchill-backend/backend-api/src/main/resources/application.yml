@@ -2,6 +2,10 @@ spring:
   application:
     name: windchill-api
   
+  profiles:
+    active: dev
+    include: ai
+  
   datasource:
     url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
     username: windchill
