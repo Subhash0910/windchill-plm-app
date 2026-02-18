@@ -64,6 +64,11 @@ const PartsPage = () => {
     }
   };
 
+  const handlePartDeleted = (partId) => {
+    // Remove from local state immediately for instant UI feedback
+    setParts(prevParts => prevParts.filter(p => p.id !== partId));
+  };
+
   return (
     <div>
       <div className="page-title">Parts</div>
@@ -112,7 +117,7 @@ const PartsPage = () => {
               ({filtered.length} of {parts.length} parts)
             </span>
           </label>
-          <PartsTable parts={filtered} />
+          <PartsTable parts={filtered} onPartDeleted={handlePartDeleted} />
         </div>
       )}
     </div>
