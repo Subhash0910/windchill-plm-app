@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { plmApi } from '../../services/plmApi';
 import './PartsTable.css';
 
-const PartsTable = ({ parts }) => {
+const PartsTable = ({ parts, onPartDeleted }) => {
   const [showAllVersions, setShowAllVersions] = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
   const visibleParts = useMemo(() => {
     const list = parts || [];
@@ -13,6 +15,30 @@ const PartsTable = ({ parts }) => {
   }, [parts, showAllVersions]);
 
   const hiddenCount = (parts || []).length - (visibleParts || []).length;
+
+  const handleDelete = async (part) => {
+    const confirmed = window.confirm(
+      `⚠️ DELETE PART?\n\n` +
+      `Part: ${part.partNumber} (${part.name})\n` +
+      `Revision: ${part.revision}.${part.iteration}\n\n` +
+      `This action CANNOT be undone!\n\n` +
+      `Click OK to permanently delete this part.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(part.id);
+      await plmApi.deletePart(part.id);
+      alert(`✅ Part ${part.partNumber} deleted successfully!`);
+      if (onPartDeleted) onPartDeleted(part.id);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert(`❌ Failed to delete part:\n${error.response?.data?.message || error.message}`);
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   // Helper to format folder display
   const getFolderDisplay = (part) => {
@@ -63,8 +89,25 @@ const PartsTable = ({ parts }) => {
               <td>
                 <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span>
               </td>
-              <td style={{ textAlign: 'right' }}>
+              <td style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <Link className="link" to={`/plm/parts/${p.id}`}>Open</Link>
+                <button
+                  onClick={() => handleDelete(p)}
+                  disabled={deleting === p.id}
+                  className="link"
+                  style={{
+                    color: '#dc2626',
+                    border: 'none',
+                    background: 'none',
+                    cursor: deleting === p.id ? 'not-allowed' : 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                    fontSize: 'inherit',
+                    opacity: deleting === p.id ? 0.5 : 1
+                  }}
+                >
+                  {deleting === p.id ? 'Deleting...' : 'Delete'}
+                </button>
               </td>
             </tr>
           ))}
