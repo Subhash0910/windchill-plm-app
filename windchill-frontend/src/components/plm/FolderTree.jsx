@@ -11,6 +11,7 @@ const FolderTree = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(new Set(['/'])); // Track expanded folders
+  const [deleting, setDeleting] = useState(null);
 
   const [name, setName] = useState('');
 
@@ -95,6 +96,47 @@ const FolderTree = () => {
     }
   };
 
+  const deleteFolder = async (folder, e) => {
+    e.stopPropagation();
+    
+    if (folder.path === '/') {
+      alert('⛔ Cannot delete Root folder!');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ DELETE FOLDER?\n\n` +
+      `Folder: ${folder.name}\n` +
+      `Path: ${folder.path}\n\n` +
+      `WARNING: This will also delete all subfolders and parts inside!\n\n` +
+      `This action CANNOT be undone!\n\n` +
+      `Click OK to permanently delete this folder.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(folder.id);
+      setError(null);
+      await plmApi.deleteFolder(selectedContextId, folder.id);
+      
+      // If we deleted the selected folder, reset to root
+      if (selectedFolderId === folder.id) {
+        const root = folders.find(f => f.path === '/');
+        if (root) setSelectedFolder(root);
+      }
+      
+      await load();
+      alert(`✅ Folder "${folder.name}" deleted successfully!`);
+    } catch (e) {
+      const errorMsg = e.response?.data?.message || e.message || 'Failed to delete folder';
+      setError(errorMsg);
+      alert(`❌ Failed to delete folder:\n${errorMsg}`);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="plm-block">
       <div className="plm-block-header">
@@ -112,28 +154,51 @@ const FolderTree = () => {
           {visibleFolders.map(f => {
             const isExpanded = expanded.has(f.path);
             const hasKids = hasChildren(f);
+            const isRoot = f.path === '/';
+            const isDeleting = deleting === f.id;
 
             return (
-              <button
-                key={f.id}
-                className={f.id === selectedFolderId ? 'folder-row active' : 'folder-row'}
-                style={{ paddingLeft: `${10 + depth(f.path) * 14}px` }}
-                onClick={() => setSelectedFolder(f)}
-                title={f.path}
-              >
-                {hasKids ? (
-                  <span
-                    className="folder-icon"
-                    onClick={(e) => toggleExpand(f, e)}
-                    style={{ cursor: 'pointer', userSelect: 'none' }}
+              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button
+                  className={f.id === selectedFolderId ? 'folder-row active' : 'folder-row'}
+                  style={{ paddingLeft: `${10 + depth(f.path) * 14}px`, flex: 1 }}
+                  onClick={() => setSelectedFolder(f)}
+                  title={f.path}
+                >
+                  {hasKids ? (
+                    <span
+                      className="folder-icon"
+                      onClick={(e) => toggleExpand(f, e)}
+                      style={{ cursor: 'pointer', userSelect: 'none' }}
+                    >
+                      {isExpanded ? '▾' : '▸'}
+                    </span>
+                  ) : (
+                    <span className="folder-icon" style={{ opacity: 0.3 }}>▸</span>
+                  )}
+                  <span className="folder-name">{f.path === '/' ? 'Root' : f.name}</span>
+                </button>
+                
+                {!isRoot && (
+                  <button
+                    onClick={(e) => deleteFolder(f, e)}
+                    disabled={isDeleting}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '0.75em',
+                      color: '#dc2626',
+                      background: 'none',
+                      border: '1px solid #dc2626',
+                      borderRadius: 3,
+                      cursor: isDeleting ? 'not-allowed' : 'pointer',
+                      opacity: isDeleting ? 0.5 : 1
+                    }}
+                    title={`Delete ${f.name}`}
                   >
-                    {isExpanded ? '▾' : '▸'}
-                  </span>
-                ) : (
-                  <span className="folder-icon" style={{ opacity: 0.3 }}>▸</span>
+                    {isDeleting ? '...' : '×'}
+                  </button>
                 )}
-                <span className="folder-name">{f.path === '/' ? 'Root' : f.name}</span>
-              </button>
+              </div>
             );
           })}
         </div>
