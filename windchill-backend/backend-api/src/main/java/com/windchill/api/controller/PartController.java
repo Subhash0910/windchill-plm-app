@@ -34,6 +34,18 @@ public class PartController {
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(parts).build());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>> search(@RequestParam String query) {
+        log.info("🔍 Search request for parts matching: {}", query);
+        List<Part> parts = partService.searchPartsByNumber(query);
+        log.info("✅ Found {} parts matching '{}'", parts.size(), query);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(parts)
+                .build());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
         Part part = partService.getPart(id);
