@@ -3,11 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
 import joblib
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import logging
 from datetime import datetime
 import pandas as pd
+
+# Import chat service
+from chat_service import PLMChatAssistant
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="PLM AI Service",
     description="Machine Learning service for Windchill PLM Impact Analysis",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # CORS middleware
@@ -27,6 +30,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize chat assistant
+chat_assistant = PLMChatAssistant()
 
 # Load trained model (if exists)
 try:
@@ -64,11 +70,66 @@ class RiskPredictionResponse(BaseModel):
     model_type: str = Field(..., description="ML or RULE_BASED")
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
+class ChatRequest(BaseModel):
+    """Chat request model"""
+    message: str = Field(..., description="User message")
+    context: Optional[Dict] = Field(default=None, description="Optional context (part_number, change_type, etc.)")
+    session_id: Optional[str] = Field(default=None, description="Session ID for conversation continuity")
+
+class ChatResponse(BaseModel):
+    """Chat response model"""
+    text: str = Field(..., description="AI response text")
+    actions: Optional[List[str]] = Field(default=None, description="Actions to perform (RUN_IMPACT_ANALYSIS, etc.)")
+    action_params: Optional[Dict] = Field(default=None, description="Parameters for actions")
+    suggestions: Optional[List[str]] = Field(default=None, description="Suggested follow-up queries")
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     model_type: str
+    chat_enabled: bool
     timestamp: str
+
+# Chat endpoint
+@app.post("/chat", response_model=ChatResponse, tags=["AI Assistant"])
+async def chat(request: ChatRequest):
+    """
+    AI-powered chat assistant for PLM operations.
+    
+    Understands natural language queries about:
+    - Risk analysis
+    - Change process guidance
+    - Part searches
+    - Workflow recommendations
+    
+    Example queries:
+    - "What's the risk of obsoleting part 001dfy?"
+    - "How do I create an ECN?"
+    - "Should I use ECN or ECR?"
+    """
+    try:
+        logger.info(f"💬 Chat request: {request.message[:50]}...")
+        
+        # Get response from chat assistant
+        response = chat_assistant.chat(
+            user_message=request.message,
+            part_context=request.context
+        )
+        
+        return ChatResponse(**response)
+        
+    except Exception as e:
+        logger.error(f"❌ Chat error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+@app.post("/chat/clear", tags=["AI Assistant"])
+async def clear_chat():
+    """
+    Clear chat conversation history and context.
+    """
+    chat_assistant.clear_context()
+    return {"message": "Chat context cleared", "timestamp": datetime.utcnow().isoformat()}
 
 # Risk prediction endpoint
 @app.post("/predict-risk", response_model=RiskPredictionResponse, tags=["Prediction"])
@@ -96,13 +157,6 @@ async def predict_risk(request: RiskPredictionRequest):
 def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
     """
     ML-based risk prediction using trained Random Forest model.
-    
-    IMPORTANT: Feature order must match training!
-    Training features (19 total):
-    - 8 base: bom_depth, where_used_count, released_affected, conflicting_changes,
-              has_compliance, released_ratio, complexity_score, conflict_density
-    - 5 change types: REVISE, OBSOLETE, PROMOTE, MODIFY, DELETE (one-hot)
-    - 6 lifecycle: INWORK, RELEASED, UNDER_REVIEW, PROTOTYPE (one-hot)
     """
     try:
         # Base features (8)
@@ -118,13 +172,13 @@ def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
         change_modify = 1 if request.change_type == "MODIFY" else 0
         change_delete = 1 if request.change_type == "DELETE" else 0
         
-        # Lifecycle one-hot (4 - assuming training had 4 states)
+        # Lifecycle one-hot (4)
         lifecycle_inwork = 1 if request.lifecycle_state == "INWORK" else 0
         lifecycle_released = 1 if request.lifecycle_state == "RELEASED" else 0
         lifecycle_under_review = 1 if request.lifecycle_state in ["UNDER_REVIEW", "UNDERREVIEW"] else 0
         lifecycle_prototype = 1 if request.lifecycle_state == "PROTOTYPE" else 0
         
-        # Assemble feature vector (MUST match training order)
+        # Assemble feature vector
         features = np.array([[
             request.bom_depth,
             request.where_used_count,
@@ -145,17 +199,9 @@ def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
             lifecycle_prototype
         ]])
         
-        logger.info(f"Feature vector shape: {features.shape}")
-        logger.info(f"Feature values: {features[0][:8]}...")  # Log first 8 features
-        
         # Predict
         risk_score = float(risk_model.predict(features)[0])
-        
-        # Get confidence (probability of predicted class)
-        # For regression, use prediction variance or fixed confidence
-        confidence = 0.89  # High confidence for trained model
-        
-        logger.info(f"✅ ML prediction: risk_score={risk_score:.2f}, confidence={confidence:.2f}")
+        confidence = 0.89
         
         # Determine risk level
         if risk_score < 4:
@@ -165,7 +211,6 @@ def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
         else:
             risk_level = "HIGH"
         
-        # Analyze factors
         factors = analyze_risk_factors(request, risk_score)
         
         return RiskPredictionResponse(
@@ -177,70 +222,51 @@ def ml_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
         )
     except Exception as e:
         logger.error(f"❌ ML prediction failed: {e}", exc_info=True)
-        logger.info("⚠️ Falling back to rule-based scoring")
         return rule_based_risk(request)
 
 def rule_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
     """
     Fallback: Rule-based risk scoring when no ML model available.
-    
-    Scoring logic:
-    - Released parts affected: +3.0 per part (max 6.0)
-    - Conflicting changes: +2.0 per conflict (max 4.0)
-    - High reuse (where_used > 5): +1.5
-    - Complex BOM (depth > 3): +1.0
-    - Lifecycle is RELEASED: +1.5
-    - Change type OBSOLETE: +1.0
-    - Compliance issues: +2.0
     """
     score = 0.0
     factors = []
     
-    # Released parts affected (highest impact)
     if request.released_affected > 0:
         impact = min(request.released_affected * 3.0, 6.0)
         score += impact
         factors.append(f"{request.released_affected} released part(s) affected - critical impact")
     
-    # Conflicting changes
     if request.conflicting_changes > 0:
         impact = min(request.conflicting_changes * 2.0, 4.0)
         score += impact
         factors.append(f"{request.conflicting_changes} conflicting active change(s) detected")
     
-    # High reuse indication
     if request.where_used_count > 5:
         score += 1.5
         factors.append(f"High reuse: used in {request.where_used_count} parent assemblies")
     elif request.where_used_count > 0:
         factors.append(f"Moderate reuse: used in {request.where_used_count} assemblies")
     
-    # BOM complexity
     if request.bom_depth > 3:
         score += 1.0
         factors.append(f"Complex BOM structure: {request.bom_depth} levels deep")
     
-    # Current lifecycle state
     if request.lifecycle_state == "RELEASED":
         score += 1.5
         factors.append("Part is RELEASED - requires formal change process")
     
-    # Change type
     if request.change_type == "OBSOLETE":
         score += 1.0
         factors.append("Obsolescence requires supply chain validation")
     elif request.change_type == "REVISE":
         factors.append("Revision change - review all references")
     
-    # Compliance issues
     if request.has_compliance_issues:
         score += 2.0
         factors.append("Compliance violations detected - regulatory review required")
     
-    # Cap score at 10.0
     score = min(score, 10.0)
     
-    # Determine risk level
     if score < 4:
         risk_level = "LOW"
     elif score < 7:
@@ -248,13 +274,12 @@ def rule_based_risk(request: RiskPredictionRequest) -> RiskPredictionResponse:
     else:
         risk_level = "HIGH"
     
-    # Add recommendation if no major risks
     if not factors:
         factors.append("No major risk factors detected - proceed with standard review")
     
     return RiskPredictionResponse(
         risk_score=round(score, 1),
-        confidence=0.75,  # Rule-based has fixed confidence
+        confidence=0.75,
         risk_level=risk_level,
         factors=factors,
         model_type="RULE_BASED"
@@ -296,6 +321,7 @@ async def health():
         status="healthy",
         model_loaded=risk_model is not None,
         model_type="ML" if risk_model is not None else "RULE_BASED",
+        chat_enabled=True,
         timestamp=datetime.utcnow().isoformat()
     )
 
@@ -304,10 +330,12 @@ async def health():
 async def root():
     return {
         "service": "PLM AI Service",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "running",
         "model_loaded": risk_model is not None,
+        "chat_enabled": True,
         "endpoints": {
+            "chat": "/chat",
             "predict": "/predict-risk",
             "health": "/health",
             "docs": "/docs"
