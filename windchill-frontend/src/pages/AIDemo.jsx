@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import api from '../utils/api';
 import ImpactPreview from '../components/ai/ImpactPreview';
 import PartPickerModal from '../components/ai/PartPickerModal';
 import './AIDemo.css';
@@ -10,6 +11,7 @@ const AIDemo = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [showPartPicker, setShowPartPicker] = useState(false);
   const [triggerAnalysis, setTriggerAnalysis] = useState(0);
+  const [loadingPart, setLoadingPart] = useState(false);
 
   // Get AI action trigger from parent layout
   const outletContext = useOutletContext();
@@ -20,34 +22,60 @@ const AIDemo = () => {
     if (aiActionTrigger && aiActionTrigger.part_number) {
       console.log('⚡ AI Action received:', aiActionTrigger);
       
-      // Find the part by number
-      const partNum = aiActionTrigger.part_number.toLowerCase();
-      
-      // For demo: if part number matches, simulate selection
-      // In production, you'd fetch from API
-      if (partNum === '001dfy') {
-        const demoPart = {
-          id: 1,
-          partNumber: '001dfy',
-          name: 'p1dfy',
-          lifecycleState: 'UNDERREVIEW',
-          revision: 'A',
-          iteration: '1'
-        };
-        setSelectedPart(demoPart);
-      }
-
-      // Set change type if provided
-      if (aiActionTrigger.change_type) {
-        setChangeType(aiActionTrigger.change_type);
-      }
-
-      // Trigger analysis
-      setTimeout(() => {
-        setTriggerAnalysis(prev => prev + 1);
-      }, 300);
+      // Fetch the actual part from the database
+      fetchPartByNumber(aiActionTrigger.part_number, aiActionTrigger.change_type);
     }
   }, [aiActionTrigger]);
+
+  // Fetch part by part number from database
+  const fetchPartByNumber = async (partNumber, changeTypeOverride) => {
+    setLoadingPart(true);
+    try {
+      console.log(`🔍 Fetching part ${partNumber} from database...`);
+      
+      // Search for part by part number
+      const response = await api.get(`/api/v1/parts?search=${partNumber}`);
+      const parts = response.data?.data || response.data || [];
+      
+      console.log(`📊 Found ${parts.length} parts`);
+      
+      if (parts.length > 0) {
+        // Find exact match (case-insensitive)
+        const exactMatch = parts.find(
+          p => p.partNumber.toLowerCase() === partNumber.toLowerCase()
+        );
+        
+        const part = exactMatch || parts[0];
+        console.log('✅ Part found:', part);
+        
+        setSelectedPart(part);
+
+        // Set change type if provided
+        if (changeTypeOverride) {
+          setChangeType(changeTypeOverride);
+        } else {
+          // Auto-select appropriate change type based on lifecycle
+          const recommended = getRecommendedChangeTypes(part.lifecycleState);
+          if (recommended.length > 0) {
+            setChangeType(recommended[0].value);
+          }
+        }
+
+        // Trigger analysis after short delay
+        setTimeout(() => {
+          setTriggerAnalysis(prev => prev + 1);
+        }, 500);
+      } else {
+        console.warn(`⚠️ Part ${partNumber} not found in database`);
+        alert(`Part ${partNumber} not found. Please check the part number and try again.`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching part:', error);
+      alert(`Error loading part: ${error.message}`);
+    } finally {
+      setLoadingPart(false);
+    }
+  };
 
   const getRecommendedChangeTypes = (lifecycleState) => {
     const recommendations = {
@@ -129,6 +157,13 @@ const AIDemo = () => {
         <div className="ai-demo-controls">
           <h2>Configure Analysis</h2>
           
+          {loadingPart && (
+            <div className="loading-part-banner">
+              <div className="spinner-small"></div>
+              <span>Loading part from AI request...</span>
+            </div>
+          )}
+          
           <div className="form-group">
             <label>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -157,6 +192,7 @@ const AIDemo = () => {
                 <button 
                   onClick={() => setShowPartPicker(true)}
                   className="btn-change-part"
+                  disabled={loadingPart}
                 >
                   Change
                 </button>
@@ -165,12 +201,13 @@ const AIDemo = () => {
               <button 
                 onClick={() => setShowPartPicker(true)}
                 className="btn-select-part"
+                disabled={loadingPart}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <circle cx="11" cy="11" r="8" strokeWidth="2"/>
                   <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                Search & Select Part
+                {loadingPart ? 'Loading...' : 'Search & Select Part'}
               </button>
             )}
             <small>Select a part from your database to analyze</small>
@@ -192,7 +229,7 @@ const AIDemo = () => {
               value={changeType}
               onChange={(e) => setChangeType(e.target.value)}
               className="form-select"
-              disabled={!selectedPart}
+              disabled={!selectedPart || loadingPart}
             >
               {changeTypeOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -214,7 +251,7 @@ const AIDemo = () => {
             <button 
               onClick={handleClear}
               className="btn-secondary"
-              disabled={!selectedPart}
+              disabled={!selectedPart || loadingPart}
             >
               Clear
             </button>
@@ -244,7 +281,7 @@ const AIDemo = () => {
             
             <div className="info-highlight">
               🤖 <strong>Try the AI Chat Assistant!</strong>
-              <p>Just ask: <em>"Analyze part 001dfy"</em> - I'll automatically load it and run the analysis!</p>
+              <p>Just ask: <em>"Analyze part 001dfy"</em> - I'll automatically fetch it from the database and run the analysis!</p>
             </div>
           </div>
 
