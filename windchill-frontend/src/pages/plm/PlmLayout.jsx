@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import Header from '../../components/organisms/Header/Header';
 import ContextSwitcher from '../../components/plm/ContextSwitcher';
 import ContextTeamPanel from '../../components/plm/ContextTeamPanel';
 import FolderTree from '../../components/plm/FolderTree';
+import AIChatBot from '../../components/ai/AIChatBot';
 import './PlmLayout.css';
 
 const PlmLayout = () => {
   const location = useLocation();
+  const [selectedPart, setSelectedPart] = useState(null);
 
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isWorklist = location.pathname.startsWith('/plm/worklist');
@@ -16,6 +18,21 @@ const PlmLayout = () => {
   const isChanges = isChangesGroup && !isChangeTasks;
   const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
   const isWorkspace = location.pathname.startsWith('/plm') && !isWorklist && !isChangesGroup && !isAiDemo;
+
+  // Determine current page context for AI
+  const getCurrentPage = () => {
+    if (isWorkspace) return 'workspace';
+    if (isWorklist) return 'worklist';
+    if (isChanges) return 'changes';
+    if (isChangeTasks) return 'change-tasks';
+    if (isAiDemo) return 'ai-demo';
+    return 'unknown';
+  };
+
+  const handleChatAction = (action, params) => {
+    console.log('Global chat action:', action, params);
+    // Handle global actions like navigation, search, etc.
+  };
 
   return (
     <div className="plm-shell">
@@ -43,6 +60,13 @@ const PlmLayout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global AI Chat Bot - Available on ALL pages */}
+      <AIChatBot 
+        onAction={handleChatAction}
+        selectedPart={selectedPart}
+        currentPage={getCurrentPage()}
+      />
     </div>
   );
 };
