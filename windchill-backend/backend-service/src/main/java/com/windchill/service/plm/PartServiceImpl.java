@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +79,36 @@ public class PartServiceImpl implements IPartService {
         }
         acl.requireContextMember(contextId);
         return partRepository.findByContextIdAndIsDeletedFalseOrderByPartNumberAsc(contextId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Part> searchPartsByNumber(String query) {
+        if (query == null || query.isBlank()) {
+            log.warn("searchPartsByNumber called with empty query");
+            return List.of();
+        }
+        
+        log.info("Searching parts by number: {}", query);
+        
+        // Find all parts matching the query
+        List<Part> allMatches = partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query);
+        
+        // Filter by context access - only return parts user has access to
+        List<Part> accessible = allMatches.stream()
+            .filter(part -> {
+                try {
+                    acl.requireContextMember(part.getContextId());
+                    return true;
+                } catch (Exception e) {
+                    // User doesn't have access to this context
+                    return false;
+                }
+            })
+            .collect(Collectors.toList());
+        
+        log.info("Found {} accessible parts matching '{}'", accessible.size(), query);
+        return accessible;
     }
 
     @Override
