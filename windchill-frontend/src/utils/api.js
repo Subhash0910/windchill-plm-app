@@ -17,6 +17,7 @@ const redirectToLogin = () => {
   clearAuth();
   // Avoid infinite redirect loops
   if (window.location.pathname !== '/login') {
+    console.warn('🔴 Session expired - redirecting to login');
     setTimeout(() => {
       window.location.href = '/login';
     }, 150);
@@ -27,13 +28,29 @@ const redirectToLogin = () => {
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
+    
+    console.log('🔑 API Request:', {
+      url: config.url,
+      method: config.method,
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+    });
+    
     if (token) {
+      // TEMPORARILY DISABLE expiration check for debugging
+      /*
       if (isTokenExpired(token)) {
+        console.error('❌ Token expired!');
         redirectToLogin();
         return Promise.reject(new Error('Session expired. Please login again.'));
       }
+      */
+      
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('⚠️ No token found in storage!');
     }
+    
     return config;
   },
   (error) => Promise.reject(error)
@@ -41,9 +58,22 @@ api.interceptors.request.use(
 
 // Response interceptor - handle errors and token expiry
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', {
+      url: response.config.url,
+      status: response.status
+    });
+    return response;
+  },
   (error) => {
     const status = error?.response?.status;
+    const url = error?.config?.url;
+
+    console.error('❌ API Error:', {
+      url,
+      status,
+      message: error.response?.data?.message || error.message
+    });
 
     // Network / backend down cases
     if (!error.response) {
@@ -53,6 +83,7 @@ api.interceptors.response.use(
     }
 
     if (status === 401 || status === 403) {
+      console.error('🚫 Auth failed - clearing session and redirecting');
       redirectToLogin();
     }
 
