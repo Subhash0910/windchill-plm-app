@@ -4,16 +4,12 @@ import PartPickerModal from '../components/ai/PartPickerModal';
 import AIChatBot from '../components/ai/AIChatBot';
 import './AIDemo.css';
 
-/**
- * AI Demo Page with smart Part Picker and intelligent change type suggestions
- */
 const AIDemo = () => {
   const [selectedPart, setSelectedPart] = useState(null);
   const [changeType, setChangeType] = useState('MODIFY');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [showPartPicker, setShowPartPicker] = useState(false);
 
-  // Smart change type suggestions based on lifecycle state
   const getRecommendedChangeTypes = (lifecycleState) => {
     const recommendations = {
       'INWORK': [
@@ -40,13 +36,10 @@ const AIDemo = () => {
 
   const handlePartSelect = (part) => {
     setSelectedPart(part);
-    
-    // Smart default change type based on lifecycle state
     const recommended = getRecommendedChangeTypes(part.lifecycleState);
     if (recommended.length > 0) {
       setChangeType(recommended[0].value);
     }
-    
     setAnalysisResult(null);
   };
 
@@ -63,10 +56,7 @@ const AIDemo = () => {
 
   const handleChatAction = (action, params) => {
     console.log('Chat action:', action, params);
-    
-    // Handle chat-triggered actions
     if (action === 'RUN_IMPACT_ANALYSIS' && params?.part_number) {
-      // Find and select part
       setShowPartPicker(true);
     }
   };
@@ -94,11 +84,9 @@ const AIDemo = () => {
       </div>
 
       <div className="ai-demo-container">
-        {/* Input Controls */}
         <div className="ai-demo-controls">
           <h2>Configure Analysis</h2>
           
-          {/* Part Selector */}
           <div className="form-group">
             <label>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -146,7 +134,6 @@ const AIDemo = () => {
             <small>Select a part from your database to analyze</small>
           </div>
 
-          {/* Change Type */}
           <div className="form-group">
             <label htmlFor="changeType">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -191,7 +178,6 @@ const AIDemo = () => {
             </button>
           </div>
 
-          {/* Info Box */}
           <div className="info-box">
             <h3>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -216,11 +202,10 @@ const AIDemo = () => {
             
             <div className="info-highlight">
               🤖 <strong>Try the AI Chat Assistant!</strong>
-              <p>Click the chat bubble in the bottom-right to ask questions in natural language!</p>
+              <p>The chat is context-aware - it knows which part you selected and what page you're on!</p>
             </div>
           </div>
 
-          {/* Analysis Result JSON */}
           {analysisResult && (
             <div className="result-json">
               <h3>Raw API Response</h3>
@@ -235,7 +220,6 @@ const AIDemo = () => {
           )}
         </div>
 
-        {/* Impact Preview */}
         <div className="ai-demo-preview">
           <ImpactPreview 
             partId={selectedPart?.id} 
@@ -245,15 +229,19 @@ const AIDemo = () => {
         </div>
       </div>
 
-      {/* Part Picker Modal */}
       <PartPickerModal
         isOpen={showPartPicker}
         onClose={() => setShowPartPicker(false)}
         onSelect={handlePartSelect}
       />
 
-      {/* AI Chat Bot */}
-      <AIChatBot onAction={handleChatAction} />
+      {/* Context-Aware AI Chat Bot */}
+      <AIChatBot 
+        onAction={handleChatAction}
+        selectedPart={selectedPart}
+        changeType={changeType}
+        currentPage="ai-demo"
+      />
     </div>
   );
 };
