@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .content h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .button:hover {
+            background: #5568d3;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Windchill PLM</h1>
+            <p>Engineering Change Notification</p>
+        </div>
+        
+        <div class="content">
+            <h2>New ECN Created</h2>
+            
+            <p>Hi <strong th:text="${userName}">User</strong>,</p>
+            
+            <p>A new Engineering Change Notice has been created that may require your attention:</p>
+            
+            <div class="info-box">
+                <strong>ECN Number:</strong> <span th:text="${ecnNumber}">ECN-2024-001</span><br>
+                <strong>Created by:</strong> <span th:text="${creatorName}">John Doe</span><br>
+            </div>
+            
+            <p th:if="${message}" th:text="${message}">Additional message goes here.</p>
+            
+            <center>
+                <a th:href="${actionUrl}" class="button">
+                    View ECN Details →
+                </a>
+            </center>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #666;">
+                You're receiving this email because you're listed as a stakeholder for this change.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2026 Windchill PLM System | TCS</p>
+            <p>
+                <a href="#" style="color: #667eea; text-decoration: none;">View in Browser</a> |
+                <a href="#" style="color: #667eea; text-decoration: none;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
