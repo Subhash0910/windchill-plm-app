@@ -58,6 +58,48 @@
   color: #2d3748;
 }
 
+/* Loading Part Banner */
+.loading-part-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-part-banner span {
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
@@ -101,9 +143,15 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.btn-select-part:hover {
+.btn-select-part:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-select-part:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-select-part svg {
@@ -204,9 +252,14 @@
   flex-shrink: 0;
 }
 
-.btn-change-part:hover {
+.btn-change-part:hover:not(:disabled) {
   background: #4299e1;
   color: white;
+}
+
+.btn-change-part:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .form-input,
@@ -305,6 +358,28 @@
 
 .info-box ul li {
   margin-bottom: 4px;
+}
+
+.info-highlight {
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+  padding: 12px;
+  margin-top: 15px;
+  border-radius: 4px;
+}
+
+.info-highlight strong {
+  color: #5a67d8;
+}
+
+.info-highlight p {
+  margin: 5px 0 0 0;
+  font-size: 13px;
+}
+
+.info-highlight em {
+  color: #667eea;
+  font-weight: 600;
 }
 
 /* Result JSON */
