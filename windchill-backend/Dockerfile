@@ -1,18 +1,28 @@
-# Multi-stage build for Spring Boot backend
+# Multi-stage build for Spring Boot backend (multi-module Maven project)
 
 # Stage 1: Build
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy pom.xml and download dependencies (cached layer)
+# -------------------------------------------------------
+# Copy ALL pom.xml files first for optimal Docker caching.
+# Maven needs the full module tree to resolve the parent POM.
+# -------------------------------------------------------
 COPY pom.xml .
+COPY backend-common/pom.xml backend-common/pom.xml
+COPY backend-domain/pom.xml backend-domain/pom.xml
+COPY backend-repository/pom.xml backend-repository/pom.xml
+COPY backend-service/pom.xml backend-service/pom.xml
+COPY backend-api/pom.xml backend-api/pom.xml
+
+# Download all dependencies (this layer is cached as long as pom files don't change)
 RUN mvn dependency:go-offline -B
 
-# Copy source code
-COPY src ./src
+# Copy all source code (full project tree including all submodule src folders)
+COPY . .
 
-# Build the application
-RUN mvn clean package -DskipTests
+# Build the runnable API module and all modules it depends on (-am)
+RUN mvn clean package -pl backend-api -am -DskipTests -B
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
@@ -26,8 +36,8 @@ RUN addgroup -g 1001 appuser && \
 RUN mkdir -p /opt/windchill/files && \
     chown -R appuser:appuser /opt/windchill/files
 
-# Copy JAR from build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy JAR from the backend-api module target
+COPY --from=build /app/backend-api/target/*.jar app.jar
 
 # Change ownership
 RUN chown appuser:appuser app.jar
