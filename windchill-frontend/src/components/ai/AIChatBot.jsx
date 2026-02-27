@@ -6,11 +6,11 @@ const AIChatBot = ({ onAction }) => {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: "👋 Hi! I'm your AI assistant for Windchill PLM.\n\nI can help you with:\n🔹 Risk analysis and impact assessment\n🔹 Change process guidance (ECN/ECR)\n🔹 Part searches and BOM analysis\n🔹 Timeline estimates\n\nWhat would you like to know?",
+      text: "👋 Hello! I'm your AI assistant for Windchill PLM.\n\nI can help you with:\n🔹 **Risk Analysis:** Assess impact of part changes\n🔹 **Process Guidance:** ECN/ECR workflows\n🔹 **Part Search:** Find components\n🔹 **Recommendations:** Best practices\n\nWhat would you like to know?",
       suggestions: [
-        "What's the risk of obsoleting a part?",
-        "How do I create an ECN?",
-        "Analyze impact for me"
+        "Analyze risk for a part",
+        "How to create an ECN?",
+        "Find a part"
       ],
       timestamp: new Date()
     }
@@ -49,32 +49,45 @@ const AIChatBot = ({ onAction }) => {
         },
         body: JSON.stringify({
           message: input,
-          context: {}
+          context: {},
+          sessionId: 'web-session'
         })
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      const data = result.data || result;
 
       const assistantMessage = {
         role: 'assistant',
-        text: data.data?.reply || data.data?.text || "I received your message!",
-        suggestions: data.data?.suggestions || [],
-        actions: data.data?.actions || [],
+        text: data.text || "I received your message!",
+        suggestions: data.suggestions || [],
+        actions: data.actions || [],
+        actionParams: data.actionParams || data.action_params,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
       // Handle special actions
-      if (data.data?.actions && onAction) {
-        data.data.actions.forEach(action => onAction(action, data.data.actionParams));
+      if (data.actions && data.actions.length > 0 && onAction) {
+        data.actions.forEach(action => {
+          onAction(action, data.actionParams || data.action_params);
+        });
       }
 
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: "Sorry, I'm having trouble connecting right now. Please try again.",
+        text: "⚠️ Sorry, I'm having trouble connecting right now. Please try again in a moment.\n\nIf the problem persists, check if the ML service is running.",
+        suggestions: [
+          "Try again",
+          "Check system status"
+        ],
         timestamp: new Date()
       }]);
     } finally {
@@ -84,6 +97,12 @@ const AIChatBot = ({ onAction }) => {
 
   const handleSuggestionClick = (suggestion) => {
     setInput(suggestion);
+    // Auto-send after short delay
+    setTimeout(() => {
+      if (document.activeElement?.tagName !== 'TEXTAREA') {
+        handleSend();
+      }
+    }, 100);
   };
 
   const handleKeyPress = (e) => {
