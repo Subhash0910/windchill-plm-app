@@ -1,5 +1,6 @@
 package com.windchill.service.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,6 +9,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * AI Impact Analysis Result DTO
+ * 
+ * FIXED: Added @JsonFormat to ensure LocalDateTime serializes properly as ISO-8601 string
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -39,6 +45,7 @@ public class AIImpactAnalysis {
     private Integer estimatedCycleTimeDays;
     
     // Metadata
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime analyzedAt;
     private Long analysisTimeMs;
 }
