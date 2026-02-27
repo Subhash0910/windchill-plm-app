@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../components/organisms/Header/Header';
 import ContextSwitcher from '../../components/plm/ContextSwitcher';
 import ContextTeamPanel from '../../components/plm/ContextTeamPanel';
@@ -9,7 +9,9 @@ import './PlmLayout.css';
 
 const PlmLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedPart, setSelectedPart] = useState(null);
+  const [aiActionTrigger, setAiActionTrigger] = useState(null);
 
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isWorklist = location.pathname.startsWith('/plm/worklist');
@@ -29,10 +31,85 @@ const PlmLayout = () => {
     return 'unknown';
   };
 
+  // Handle AI chat actions
   const handleChatAction = (action, params) => {
-    console.log('Global chat action:', action, params);
-    // Handle global actions like navigation, search, etc.
+    console.log('🤖 AI Action:', action, params);
+
+    switch (action) {
+      case 'RUN_IMPACT_ANALYSIS':
+        handleImpactAnalysis(params);
+        break;
+      
+      case 'SEARCH_PART':
+        handlePartSearch(params);
+        break;
+      
+      case 'NAVIGATE_TO_ECN':
+        navigate('/plm/changes');
+        break;
+      
+      case 'NAVIGATE_TO_PARTS':
+        navigate('/plm/parts');
+        break;
+      
+      default:
+        console.log('Unknown action:', action);
+    }
   };
+
+  // Handle impact analysis action from AI
+  const handleImpactAnalysis = (params) => {
+    const { part_number, change_type } = params;
+    console.log(`🔍 Triggering analysis for ${part_number} (${change_type})`);
+
+    // If not on AI Demo page, navigate there first
+    if (!isAiDemo) {
+      console.log('📍 Navigating to AI Demo page...');
+      // Store the action to execute after navigation
+      sessionStorage.setItem('pendingAiAction', JSON.stringify({
+        action: 'RUN_IMPACT_ANALYSIS',
+        params: { part_number, change_type }
+      }));
+      navigate('/plm/ai-demo');
+    } else {
+      // Already on AI Demo page - trigger the analysis
+      console.log('✅ On AI Demo page, triggering analysis');
+      setAiActionTrigger({ part_number, change_type, timestamp: Date.now() });
+    }
+  };
+
+  // Handle part search action from AI
+  const handlePartSearch = (params) => {
+    const { part_number } = params;
+    console.log(`🔍 Searching for part: ${part_number}`);
+    
+    // Navigate to parts page with search
+    navigate(`/plm/parts?search=${part_number}`);
+  };
+
+  // Listen for pending actions after navigation
+  useEffect(() => {
+    if (isAiDemo) {
+      const pendingAction = sessionStorage.getItem('pendingAiAction');
+      if (pendingAction) {
+        try {
+          const { action, params } = JSON.parse(pendingAction);
+          console.log('⚡ Executing pending action:', action, params);
+          sessionStorage.removeItem('pendingAiAction');
+          
+          // Delay slightly to ensure page is fully loaded
+          setTimeout(() => {
+            if (action === 'RUN_IMPACT_ANALYSIS') {
+              setAiActionTrigger({ ...params, timestamp: Date.now() });
+            }
+          }, 500);
+        } catch (e) {
+          console.error('Error parsing pending action:', e);
+          sessionStorage.removeItem('pendingAiAction');
+        }
+      }
+    }
+  }, [isAiDemo]);
 
   return (
     <div className="plm-shell">
@@ -57,7 +134,8 @@ const PlmLayout = () => {
         </aside>
 
         <main className="plm-main">
-          <Outlet />
+          {/* Pass AI action trigger to child pages via context/props */}
+          <Outlet context={{ aiActionTrigger }} />
         </main>
       </div>
 
