@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import ImpactPreview from '../components/ai/ImpactPreview';
 import PartPickerModal from '../components/ai/PartPickerModal';
 import './AIDemo.css';
@@ -8,6 +9,45 @@ const AIDemo = () => {
   const [changeType, setChangeType] = useState('MODIFY');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [showPartPicker, setShowPartPicker] = useState(false);
+  const [triggerAnalysis, setTriggerAnalysis] = useState(0);
+
+  // Get AI action trigger from parent layout
+  const outletContext = useOutletContext();
+  const aiActionTrigger = outletContext?.aiActionTrigger;
+
+  // Listen for AI-triggered actions
+  useEffect(() => {
+    if (aiActionTrigger && aiActionTrigger.part_number) {
+      console.log('⚡ AI Action received:', aiActionTrigger);
+      
+      // Find the part by number
+      const partNum = aiActionTrigger.part_number.toLowerCase();
+      
+      // For demo: if part number matches, simulate selection
+      // In production, you'd fetch from API
+      if (partNum === '001dfy') {
+        const demoPart = {
+          id: 1,
+          partNumber: '001dfy',
+          name: 'p1dfy',
+          lifecycleState: 'UNDERREVIEW',
+          revision: 'A',
+          iteration: '1'
+        };
+        setSelectedPart(demoPart);
+      }
+
+      // Set change type if provided
+      if (aiActionTrigger.change_type) {
+        setChangeType(aiActionTrigger.change_type);
+      }
+
+      // Trigger analysis
+      setTimeout(() => {
+        setTriggerAnalysis(prev => prev + 1);
+      }, 300);
+    }
+  }, [aiActionTrigger]);
 
   const getRecommendedChangeTypes = (lifecycleState) => {
     const recommendations = {
@@ -17,6 +57,10 @@ const AIDemo = () => {
         { value: 'DELETE', label: 'Delete Part', description: 'Remove from system' },
       ],
       'UNDER_REVIEW': [
+        { value: 'MODIFY', label: 'Modify Part', description: 'Update under review' },
+        { value: 'REVISE', label: 'Revise Part', description: 'Create new revision' },
+      ],
+      'UNDERREVIEW': [
         { value: 'MODIFY', label: 'Modify Part', description: 'Update under review' },
         { value: 'REVISE', label: 'Revise Part', description: 'Create new revision' },
       ],
@@ -34,17 +78,23 @@ const AIDemo = () => {
   };
 
   const handlePartSelect = (part) => {
+    console.log('🔧 Part selected:', part);
     setSelectedPart(part);
     const recommended = getRecommendedChangeTypes(part.lifecycleState);
     if (recommended.length > 0) {
       setChangeType(recommended[0].value);
     }
     setAnalysisResult(null);
+    
+    // Auto-trigger analysis after selection
+    setTimeout(() => {
+      setTriggerAnalysis(prev => prev + 1);
+    }, 300);
   };
 
   const handleAnalysisComplete = (result) => {
+    console.log('✅ Analysis complete:', result);
     setAnalysisResult(result);
-    console.log('AI Analysis Result:', result);
   };
 
   const handleClear = () => {
@@ -194,7 +244,7 @@ const AIDemo = () => {
             
             <div className="info-highlight">
               🤖 <strong>Try the AI Chat Assistant!</strong>
-              <p>The chat is now <strong>global</strong> - available on every page! It's context-aware and knows where you are.</p>
+              <p>Just ask: <em>"Analyze part 001dfy"</em> - I'll automatically load it and run the analysis!</p>
             </div>
           </div>
 
@@ -217,6 +267,7 @@ const AIDemo = () => {
             partId={selectedPart?.id} 
             changeType={changeType}
             onAnalysisComplete={handleAnalysisComplete}
+            triggerAnalysis={triggerAnalysis}
           />
         </div>
       </div>
