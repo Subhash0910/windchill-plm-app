@@ -16,4 +16,7 @@ public interface PartRepository extends JpaRepository<Part, Long> {
     List<Part> findByIdInAndIsDeletedFalseOrderByPartNumberAsc(List<Long> ids);
     
     long countByFolderIdAndIsDeletedFalse(Long folderId);
+    
+    // Search parts by part number (case-insensitive partial match)
+    List<Part> findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(String partNumber);
 }
