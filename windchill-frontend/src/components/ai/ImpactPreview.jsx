@@ -4,18 +4,14 @@ import './ImpactPreview.css';
 
 /**
  * ImpactPreview - Real-time AI impact analysis component
- * Shows risk score, affected parts, warnings, and recommendations
- * 
- * FIXED: 
- * - Uses correct backend endpoint: /api/v1/ai/analyze-impact
- * - Maps backend AIImpactAnalysis response to frontend expected format
- * - Uses api utility for auth token handling
+ * NOW SUPPORTS: External triggers from AI chat (triggerAnalysis prop)
  */
-export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
+export const ImpactPreview = ({ partId, changeType, onAnalysisComplete, triggerAnalysis }) => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Auto-analyze when part/changeType changes
   useEffect(() => {
     if (partId && changeType) {
       analyzeImpact();
@@ -24,20 +20,33 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
     }
   }, [partId, changeType]);
 
+  // ALSO respond to external triggers (from AI chat)
+  useEffect(() => {
+    if (triggerAnalysis > 0 && partId && changeType) {
+      console.log('⚡ External trigger received, running analysis...');
+      analyzeImpact();
+    }
+  }, [triggerAnalysis]);
+
   const analyzeImpact = async () => {
+    if (!partId || !changeType) {
+      console.warn('Cannot analyze: missing partId or changeType');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Call CORRECT backend endpoint
+      console.log(`🔍 Running impact analysis: partId=${partId}, changeType=${changeType}`);
+      
       const response = await api.post('/api/v1/ai/analyze-impact', {
         partId: parseInt(partId),
         changeType: changeType
       });
 
-      console.log('AI Analysis Response:', response.data);
+      console.log('✅ AI Analysis Response:', response.data);
 
-      // Backend returns: { success: true, data: AIImpactAnalysis }
       const backendData = response.data?.data;
       
       if (!backendData) {
@@ -46,53 +55,38 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
 
       // Transform backend flat structure to frontend nested structure
       const transformedData = {
-        // Risk prediction section
         riskPrediction: {
           riskScore: backendData.riskScore || 0,
           riskLevel: backendData.riskLevel || 'UNKNOWN',
           confidence: backendData.confidence || 0,
           modelType: backendData.modelType || 'UNKNOWN'
         },
-        
-        // Graph analysis section
         graphAnalysis: {
           bomDepth: backendData.bomDepth || 0,
           totalAffectedCount: backendData.whereUsedCount || 0,
           releasedAffectedCount: backendData.releasedAffected || 0,
           conflictingChangesCount: backendData.conflictingChanges || 0
         },
-        
-        // Warnings (derived from risk factors if high/medium risk)
         warnings: backendData.riskLevel === 'HIGH' || backendData.riskLevel === 'MEDIUM'
           ? (backendData.riskFactors || [])
           : [],
-        
-        // Blockers (critical items that must be addressed)
         blockers: backendData.releasedAffected > 0 
           ? [`${backendData.releasedAffected} RELEASED parts affected - ECN process required`]
           : [],
-        
-        // Recommendations (from backend)
         recommendations: backendData.suggestedActions || [],
-        
-        // Affected parts list (from backend part numbers)
         affectedParts: (backendData.affectedPartNumbers || []).map((partNum, idx) => ({
           id: idx,
           partNumber: partNum,
           name: 'Assembly using this part',
-          lifecycleState: 'UNKNOWN' // Backend doesn't return full part details yet
+          lifecycleState: 'UNKNOWN'
         })),
-        
-        // Impact summary text
         impactSummary: backendData.recommendation || 'No recommendation available',
-        
-        // Metadata
         estimatedCycleTimeDays: backendData.estimatedCycleTimeDays,
         analyzedAt: backendData.analyzedAt,
         analysisTimeMs: backendData.analysisTimeMs
       };
 
-      console.log('Transformed analysis:', transformedData);
+      console.log('💡 Transformed analysis:', transformedData);
       
       setAnalysis(transformedData);
       
@@ -100,7 +94,7 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete }) => {
         onAnalysisComplete(transformedData);
       }
     } catch (err) {
-      console.error('Impact analysis error:', err);
+      console.error('❌ Impact analysis error:', err);
       setError(err.response?.data?.message || err.message || 'Analysis failed');
     } finally {
       setLoading(false);
