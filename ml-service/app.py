@@ -111,10 +111,10 @@ async def chat(request: ChatRequest):
     try:
         logger.info(f"💬 Chat request: {request.message[:50]}...")
         
-        # Get response from chat assistant
+        # Get response from chat assistant - FIXED: use context instead of part_context
         response = chat_assistant.chat(
             user_message=request.message,
-            part_context=request.context
+            context=request.context
         )
         
         return ChatResponse(**response)
