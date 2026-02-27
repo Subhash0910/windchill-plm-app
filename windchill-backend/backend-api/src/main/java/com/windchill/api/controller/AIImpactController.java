@@ -1,5 +1,6 @@
 package com.windchill.api.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.service.ai.dto.AIImpactAnalysis;
 import com.windchill.service.ai.IAIImpactService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class AIImpactController {
 
     private final IAIImpactService aiImpactService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Analyze the impact of a proposed change to a part.
@@ -37,6 +39,7 @@ public class AIImpactController {
      *     "partNumber": "MOTOR-456",
      *     "riskScore": 8.2,
      *     "riskLevel": "HIGH",
+     *     "modelType": "ML",
      *     "bomDepth": 3,
      *     "whereUsedCount": 12,
      *     "releasedAffected": 3,
@@ -50,20 +53,35 @@ public class AIImpactController {
      */
     @PostMapping("/analyze-impact")
     public ResponseEntity<ApiResponse<?>> analyzeImpact(@RequestBody ImpactAnalysisRequest request) {
-        log.info("AI Impact analysis request: partId={}, changeType={}", request.getPartId(), request.getChangeType());
+        log.info("🎯 AI Impact analysis request: partId={}, changeType={}", request.getPartId(), request.getChangeType());
         
         try {
             AIImpactAnalysis analysis = aiImpactService.analyzeImpact(request.getPartId(), request.getChangeType());
             
-            return ResponseEntity.ok(
-                ApiResponse.builder()
-                    .success(true)
-                    .message("AI impact analysis completed successfully")
-                    .data(analysis)
-                    .build()
-            );
+            // Log the analysis result for debugging
+            log.info("✅ Analysis complete: riskScore={}, riskLevel={}, modelType={}", 
+                analysis.getRiskScore(), analysis.getRiskLevel(), analysis.getModelType());
+            
+            ApiResponse<?> response = ApiResponse.builder()
+                .success(true)
+                .message("AI impact analysis completed successfully")
+                .data(analysis)
+                .build();
+            
+            // Log the full response as JSON for debugging
+            try {
+                String responseJson = objectMapper.writeValueAsString(response);
+                log.debug("📤 Response JSON (first 500 chars): {}", 
+                    responseJson.length() > 500 ? responseJson.substring(0, 500) + "..." : responseJson);
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to serialize response for logging: {}", e.getMessage());
+            }
+            
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
-            log.error("AI analysis failed: {}", e.getMessage(), e);
+            log.error("❌ AI analysis failed: {}", e.getMessage(), e);
+            
             return ResponseEntity.ok(
                 ApiResponse.builder()
                     .success(false)
@@ -89,6 +107,8 @@ public class AIImpactController {
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<?>> healthCheck() {
         boolean isHealthy = aiImpactService.isMLServiceHealthy();
+        
+        log.info("🏥 AI health check: {}", isHealthy ? "HEALTHY" : "UNHEALTHY");
         
         return ResponseEntity.ok(
             ApiResponse.builder()
