@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ImpactPreview from '../components/ai/ImpactPreview';
 import PartPickerModal from '../components/ai/PartPickerModal';
+import AIChatBot from '../components/ai/AIChatBot';
 import './AIDemo.css';
 
 /**
@@ -58,6 +59,16 @@ const AIDemo = () => {
     setSelectedPart(null);
     setChangeType('MODIFY');
     setAnalysisResult(null);
+  };
+
+  const handleChatAction = (action, params) => {
+    console.log('Chat action:', action, params);
+    
+    // Handle chat-triggered actions
+    if (action === 'RUN_IMPACT_ANALYSIS' && params?.part_number) {
+      // Find and select part
+      setShowPartPicker(true);
+    }
   };
 
   const changeTypeOptions = selectedPart 
@@ -202,6 +213,11 @@ const AIDemo = () => {
               </li>
               <li>Get actionable recommendations and warnings</li>
             </ol>
+            
+            <div className="info-highlight">
+              🤖 <strong>Try the AI Chat Assistant!</strong>
+              <p>Click the chat bubble in the bottom-right to ask questions in natural language!</p>
+            </div>
           </div>
 
           {/* Analysis Result JSON */}
@@ -235,6 +251,9 @@ const AIDemo = () => {
         onClose={() => setShowPartPicker(false)}
         onSelect={handlePartSelect}
       />
+
+      {/* AI Chat Bot */}
+      <AIChatBot onAction={handleChatAction} />
     </div>
   );
 };
