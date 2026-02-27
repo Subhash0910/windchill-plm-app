@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import ImpactPreview from '../components/ai/ImpactPreview';
 import PartPickerModal from '../components/ai/PartPickerModal';
-import AIChatBot from '../components/ai/AIChatBot';
 import './AIDemo.css';
 
 const AIDemo = () => {
@@ -52,13 +51,6 @@ const AIDemo = () => {
     setSelectedPart(null);
     setChangeType('MODIFY');
     setAnalysisResult(null);
-  };
-
-  const handleChatAction = (action, params) => {
-    console.log('Chat action:', action, params);
-    if (action === 'RUN_IMPACT_ANALYSIS' && params?.part_number) {
-      setShowPartPicker(true);
-    }
   };
 
   const changeTypeOptions = selectedPart 
@@ -194,7 +186,7 @@ const AIDemo = () => {
                   <li>BOM structure impact (where-used)</li>
                   <li>Released parts dependencies</li>
                   <li>Conflicting active changes</li>
-                  <li>ML-based risk prediction</li>
+                  <li>ML-powered risk prediction</li>
                 </ul>
               </li>
               <li>Get actionable recommendations and warnings</li>
@@ -202,7 +194,7 @@ const AIDemo = () => {
             
             <div className="info-highlight">
               🤖 <strong>Try the AI Chat Assistant!</strong>
-              <p>The chat is context-aware - it knows which part you selected and what page you're on!</p>
+              <p>The chat is now <strong>global</strong> - available on every page! It's context-aware and knows where you are.</p>
             </div>
           </div>
 
@@ -233,14 +225,6 @@ const AIDemo = () => {
         isOpen={showPartPicker}
         onClose={() => setShowPartPicker(false)}
         onSelect={handlePartSelect}
-      />
-
-      {/* Context-Aware AI Chat Bot */}
-      <AIChatBot 
-        onAction={handleChatAction}
-        selectedPart={selectedPart}
-        changeType={changeType}
-        currentPage="ai-demo"
       />
     </div>
   );
