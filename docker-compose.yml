@@ -1,139 +1,98 @@
+version: '3.8'
+
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: windchill-mysql
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: windchill-postgres
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: windchill_db
-      MYSQL_USER: windchill
-      MYSQL_PASSWORD: windchill123
+      POSTGRES_DB: windchill_db
+      POSTGRES_USER: windchill
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-windchill123}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - windchill-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U windchill"]
       interval: 10s
-
-  redis:
-    image: redis:7-alpine
-    container_name: windchill-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - windchill-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      interval: 10s
 
-  # NEW: ML Service for AI Impact Engine
-  ml-service:
-    build:
-      context: ./ml-service
-      dockerfile: Dockerfile
-    container_name: windchill-ml-service
-    ports:
-      - "5000:5000"
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_NAME: windchill_db
-      DB_USER: windchill
-      DB_PASSWORD: windchill123
-      MODEL_PATH: models/risk_model.pkl
-      LOG_LEVEL: INFO
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - windchill-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      timeout: 10s
-      retries: 5
-      interval: 15s
-      start_period: 30s
-    volumes:
-      - ml_models:/app/models
-      - ml_logs:/app/logs
-
+  # Spring Boot Backend
   backend:
     build:
       context: ./windchill-backend
-      dockerfile: backend-api/Dockerfile
+      dockerfile: Dockerfile
     container_name: windchill-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/windchill_db
+      SPRING_DATASOURCE_USERNAME: windchill
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-windchill123}
+      
+      # JPA/Hibernate
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+      
+      # Email (configure these)
+      EMAIL_USERNAME: ${EMAIL_USERNAME:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@windchill-plm.com}
+      
+      # App settings
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      
+      # File storage
+      FILE_STORAGE_PATH: /opt/windchill/files
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      
     ports:
       - "8080:8080"
-    environment:
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATA_REDIS_TIMEOUT: 2000
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
-      SPRING_DATASOURCE_USERNAME: windchill
-      SPRING_DATASOURCE_PASSWORD: windchill123
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
-      SERVER_SERVLET_CONTEXT_PATH: /
-      SERVER_PORT: 8080
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
-      SPRING_PROFILES_ACTIVE: docker
-      TZ: UTC
-      # ML Service connection
-      ML_SERVICE_URL: http://ml-service:5000
-      ML_SERVICE_ENABLED: true
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ml-service:
-        condition: service_healthy
+    volumes:
+      - windchill_files:/opt/windchill/files
+      - ./windchill-backend/logs:/app/logs
     networks:
       - windchill-network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
-      timeout: 15s
-      retries: 10
       interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 60s
 
+  # React Frontend
   frontend:
     build:
       context: ./windchill-frontend
       dockerfile: Dockerfile
     container_name: windchill-frontend
-    ports:
-      - "80:80"
-    environment:
-      VITE_API_BASE_URL: /api/v1
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+    ports:
+      - "3000:80"
     networks:
       - windchill-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/healthz"]
-      timeout: 10s
-      retries: 5
-      interval: 15s
-      start_period: 10s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
-  mysql_data:
-  redis_data:
-  ml_models:  # NEW: Persist trained ML models
-  ml_logs:    # NEW: Persist ML service logs
+  postgres_data:
+    driver: local
+  windchill_files:
+    driver: local
 
 networks:
   windchill-network:
