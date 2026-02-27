@@ -34,8 +34,8 @@ const AIDemo = () => {
     try {
       console.log(`🔍 Fetching part ${partNumber} from database...`);
       
-      // Search for part by part number
-      const response = await api.get(`/api/v1/parts?search=${partNumber}`);
+      // ✅ FIXED: Use correct endpoint /api/v1/plm/parts/search with 'query' parameter
+      const response = await api.get(`/api/v1/plm/parts/search?query=${partNumber}`);
       const parts = response.data?.data || response.data || [];
       
       console.log(`📊 Found ${parts.length} parts`);
