@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ImpactPreview from '../components/ai/ImpactPreview';
 import PartPickerModal from '../components/ai/PartPickerModal';
 import './AIDemo.css';
 
 const AIDemo = () => {
+  const navigate = useNavigate();
   const [selectedPart, setSelectedPart] = useState(null);
   const [changeType, setChangeType] = useState('MODIFY');
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -71,7 +72,17 @@ const AIDemo = () => {
       }
     } catch (error) {
       console.error('❌ Error fetching part:', error);
-      alert(`Error loading part: ${error.message}`);
+      
+      // Handle auth errors specifically
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        // Let the api interceptor handle the redirect
+        return;
+      }
+      
+      // Handle other errors
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to load part';
+      alert(`Error loading part: ${errorMsg}\n\nTip: Make sure you're logged in and have access to this part.`);
     } finally {
       setLoadingPart(false);
     }
