@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import './AIChatBot.css';
 
-const AIChatBot = ({ onAction }) => {
+const AIChatBot = ({ onAction, selectedPart, changeType, currentPage }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: "👋 Hello! I'm your AI assistant for Windchill PLM.\n\nI can help you with:\n🔹 **Risk Analysis:** Assess impact of part changes\n🔹 **Process Guidance:** ECN/ECR workflows\n🔹 **Part Search:** Find components\n🔹 **Recommendations:** Best practices\n\nWhat would you like to know?",
+      text: "👋 Hello! I'm your Windchill PLM assistant.\n\nI can help you with:\n🔹 **Risk Analysis:** Assess impact of part changes\n🔹 **Process Guidance:** ECN/ECR workflows\n🔹 **Part Management:** Search and analyze components\n🔹 **Best Practices:** Change management recommendations\n\nWhat would you like to know?",
       suggestions: [
         "Analyze risk for a part",
         "How to create an ECN?",
-        "Find a part"
+        "What can you help with?"
       ],
       timestamp: new Date()
     }
@@ -18,6 +19,7 @@ const AIChatBot = ({ onAction }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const location = useLocation();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +28,41 @@ const AIChatBot = ({ onAction }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Build smart context from UI state
+  const buildContext = () => {
+    const context = {
+      page: currentPage || getPageFromRoute(location.pathname),
+      route: location.pathname
+    };
+
+    // Add selected part context if available
+    if (selectedPart) {
+      context.selected_part = {
+        id: selectedPart.id,
+        part_number: selectedPart.partNumber,
+        name: selectedPart.name,
+        lifecycle_state: selectedPart.lifecycleState,
+        revision: selectedPart.revision,
+        iteration: selectedPart.iteration
+      };
+    }
+
+    // Add change type if on AI demo page
+    if (changeType) {
+      context.change_type = changeType;
+    }
+
+    return context;
+  };
+
+  const getPageFromRoute = (pathname) => {
+    if (pathname.includes('/ai-demo')) return 'ai-demo';
+    if (pathname.includes('/parts')) return 'parts';
+    if (pathname.includes('/worklist')) return 'worklist';
+    if (pathname.includes('/changes')) return 'changes';
+    return 'unknown';
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -41,6 +78,8 @@ const AIChatBot = ({ onAction }) => {
     setIsLoading(true);
 
     try {
+      const context = buildContext();
+      
       const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
@@ -49,8 +88,8 @@ const AIChatBot = ({ onAction }) => {
         },
         body: JSON.stringify({
           message: input,
-          context: {},
-          sessionId: 'web-session'
+          context: context,
+          sessionId: `web-${Date.now()}`
         })
       });
 
@@ -83,7 +122,7 @@ const AIChatBot = ({ onAction }) => {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: "⚠️ Sorry, I'm having trouble connecting right now. Please try again in a moment.\n\nIf the problem persists, check if the ML service is running.",
+        text: "⚠️ Sorry, I'm having trouble connecting right now.\n\nThis usually means:\n• ML service is starting up\n• Network connectivity issue\n• Service temporarily unavailable\n\nPlease try again in a moment.",
         suggestions: [
           "Try again",
           "Check system status"
@@ -99,10 +138,64 @@ const AIChatBot = ({ onAction }) => {
     setInput(suggestion);
     // Auto-send after short delay
     setTimeout(() => {
-      if (document.activeElement?.tagName !== 'TEXTAREA') {
-        handleSend();
+      const textarea = document.querySelector('.ai-chat-input textarea');
+      if (textarea && document.activeElement !== textarea) {
+        // Manually trigger send since input state update is async
+        handleSendWithText(suggestion);
       }
     }, 100);
+  };
+
+  const handleSendWithText = async (text) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage = {
+      role: 'user',
+      text: text,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const context = buildContext();
+      
+      const response = await fetch('/api/v1/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          message: text,
+          context: context,
+          sessionId: `web-${Date.now()}`
+        })
+      });
+
+      const result = await response.json();
+      const data = result.data || result;
+
+      const assistantMessage = {
+        role: 'assistant',
+        text: data.text || "I received your message!",
+        suggestions: data.suggestions || [],
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      if (data.actions && onAction) {
+        data.actions.forEach(action => onAction(action, data.actionParams || data.action_params));
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -143,8 +236,8 @@ const AIChatBot = ({ onAction }) => {
                 </svg>
               </div>
               <div>
-                <strong>AI Assistant</strong>
-                <small>Windchill PLM Expert</small>
+                <strong>PLM Assistant</strong>
+                <small>Context-Aware AI</small>
               </div>
             </div>
             <button
@@ -215,7 +308,7 @@ const AIChatBot = ({ onAction }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me anything about PLM..."
+              placeholder="Ask me about PLM..."
               rows="1"
               disabled={isLoading}
             />
