@@ -1,12 +1,36 @@
+# Core FastAPI
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+httpx==0.27.0
+
+# Data Science & ML
 pandas==2.2.0
 scikit-learn==1.4.0
 numpy==1.26.4
-mysql-connector-python==8.3.0
 joblib==1.3.2
-pydantic==2.6.1
-python-multipart==0.0.9
-httpx==0.27.0
 matplotlib==3.8.2
 seaborn==0.13.1
+
+# 🚀 UPGRADE 1: Semantic Understanding
+sentence-transformers==2.5.1
+transformers==4.38.1
+torch==2.2.0
+
+# 🚀 UPGRADE 2: Conversation Memory & Persistence
+redis==5.0.1
+pickle5==0.0.12
+
+# 🚀 UPGRADE 3: Fuzzy Matching & Language Detection
+python-Levenshtein==0.23.0
+langdetect==1.0.9
+
+# 🚀 UPGRADE 4: Enhanced NLP
+spacy==3.7.4
+nltk==3.8.1
+
+# Database
+mysql-connector-python==8.3.0
+
+# Validation
+pydantic==2.6.1
