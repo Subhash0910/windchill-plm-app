@@ -1,8 +1,26 @@
-/* ── Layout ──────────────────────────────────────────────────── */
-.tm-page { display: flex; flex-direction: column; min-height: 100vh; background: #f8fafc; }
-.tm-main { max-width: 900px; margin: 0 auto; padding: 28px 16px 48px; width: 100%; }
+/* ── Page wrapper ─────────────────────────────────────────────── */
+.tm-page {
+  padding: 24px 28px 48px;
+  max-width: 900px;
+}
 
-/* ── Context Banner ────────────────────────────────────────── */
+/* ── Page header (replaces <Header> component) ──────────────── */
+.tm-page-header {
+  margin-bottom: 20px;
+}
+.tm-page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 3px;
+}
+.tm-page-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ── Context Banner ───────────────────────────────────────── */
 .tm-context-banner {
   display: flex;
   align-items: center;
@@ -20,7 +38,7 @@
   letter-spacing: 0.06em;
   color: #94a3b8;
 }
-.tm-context-name { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+.tm-context-name  { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
 .tm-member-count {
   margin-left: auto;
   font-size: 0.8rem;
@@ -31,7 +49,7 @@
   border: 1px solid #e2e8f0;
 }
 
-/* ── Cards ────────────────────────────────────────────────────── */
+/* ── Cards ──────────────────────────────────────────────── */
 .tm-card {
   background: white;
   border: 1px solid #e2e8f0;
@@ -41,7 +59,7 @@
 }
 .tm-section-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin: 0 0 16px; }
 
-/* ── Add Form ────────────────────────────────────────────────── */
+/* ── Add Form ──────────────────────────────────────────────── */
 .tm-add-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .tm-field { display: flex; flex-direction: column; gap: 4px; }
 .tm-field label {
@@ -76,23 +94,16 @@
   font-size: 0.88rem;
   cursor: pointer;
   transition: background 0.15s;
-  white-space: nowrap;
   height: 38px;
 }
 .tm-btn-add:hover:not(:disabled) { background: #2563eb; }
 .tm-btn-add:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.tm-msg {
-  margin-top: 12px;
-  padding: 9px 14px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
+.tm-msg { margin-top: 12px; padding: 9px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 500; }
 .tm-msg--error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .tm-msg--success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 
-/* ── Table ────────────────────────────────────────────────────── */
+/* ── Table ──────────────────────────────────────────────────── */
 .tm-table-wrap { overflow-x: auto; }
 .tm-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .tm-table th {
@@ -109,9 +120,8 @@
 .tm-table td { padding: 13px 16px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
 .tm-table tr:last-child td { border-bottom: none; }
 .tm-table tbody tr:hover td { background: #f8fafc; }
-
-.tm-row-self td          { background: #fefce8; }
-.tm-row-self:hover td    { background: #fef9c3; }
+.tm-row-self td       { background: #fefce8; }
+.tm-row-self:hover td { background: #fef9c3; }
 
 .tm-id       { color: #94a3b8; font-family: monospace; font-size: 0.82rem; }
 .tm-username { font-weight: 500; }
@@ -126,7 +136,6 @@
   margin-left: 5px;
   font-weight: 700;
   vertical-align: middle;
-  letter-spacing: 0.02em;
 }
 
 .tm-role-badge {
@@ -145,9 +154,7 @@
   font-weight: 600;
   cursor: pointer;
   outline: none;
-  transition: border-color 0.15s;
 }
-.tm-role-select:focus { border-color: #3b82f6; }
 
 .tm-btn-remove {
   padding: 4px 12px;
@@ -159,16 +166,11 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
-  white-space: nowrap;
 }
 .tm-btn-remove:hover { background: #fecaca; }
 
 /* ── Loading / Empty ────────────────────────────────────────── */
-.tm-loading {
-  text-align: center;
-  padding: 40px;
-  color: #94a3b8;
-}
+.tm-loading { text-align: center; padding: 40px; color: #94a3b8; }
 .tm-spinner {
   width: 32px; height: 32px;
   border: 3px solid #e2e8f0;
@@ -178,18 +180,7 @@
   animation: tm-spin 0.75s linear infinite;
 }
 @keyframes tm-spin { to { transform: rotate(360deg); } }
-
-.tm-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: #94a3b8;
-}
+.tm-empty    { text-align: center; padding: 60px 20px; color: #94a3b8; }
 .tm-empty span { font-size: 2.8rem; display: block; margin-bottom: 8px; }
-.tm-empty p { margin: 0; font-size: 0.9rem; }
-
-.tm-empty-sm {
-  text-align: center;
-  padding: 24px;
-  color: #94a3b8;
-  font-size: 0.88rem;
-}
+.tm-empty p  { margin: 0; font-size: 0.9rem; }
+.tm-empty-sm { text-align: center; padding: 24px; color: #94a3b8; font-size: 0.88rem; }

@@ -20,24 +20,21 @@ const PlmLayout = () => {
   const isChanges       = isChangesGroup && !isChangeTasks;
   const isAiDemo        = location.pathname.startsWith('/plm/ai-demo');
   const isNotifications = location.pathname.startsWith('/plm/notifications');
-  const isTeam          = location.pathname.startsWith('/plm/team');
 
-  // Workspace = any /plm route that isn't one of the named sections
+  // Workspace = any /plm route that isn’t one of the named sections
   const isWorkspace = location.pathname.startsWith('/plm')
     && !isWorklist
     && !isChangesGroup
     && !isAiDemo
-    && !isNotifications
-    && !isTeam;
+    && !isNotifications;
 
   const getCurrentPage = () => {
-    if (isWorkspace)      return 'workspace';
-    if (isWorklist)       return 'worklist';
-    if (isChanges)        return 'changes';
-    if (isChangeTasks)    return 'change-tasks';
-    if (isAiDemo)         return 'ai-demo';
-    if (isNotifications)  return 'notifications';
-    if (isTeam)           return 'team';
+    if (isWorkspace)     return 'workspace';
+    if (isWorklist)      return 'worklist';
+    if (isChanges)       return 'changes';
+    if (isChangeTasks)   return 'change-tasks';
+    if (isAiDemo)        return 'ai-demo';
+    if (isNotifications) return 'notifications';
     return 'unknown';
   };
 
@@ -99,7 +96,6 @@ const PlmLayout = () => {
           <Link className={isChanges       ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
           <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">Change Tasks</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
-          <Link className={isTeam          ? 'plm-link active' : 'plm-link'} to="/plm/team">👥 Team</Link>
           <Link
             className={isAiDemo ? 'plm-link active' : 'plm-link'}
             to="/plm/ai-demo"
