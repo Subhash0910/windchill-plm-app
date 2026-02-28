@@ -3,30 +3,38 @@ import { Link } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
 import './PartsTable.css';
 
-const PartsTable = ({ parts, onPartDeleted }) => {
+/**
+ * PartsTable
+ *
+ * Props:
+ *   parts      - array of part objects from backend
+ *   onPartDeleted(partId) - callback after delete
+ *   folderMap  - { [folderId]: { id, name, path, ... } }
+ *               built in PartsPage from plmApi.listFolders.
+ *               Used to display the correct folder name in the FOLDER column
+ *               because the backend returns folderId (Long), not folderPath.
+ */
+const PartsTable = ({ parts, onPartDeleted, folderMap = {} }) => {
   const [showAllVersions, setShowAllVersions] = useState(false);
   const [deleting, setDeleting] = useState(null);
 
   const visibleParts = useMemo(() => {
     const list = parts || [];
     if (showAllVersions) return list;
-    // Default Windchill-like view: show latest only.
-    return list.filter(p => p?.isLatest === true || p?.isLatest === undefined || p?.isLatest === null);
+    // Default Windchill-like view: show latest iteration only.
+    return list.filter(p => p?.isLatest === true || p?.isLatest == null);
   }, [parts, showAllVersions]);
 
-  const hiddenCount = (parts || []).length - (visibleParts || []).length;
+  const hiddenCount = (parts || []).length - visibleParts.length;
 
   const handleDelete = async (part) => {
     const confirmed = window.confirm(
       `⚠️ DELETE PART?\n\n` +
       `Part: ${part.partNumber} (${part.name})\n` +
       `Revision: ${part.revision}.${part.iteration}\n\n` +
-      `This action CANNOT be undone!\n\n` +
-      `Click OK to permanently delete this part.`
+      `This action CANNOT be undone!\n\nClick OK to permanently delete.`
     );
-
     if (!confirmed) return;
-
     try {
       setDeleting(part.id);
       await plmApi.deletePart(part.id);
@@ -40,15 +48,36 @@ const PartsTable = ({ parts, onPartDeleted }) => {
     }
   };
 
-  // Helper to format folder display
+  /**
+   * Resolve folder display name for a part.
+   *
+   * Priority:
+   *   1. part.folderPath  — if backend ever returns it directly
+   *   2. folderMap[part.folderId] — resolved from parallel listFolders call
+   *   3. 'Root' fallback
+   */
   const getFolderDisplay = (part) => {
-    if (!part.folderPath || part.folderPath === '/') return 'Root';
-    return part.folderPath;
+    // 1. Backend-provided folderPath (future-proofing)
+    if (part.folderPath) {
+      return part.folderPath === '/' ? 'Root' : part.folderPath;
+    }
+    // 2. Look up via folderMap built from listFolders
+    if (part.folderId != null) {
+      const folder = folderMap[part.folderId];
+      if (folder) {
+        return folder.path === '/' ? 'Root' : folder.name;
+      }
+    }
+    // 3. Default
+    return 'Root';
   };
 
   return (
     <div className="parts-table-wrap">
-      <div className="parts-table-toolbar" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+      <div
+        className="parts-table-toolbar"
+        style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}
+      >
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             type="checkbox"
@@ -75,19 +104,21 @@ const PartsTable = ({ parts, onPartDeleted }) => {
           </tr>
         </thead>
         <tbody>
-          {(visibleParts || []).map(p => (
+          {visibleParts.map(p => (
             <tr key={p.id}>
               <td className="mono">{p.partNumber}</td>
               <td>{p.name}</td>
               <td>
-                <span style={{ color: '#64748b', fontSize: '0.9em' }}>
+                <span style={{ color: '#64748b', fontSize: '0.9em' }} title={p.folderId ? `ID: ${p.folderId}` : ''}>
                   📁 {getFolderDisplay(p)}
                 </span>
               </td>
               <td>{p.revision}</td>
               <td>{p.iteration}</td>
               <td>
-                <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span>
+                <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>
+                  {p.lifecycleState}
+                </span>
               </td>
               <td style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <Link className="link" to={`/plm/parts/${p.id}`}>Open</Link>
@@ -103,7 +134,7 @@ const PartsTable = ({ parts, onPartDeleted }) => {
                     padding: 0,
                     textDecoration: 'underline',
                     fontSize: 'inherit',
-                    opacity: deleting === p.id ? 0.5 : 1
+                    opacity: deleting === p.id ? 0.5 : 1,
                   }}
                 >
                   {deleting === p.id ? 'Deleting...' : 'Delete'}
@@ -111,11 +142,9 @@ const PartsTable = ({ parts, onPartDeleted }) => {
               </td>
             </tr>
           ))}
-          {(visibleParts || []).length === 0 && (
+          {visibleParts.length === 0 && (
             <tr>
-              <td colSpan={7} className="plm-muted" style={{ padding: 12 }}>
-                No parts.
-              </td>
+              <td colSpan={7} className="plm-muted" style={{ padding: 12 }}>No parts.</td>
             </tr>
           )}
         </tbody>
