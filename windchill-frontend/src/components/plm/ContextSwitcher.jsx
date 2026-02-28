@@ -6,9 +6,21 @@ import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './ContextSwitcher.css';
 
 const TYPE_COLORS = {
-  PRODUCT: { bg: '#dbeafe', text: '#1e40af' },
-  PROJECT: { bg: '#ede9fe', text: '#5b21b6' },
-  LIBRARY: { bg: '#dcfce7', text: '#166534' },
+  PRODUCT: { bg: '#dbeafe', text: '#1e40af', btn: '#1d4ed8' },
+  PROJECT: { bg: '#ede9fe', text: '#5b21b6', btn: '#5b21b6' },
+  LIBRARY: { bg: '#dcfce7', text: '#166534', btn: '#166534' },
+};
+
+const TYPE_ROUTES = {
+  PRODUCT: '/plm/parts',
+  PROJECT: '/plm/projects',
+  LIBRARY: '/plm/library',
+};
+
+const TYPE_LABELS = {
+  PRODUCT: '📦 Open Workspace →',
+  PROJECT: '🗂️ View Projects page →',
+  LIBRARY: '📚 View Library →',
 };
 
 const ContextSwitcher = () => {
@@ -22,29 +34,25 @@ const ContextSwitcher = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ code: '', name: '', contextType: 'PRODUCT', description: '' });
 
-  const selected = useMemo(() => contexts.find(c => c.id === selectedContextId) || null, [contexts, selectedContextId]);
+  const selected = useMemo(
+    () => contexts.find(c => c.id === selectedContextId) || null,
+    [contexts, selectedContextId]
+  );
 
   const load = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       const data = await plmApi.listContexts();
       const list = data || [];
       setContexts(list);
-
       if (selectedContextId && !list.some(c => c.id === selectedContextId)) {
-        setSelectedContextId(null);
-        return;
+        setSelectedContextId(null); return;
       }
-      if (!selectedContextId && list.length > 0) {
-        setSelectedContextId(list[0].id);
-      }
+      if (!selectedContextId && list.length > 0) setSelectedContextId(list[0].id);
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to load contexts');
       setSelectedContextId(null);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -52,20 +60,13 @@ const ContextSwitcher = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Route based on context type:
-   *   PRODUCT / LIBRARY  →  /plm/parts   (parts workspace)
-   *   PROJECT            →  /plm/projects (project page)
-   */
+  const routeForType = (ctx) => TYPE_ROUTES[ctx?.contextType] || '/plm/parts';
+
   const onChange = (e) => {
     const id  = Number(e.target.value);
     const ctx = contexts.find(c => c.id === id);
     setSelectedContextId(id);
-    if (ctx?.contextType === 'PROJECT') {
-      navigate('/plm/projects');
-    } else {
-      navigate('/plm/parts');
-    }
+    navigate(routeForType(ctx));
   };
 
   const create = async () => {
@@ -76,11 +77,7 @@ const ContextSwitcher = () => {
       setForm({ code: '', name: '', contextType: 'PRODUCT', description: '' });
       await load();
       setSelectedContextId(created.id);
-      if (created.contextType === 'PROJECT') {
-        navigate('/plm/projects');
-      } else {
-        navigate('/plm/parts');
-      }
+      navigate(TYPE_ROUTES[created.contextType] || '/plm/parts');
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to create context');
     }
@@ -118,43 +115,45 @@ const ContextSwitcher = () => {
             <span
               className="v"
               style={{
-                background: typeStyle?.bg,
-                color:      typeStyle?.text,
-                padding:    '2px 8px',
+                background:   typeStyle?.bg,
+                color:        typeStyle?.text,
+                padding:      '2px 8px',
                 borderRadius: '10px',
-                fontWeight: 600,
-                fontSize:   '0.75rem',
+                fontWeight:   600,
+                fontSize:     '0.75rem',
               }}
             >
               {selected.contextType}
             </span>
           </div>
           <div><span className="k">Code</span><span className="v">{selected.code}</span></div>
-          {selected.contextType === 'PROJECT' && (
-            <div style={{ marginTop: 4 }}>
-              <button
-                style={{
-                  fontSize: '0.75rem',
-                  color: '#5b21b6',
-                  background: '#ede9fe',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '3px 10px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
-                onClick={() => navigate('/plm/projects')}
-              >
-                🗂️ View Projects page →
-              </button>
-            </div>
-          )}
+
+          {/* Context-type shortcut button — shown for all 3 types */}
+          <div style={{ marginTop: 6 }}>
+            <button
+              style={{
+                fontSize:     '0.75rem',
+                color:        'white',
+                background:   typeStyle?.btn || '#1e293b',
+                border:       'none',
+                borderRadius: 6,
+                padding:      '4px 11px',
+                cursor:       'pointer',
+                fontWeight:   600,
+                width:        '100%',
+                textAlign:    'left',
+              }}
+              onClick={() => navigate(routeForType(selected))}
+            >
+              {TYPE_LABELS[selected.contextType] || '→ Open'}
+            </button>
+          </div>
         </div>
       )}
 
       {showCreate && (
         <div className="plm-form">
-          <input className="plm-input" placeholder="Code (e.g., PROD001)" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} />
+          <input className="plm-input" placeholder="Code (e.g., LIB001)" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} />
           <input className="plm-input" placeholder="Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           <select className="plm-select" value={form.contextType} onChange={e => setForm({ ...form, contextType: e.target.value })}>
             <option value="PRODUCT">PRODUCT</option>

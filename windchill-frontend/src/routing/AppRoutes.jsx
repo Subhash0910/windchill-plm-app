@@ -15,6 +15,7 @@ import NotificationsPage from '../pages/plm/NotificationsPage';
 import DocumentsPage from '../pages/plm/DocumentsPage';
 import ProductsPage from '../pages/plm/ProductsPage';
 import ProjectsPage from '../pages/plm/ProjectsPage';
+import LibraryPage from '../pages/plm/LibraryPage';
 import AuditLogPage from '../pages/plm/AuditLogPage';
 import TeamManagementPage from '../pages/plm/TeamManagementPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
@@ -41,6 +42,7 @@ const AppRoutes = () => (
           <Route path="documents"       element={<DocumentsPage />} />
           <Route path="products"        element={<ProductsPage />} />
           <Route path="projects"        element={<ProjectsPage />} />
+          <Route path="library"         element={<LibraryPage />} />
           <Route path="notifications"   element={<NotificationsPage />} />
           <Route path="audit-log"       element={<AuditLogPage />} />
           <Route path="team"            element={<TeamManagementPage />} />

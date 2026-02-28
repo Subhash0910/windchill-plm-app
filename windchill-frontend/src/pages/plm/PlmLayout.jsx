@@ -23,12 +23,13 @@ const PlmLayout = () => {
   const isDocuments     = location.pathname.startsWith('/plm/documents');
   const isProducts      = location.pathname.startsWith('/plm/products');
   const isProjects      = location.pathname.startsWith('/plm/projects');
+  const isLibrary       = location.pathname.startsWith('/plm/library');
   const isAuditLog      = location.pathname.startsWith('/plm/audit-log');
 
   const isWorkspace = location.pathname.startsWith('/plm')
     && !isWorklist && !isChangesGroup && !isAiDemo
     && !isNotifications && !isDocuments
-    && !isProducts && !isProjects && !isAuditLog;
+    && !isProducts && !isProjects && !isLibrary && !isAuditLog;
 
   const getCurrentPage = () => {
     if (isWorkspace)     return 'workspace';
@@ -40,6 +41,7 @@ const PlmLayout = () => {
     if (isDocuments)     return 'documents';
     if (isProducts)      return 'products';
     if (isProjects)      return 'projects';
+    if (isLibrary)       return 'library';
     if (isAuditLog)      return 'audit-log';
     return 'unknown';
   };
@@ -95,6 +97,7 @@ const PlmLayout = () => {
           <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
           <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
           <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
+          <Link className={isLibrary       ? 'plm-link active' : 'plm-link'} to="/plm/library">📚 Library</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
           <Link className={isAuditLog      ? 'plm-link active' : 'plm-link'} to="/plm/audit-log">📋 Audit Log</Link>
           <Link
