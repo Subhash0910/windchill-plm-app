@@ -20,9 +20,23 @@ public class AuditController {
 
     private final IAuditService auditService;
 
+    /** Per-entity audit — used by PartDetailPage audit tab */
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> get(@RequestParam PlmEntityTypeEnum entityType, @RequestParam Long entityId) {
+    public ResponseEntity<ApiResponse<?>> get(
+            @RequestParam PlmEntityTypeEnum entityType,
+            @RequestParam Long entityId) {
         List<AuditLog> logs = auditService.getLogs(entityType, entityId);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(logs).build());
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true).message(APIConstants.SUCCESS).data(logs).build());
+    }
+
+    /** Global audit feed — used by AuditLogPage, sorted DESC by createdAt */
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<?>> getAll(
+            @RequestParam(defaultValue = "200") int limit) {
+        log.info("Fetching global audit log, limit={}", limit);
+        List<AuditLog> logs = auditService.getAllLogs(limit);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true).message(APIConstants.SUCCESS).data(logs).build());
     }
 }

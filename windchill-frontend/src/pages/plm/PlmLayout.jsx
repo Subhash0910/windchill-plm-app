@@ -10,7 +10,7 @@ import './PlmLayout.css';
 const PlmLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedPart, setSelectedPart]     = useState(null);
+  const [selectedPart,    setSelectedPart]    = useState(null);
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
 
   const isDashboard     = location.pathname.startsWith('/dashboard');
@@ -23,15 +23,12 @@ const PlmLayout = () => {
   const isDocuments     = location.pathname.startsWith('/plm/documents');
   const isProducts      = location.pathname.startsWith('/plm/products');
   const isProjects      = location.pathname.startsWith('/plm/projects');
+  const isAuditLog      = location.pathname.startsWith('/plm/audit-log');
 
   const isWorkspace = location.pathname.startsWith('/plm')
-    && !isWorklist
-    && !isChangesGroup
-    && !isAiDemo
-    && !isNotifications
-    && !isDocuments
-    && !isProducts
-    && !isProjects;
+    && !isWorklist && !isChangesGroup && !isAiDemo
+    && !isNotifications && !isDocuments
+    && !isProducts && !isProjects && !isAuditLog;
 
   const getCurrentPage = () => {
     if (isWorkspace)     return 'workspace';
@@ -43,6 +40,7 @@ const PlmLayout = () => {
     if (isDocuments)     return 'documents';
     if (isProducts)      return 'products';
     if (isProjects)      return 'projects';
+    if (isAuditLog)      return 'audit-log';
     return 'unknown';
   };
 
@@ -66,7 +64,7 @@ const PlmLayout = () => {
     }
   };
 
-  const handlePartSearch = (params) => { navigate(`/plm/parts?search=${params.part_number}`); };
+  const handlePartSearch = (params) => navigate(`/plm/parts?search=${params.part_number}`);
 
   useEffect(() => {
     if (isAiDemo) {
@@ -98,6 +96,7 @@ const PlmLayout = () => {
           <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
           <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
+          <Link className={isAuditLog      ? 'plm-link active' : 'plm-link'} to="/plm/audit-log">📋 Audit Log</Link>
           <Link
             className={isAiDemo ? 'plm-link active' : 'plm-link'}
             to="/plm/ai-demo"

@@ -6,6 +6,10 @@ import com.windchill.domain.entity.AuditLog;
 import java.util.List;
 
 public interface IAuditService {
-    void log(PlmEntityTypeEnum type, Long id, String action, String details);
-    List<AuditLog> getLogs(PlmEntityTypeEnum type, Long id);
+
+    /** Get all audit logs for a specific entity (used by PartDetailPage audit tab) */
+    List<AuditLog> getLogs(PlmEntityTypeEnum entityType, Long entityId);
+
+    /** Get recent audit logs across all entities, sorted DESC by createdAt */
+    List<AuditLog> getAllLogs(int limit);
 }
