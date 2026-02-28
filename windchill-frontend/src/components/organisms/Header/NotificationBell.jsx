@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
 import './NotificationBell.css';
 
@@ -17,13 +18,13 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [count,         setCount]         = useState(0);
   const [loading,       setLoading]       = useState(false);
-  const dropRef = useRef(null);
+  const dropRef  = useRef(null);
+  const navigate = useNavigate();
 
   /* ── fetch unread count (mount + every 30 s) ── */
   const fetchCount = useCallback(async () => {
     try {
       const res = await api.get('/api/v1/notifications/count');
-      // Backend returns ApiResponse<Map> → { success, data: { unreadCount: N }, message }
       const n = res.data?.data?.unreadCount ?? res.data?.unreadCount ?? 0;
       setCount(Number(n));
     } catch { /* silent */ }
@@ -33,8 +34,7 @@ const NotificationBell = () => {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/v1/notifications/unread');
-      // Backend returns ApiResponse<List> → { success, data: [...], message }
+      const res  = await api.get('/api/v1/notifications/unread');
       const data = res.data?.data ?? res.data ?? [];
       setNotifications(Array.isArray(data) ? data : []);
     } catch {
@@ -97,6 +97,11 @@ const NotificationBell = () => {
     const h = Math.floor(m / 60);
     if (h < 24) return `${h}h ago`;
     return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const handleViewAll = () => {
+    setOpen(false);
+    navigate('/plm/notifications');
   };
 
   return (
@@ -163,11 +168,15 @@ const NotificationBell = () => {
             )}
           </div>
 
-          {notifications.length > 0 && (
-            <div className="nb-footer">
-              <span>{notifications.length} unread</span>
-            </div>
-          )}
+          {/* Footer — always visible */}
+          <div className="nb-footer">
+            <span className="nb-footer-count">
+              {count > 0 ? `${count} unread` : 'No unread'}
+            </span>
+            <button className="nb-view-all" onClick={handleViewAll}>
+              View all &rarr;
+            </button>
+          </div>
         </div>
       )}
     </div>
