@@ -1,133 +1,110 @@
 import { useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
+import { getToken } from '../utils/localStorage'; // ← FIX: reads sessionStorage 'auth_token'
 
 /**
- * Custom hook for WebSocket connection
- * Provides real-time notification support
- * 
- * @param {function} onNotification - Callback when notification received
- * @param {function} onCountUpdate - Callback when unread count updates
- * @returns {Object} Connection status and methods
+ * Custom hook for WebSocket / STOMP real-time notifications.
+ *
+ * FIX: Was using localStorage.getItem('token') which always returns null because
+ * the app stores JWT in sessionStorage under 'auth_token' via localStorage.js util.
+ * Now uses getToken() from the shared localStorage util.
+ *
+ * Added max reconnect attempts (3) to prevent infinite reconnect loops.
  */
 export const useWebSocket = (onNotification, onCountUpdate) => {
   const [connected, setConnected] = useState(false);
-  const [error, setError] = useState(null);
-  const stompClientRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
+  const [error,     setError]     = useState(null);
+
+  const stompClientRef        = useRef(null);
+  const reconnectTimeoutRef   = useRef(null);
+  const reconnectAttemptsRef  = useRef(0);
+  const MAX_RECONNECTS        = 3;
 
   useEffect(() => {
     connect();
-
-    return () => {
-      disconnect();
-    };
+    return () => disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const connect = () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('⚠️ No token found, skipping WebSocket connection');
-        return;
-      }
+    const token = getToken(); // sessionStorage 'auth_token'
+    if (!token) {
+      console.warn('\u26A0\uFE0F No auth token found — skipping WebSocket (polling fallback active)');
+      return;
+    }
+    if (reconnectAttemptsRef.current >= MAX_RECONNECTS) {
+      console.warn('\u26A0\uFE0F Max WebSocket reconnect attempts reached — using polling only');
+      return;
+    }
 
-      // Create WebSocket connection
-      const socket = new SockJS('http://localhost:8080/ws');
+    try {
+      const socket      = new SockJS('http://localhost:8080/ws');
       const stompClient = Stomp.over(socket);
 
-      // Disable debug logs in production
-      stompClient.debug = (msg) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(msg);
-        }
-      };
+      stompClient.debug = process.env.NODE_ENV === 'development'
+        ? (msg) => console.log('[STOMP]', msg)
+        : () => {};
 
-      // Connect
       stompClient.connect(
         { Authorization: `Bearer ${token}` },
         () => {
-          console.log('✅ WebSocket connected');
+          console.log('\u2705 WebSocket connected');
           setConnected(true);
           setError(null);
+          reconnectAttemptsRef.current = 0;
 
-          // Subscribe to user-specific notifications
-          stompClient.subscribe('/user/queue/notifications', (message) => {
-            const notification = JSON.parse(message.body);
-            console.log('🔔 Received notification:', notification);
-            if (onNotification) {
-              onNotification(notification);
-            }
+          stompClient.subscribe('/user/queue/notifications', ({ body }) => {
+            const notification = JSON.parse(body);
+            if (onNotification) onNotification(notification);
           });
 
-          // Subscribe to unread count updates
-          stompClient.subscribe('/user/queue/notifications/count', (message) => {
-            const data = JSON.parse(message.body);
-            console.log('🔢 Unread count:', data.unreadCount);
-            if (onCountUpdate) {
-              onCountUpdate(data.unreadCount);
-            }
+          stompClient.subscribe('/user/queue/notifications/count', ({ body }) => {
+            const { unreadCount } = JSON.parse(body);
+            if (onCountUpdate) onCountUpdate(unreadCount);
           });
 
-          // Subscribe to global announcements
-          stompClient.subscribe('/topic/announcements', (message) => {
-            const data = JSON.parse(message.body);
-            console.log('📢 Announcement:', data.message);
+          stompClient.subscribe('/topic/announcements', ({ body }) => {
+            const { message } = JSON.parse(body);
+            console.log('\uD83D\uDCE2 Announcement:', message);
           });
-
-          // Send heartbeat every 30 seconds
-          setInterval(() => {
-            if (stompClient.connected) {
-              stompClient.send('/app/ping', {}, JSON.stringify({}));
-            }
-          }, 30000);
         },
-        (error) => {
-          console.error('❌ WebSocket connection error:', error);
+        (err) => {
+          console.warn('\u26A0\uFE0F WebSocket unavailable — falling back to 30s polling', err?.message);
           setConnected(false);
-          setError(error.message || 'Connection failed');
+          setError(err?.message ?? 'Connection failed');
+          reconnectAttemptsRef.current += 1;
 
-          // Auto-reconnect after 5 seconds
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('🔄 Attempting to reconnect...');
-            connect();
-          }, 5000);
+          if (reconnectAttemptsRef.current < MAX_RECONNECTS) {
+            reconnectTimeoutRef.current = setTimeout(connect, 5000);
+          }
         }
       );
 
       stompClientRef.current = stompClient;
     } catch (err) {
-      console.error('❌ WebSocket setup error:', err);
+      console.warn('\u26A0\uFE0F WebSocket setup failed:', err.message);
       setError(err.message);
     }
   };
 
   const disconnect = () => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-
-    if (stompClientRef.current && stompClientRef.current.connected) {
+    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    if (stompClientRef.current?.connected) {
       stompClientRef.current.disconnect(() => {
-        console.log('🔌 WebSocket disconnected');
+        console.log('\uD83D\uDD0C WebSocket disconnected');
         setConnected(false);
       });
     }
   };
 
   const send = (destination, body) => {
-    if (stompClientRef.current && stompClientRef.current.connected) {
+    if (stompClientRef.current?.connected) {
       stompClientRef.current.send(destination, {}, JSON.stringify(body));
     } else {
-      console.warn('⚠️ WebSocket not connected, cannot send message');
+      console.warn('\u26A0\uFE0F WebSocket not connected — cannot send');
     }
   };
 
-  return {
-    connected,
-    error,
-    send,
-    reconnect: connect,
-    disconnect
-  };
+  return { connected, error, send, reconnect: connect, disconnect };
 };

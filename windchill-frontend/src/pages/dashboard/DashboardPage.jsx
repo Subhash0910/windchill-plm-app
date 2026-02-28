@@ -12,7 +12,7 @@ const S_COLOR = {
   RELEASED:    { bg: '#dcfce7', text: '#166534', dot: '#22c55e' },
   OBSOLETE:    { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' },
 };
-const S_ICON = { INWORK: '🔧', UNDERREVIEW: '🔍', RELEASED: '✅', OBSOLETE: '🚫' };
+const S_ICON = { INWORK: '\uD83D\uDD27', UNDERREVIEW: '\uD83D\uDD0D', RELEASED: '\u2705', OBSOLETE: '\uD83D\uDEAB' };
 
 const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
   const navigate = useNavigate();
@@ -40,11 +40,11 @@ const DashboardPage = () => {
   const { selectedContextId, selectedContextName } = useContext(PlmWorkspaceContext);
   const navigate = useNavigate();
 
-  const [parts,      setParts]      = useState([]);
-  const [workItems,  setWorkItems]  = useState([]);
-  const [ecrs,       setEcrs]       = useState([]);
-  const [recentParts,setRecentParts]= useState([]);
-  const [loading,    setLoading]    = useState(true);
+  const [parts,       setParts]       = useState([]);
+  const [workItems,   setWorkItems]   = useState([]);
+  const [ecrs,        setEcrs]        = useState([]);
+  const [recentParts, setRecentParts] = useState([]);
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     if (!selectedContextId) { setLoading(false); return; }
@@ -64,11 +64,11 @@ const DashboardPage = () => {
     }).finally(() => setLoading(false));
   }, [selectedContextId]);
 
-  const counts      = parts.reduce((a, p) => ({ ...a, [p.lifecycleState]: (a[p.lifecycleState] || 0) + 1 }), {});
-  const pending     = counts['UNDERREVIEW'] || 0;
-  const released    = counts['RELEASED']    || 0;
-  const inwork      = counts['INWORK']      || 0;
-  const openEcrs    = ecrs.filter(e => !['CLOSED','CANCELLED','REJECTED'].includes(e.status)).length;
+  const counts   = parts.reduce((a, p) => ({ ...a, [p.lifecycleState]: (a[p.lifecycleState] || 0) + 1 }), {});
+  const pending  = counts['UNDERREVIEW'] || 0;  // parts in UNDERREVIEW (system-wide in context)
+  const released = counts['RELEASED']    || 0;
+  const inwork   = counts['INWORK']      || 0;
+  const openEcrs = ecrs.filter(e => !['CLOSED', 'CANCELLED', 'REJECTED'].includes(e.status)).length;
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -78,10 +78,11 @@ const DashboardPage = () => {
   };
 
   const quickActions = [
-    { icon: '⚙️',  label: 'Parts',           sub: `${parts.length} total`,   to: '/plm/parts',    color: 'blue'   },
-    { icon: '📋',  label: 'Worklist',         sub: `${workItems.length} pending`, to: '/plm/worklist', color: 'amber'  },
-    { icon: '📝',  label: 'Changes',          sub: `${ecrs.length} ECRs`,     to: '/plm/changes',  color: 'purple' },
-    { icon: '⚡',  label: 'Impact Analysis',  sub: 'AI-powered',              to: '/plm/ai-demo',  color: 'green'  },
+    { icon: '\u2699\uFE0F', label: 'Parts',          sub: `${parts.length} total`,       to: '/plm/parts',    color: 'blue'   },
+    // sub shows tasks assigned TO ME — not system-wide parts in review
+    { icon: '\uD83D\uDCCB', label: 'Worklist',        sub: `${workItems.length} task(s)`, to: '/plm/worklist', color: 'amber'  },
+    { icon: '\uD83D\uDCDD', label: 'Changes',         sub: `${ecrs.length} ECRs`,         to: '/plm/changes',  color: 'purple' },
+    { icon: '\u26A1',       label: 'Impact Analysis', sub: 'AI-powered',                  to: '/plm/ai-demo',  color: 'green'  },
   ];
 
   return (
@@ -92,28 +93,48 @@ const DashboardPage = () => {
         {/* ── Welcome Banner ── */}
         <div className="dashboard-welcome">
           <div className="welcome-text">
-            <h1>{greeting()}, <span>{user?.fullName || user?.username || 'Engineer'}</span> 👋</h1>
+            <h1>{greeting()}, <span>{user?.fullName || user?.username || 'Engineer'}</span> \uD83D\uDC4B</h1>
             <p>
               {selectedContextId
                 ? <>
                     Active context: <strong>{selectedContextName || selectedContextId}</strong>
-                    &nbsp;·&nbsp;{parts.length} part(s)
+                    &nbsp;\u00B7&nbsp;{parts.length} part(s)
                   </>
                 : 'Select a context from the PLM workspace to see live data.'}
             </p>
           </div>
           <div className="welcome-actions">
             <span className="role-badge">{user?.role || 'VIEWER'}</span>
-            <button className="btn-ghost" onClick={() => navigate('/plm/parts')}>Open Workspace →</button>
+            <button className="btn-ghost" onClick={() => navigate('/plm/parts')}>Open Workspace \u2192</button>
           </div>
         </div>
 
         {/* ── KPI Cards ── */}
         <div className="kpi-grid">
-          <KPICard icon="⚙️" label="Total Parts"     value={parts.length} sub={selectedContextId ? selectedContextName : 'No context'} color="blue"   to="/plm/parts"    loading={loading} />
-          <KPICard icon="🔍" label="Pending Review"  value={pending}      sub={pending > 0 ? 'Need approval' : 'All clear ✓'}         color="amber"  to="/plm/worklist" loading={loading} />
-          <KPICard icon="✅" label="Released Parts"  value={released}     sub={`${inwork} in work`}                                   color="green"                    loading={loading} />
-          <KPICard icon="📝" label="Open ECRs"       value={openEcrs}     sub={`${ecrs.length} total`}                                color="purple" to="/plm/changes"  loading={loading} />
+          <KPICard icon="\u2699\uFE0F" label="Total Parts"
+            value={parts.length}
+            sub={selectedContextId ? selectedContextName : 'No context'}
+            color="blue" to="/plm/parts" loading={loading} />
+
+          {/*
+            PENDING REVIEW = parts in UNDERREVIEW state (system-wide in this context).
+            This is NOT your personal worklist. Links to /plm/parts so users see
+            which parts are awaiting review, regardless of who the approver is.
+          */}
+          <KPICard icon="\uD83D\uDD0D" label="Pending Review"
+            value={pending}
+            sub={pending > 0 ? 'Parts awaiting review' : 'All clear \u2713'}
+            color="amber" to="/plm/parts" loading={loading} />
+
+          <KPICard icon="\u2705" label="Released Parts"
+            value={released}
+            sub={`${inwork} in work`}
+            color="green" loading={loading} />
+
+          <KPICard icon="\uD83D\uDCDD" label="Open ECRs"
+            value={openEcrs}
+            sub={`${ecrs.length} total`}
+            color="purple" to="/plm/changes" loading={loading} />
         </div>
 
         {/* ── Body ── */}
@@ -124,7 +145,7 @@ const DashboardPage = () => {
             <h2 className="section-title">Lifecycle Breakdown</h2>
             {!selectedContextId ? (
               <div className="empty-state">
-                <span>🗂️</span>
+                <span>\uD83D\uDDC2\uFE0F</span>
                 <p>Select a context to see part distribution</p>
                 <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Open Workspace</button>
               </div>
@@ -132,7 +153,7 @@ const DashboardPage = () => {
               <div className="skeleton-list">{[1,2,3,4].map(i => <div key={i} className="skeleton-row" />)}</div>
             ) : parts.length === 0 ? (
               <div className="empty-state">
-                <span>📦</span>
+                <span>\uD83D\uDCE6</span>
                 <p>No parts in this context yet</p>
                 <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Create First Part</button>
               </div>
@@ -178,12 +199,12 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Worklist alert */}
+            {/* Worklist alert — only shown when tasks are assigned TO this user */}
             {!loading && workItems.length > 0 && (
               <div className="dash-section dash-section--alert">
-                <h2 className="section-title">⚠️ Pending Your Action</h2>
+                <h2 className="section-title">\u26A0\uFE0F Pending Your Action</h2>
                 <p className="alert-text">
-                  You have <strong>{workItems.length}</strong> item(s) waiting for approval.
+                  You have <strong>{workItems.length}</strong> item(s) waiting for your approval.
                 </p>
                 <button className="btn-amber btn-sm" onClick={() => navigate('/plm/worklist')}>
                   Go to Worklist &rarr;
@@ -198,7 +219,7 @@ const DashboardPage = () => {
                 <div className="skeleton-list">{[1,2,3].map(i => <div key={i} className="skeleton-row" />)}</div>
               ) : recentParts.length === 0 ? (
                 <div className="empty-state-sm">
-                  No parts yet —{' '}
+                  No parts yet \u2014{' '}
                   <button className="link-btn" onClick={() => navigate('/plm/parts')}>create one</button>
                 </div>
               ) : (
@@ -209,7 +230,7 @@ const DashboardPage = () => {
                       <div key={p.id} className="rp-row" onClick={() => navigate(`/plm/parts/${p.id}`)}>
                         <div className="rp-info">
                           <strong>{p.partNumber}</strong>
-                          <span>{p.name || '—'}</span>
+                          <span>{p.name || '\u2014'}</span>
                         </div>
                         <span className="rp-badge" style={{ background: c.bg, color: c.text }}>
                           {S_ICON[p.lifecycleState]} {p.lifecycleState}
