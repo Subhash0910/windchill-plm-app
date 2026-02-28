@@ -2,7 +2,7 @@ package com.windchill.service.plm;
 
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.domain.entity.AuditLog;
-import com.windchill.domain.repository.AuditLogRepository;
+import com.windchill.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
