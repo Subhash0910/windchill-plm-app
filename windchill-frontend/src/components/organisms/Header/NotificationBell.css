@@ -1,0 +1,210 @@
+/* ═══════════════════════════════════════════════════════
+   NotificationBell
+═══════════════════════════════════════════════════════ */
+
+.nb-wrap { position: relative; }
+
+/* Bell button */
+.nb-bell {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  position: relative;
+  padding: 7px 9px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.nb-bell:hover { background: rgba(255,255,255,0.15); }
+
+/* Red badge */
+.nb-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 99px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 1.5px solid white;
+  pointer-events: none;
+}
+
+/* Dropdown panel */
+.nb-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 1px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0;
+  z-index: 9999;
+  overflow: hidden;
+  animation: nb-in 0.15s ease;
+}
+
+@keyframes nb-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Panel header */
+.nb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.nb-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.nb-mark-all {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s;
+}
+.nb-mark-all:hover { color: #4338ca; text-decoration: underline; }
+
+/* Scrollable list */
+.nb-list {
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.nb-list::-webkit-scrollbar { width: 4px; }
+.nb-list::-webkit-scrollbar-track { background: transparent; }
+.nb-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+/* Empty state */
+.nb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+.nb-empty span { font-size: 32px; }
+.nb-empty p { margin: 0; }
+
+/* Spinner */
+.nb-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: nb-spin 0.7s linear infinite;
+}
+@keyframes nb-spin { to { transform: rotate(360deg); } }
+
+/* Notification row */
+.nb-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+}
+.nb-item:last-child { border-bottom: none; }
+.nb-item:hover { background: #f8fafc; }
+
+.nb-item--unread {
+  background: #f0f7ff;
+}
+.nb-item--unread:hover { background: #e0efff; }
+
+/* Unread dot */
+.nb-item--unread::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+
+.nb-type-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+.nb-content { flex: 1; min-width: 0; }
+
+.nb-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.nb-item-msg {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.nb-item-time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Delete X */
+.nb-del {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.12s;
+  font-weight: 300;
+}
+.nb-del:hover { color: #ef4444; }
+
+/* Panel footer */
+.nb-footer {
+  padding: 10px 16px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  background: #f8fafc;
+}

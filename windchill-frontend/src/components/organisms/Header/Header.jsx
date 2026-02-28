@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import Button from '../../atoms/Button/Button';
+import NotificationBell from './NotificationBell';
 import './Header.css';
 
 const Header = ({ title }) => {
@@ -24,7 +25,8 @@ const Header = ({ title }) => {
               {user.role === 'ADMIN' && (
                 <a className="header-link" href="/admin/users">Users</a>
               )}
-              <span className="user-name">Welcome, {user.firstName || user.username}</span>
+              <NotificationBell />
+              <span className="user-name">{user.firstName || user.username}</span>
               <Button variant="secondary" size="sm" onClick={handleLogout}>
                 Logout
               </Button>
