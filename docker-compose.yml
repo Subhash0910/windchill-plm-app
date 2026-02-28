@@ -1,63 +1,89 @@
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: windchill-postgres
+
+  # ── MySQL 8 Database ──────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: windchill-mysql
     environment:
-      POSTGRES_DB: windchill_db
-      POSTGRES_USER: windchill
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-windchill123}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: windchill_db
+      MYSQL_USER: windchill
+      MYSQL_PASSWORD: ${DB_PASSWORD:-windchill123}
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
+    networks:
+      - windchill-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "windchill", "-p${DB_PASSWORD:-windchill123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: windchill-redis
+    ports:
+      - "6379:6379"
     networks:
       - windchill-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U windchill"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Spring Boot Backend
+  # ── Spring Boot Backend ───────────────────────────────────────────────────
   backend:
     build:
       context: ./windchill-backend
       dockerfile: Dockerfile
     container_name: windchill-backend
     depends_on:
-      postgres:
+      mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
-      # Database
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/windchill_db
+      # Database — must match application.yml service name 'mysql'
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
       SPRING_DATASOURCE_USERNAME: windchill
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-windchill123}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
 
-      # JPA/Hibernate
+      # JPA / Hibernate
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_SHOW_SQL: "false"
 
-      # Email (configure these)
+      # Redis — must match application.yml host 'redis'
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+
+      # JWT
+      APP_JWTSECRET: ${JWT_SECRET:-windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890}
+      APP_JWTEXPIRATIONINMS: "86400000"
+
+      # File storage
+      FILE_STORAGE_PATH: /opt/windchill/files
+
+      # Email
       EMAIL_USERNAME: ${EMAIL_USERNAME:-}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@windchill-plm.com}
 
-      # App settings
+      # App
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
-
-      # File storage
-      FILE_STORAGE_PATH: /opt/windchill/files
-
-      # JWT
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
 
     ports:
       - "8080:8080"
     volumes:
       - windchill_files:/opt/windchill/files
-      - ./windchill-backend/logs:/app/logs
     networks:
       - windchill-network
     healthcheck:
@@ -67,7 +93,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # React Frontend
+  # ── React Frontend (Nginx) ────────────────────────────────────────────────
   frontend:
     build:
       context: ./windchill-frontend
@@ -86,7 +112,7 @@ services:
       retries: 3
 
 volumes:
-  postgres_data:
+  mysql_data:
     driver: local
   windchill_files:
     driver: local
