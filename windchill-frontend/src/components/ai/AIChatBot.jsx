@@ -6,18 +6,22 @@ import './AIChatBot.css';
 
 // ── PLM Knowledge Base ────────────────────────────────────────────────────────
 const KB = {
-  lifecycle: `In PLM, a part moves through these lifecycle states:\n\n🔧 **INWORK** — Actively being designed. Default state when created.\n🔍 **UNDER_REVIEW** — Submitted for approval via work item.\n✅ **RELEASED** — Approved and production-ready. Cannot be directly edited.\n🚫 **OBSOLETE** — Retired. No longer in active use.\n\nOnly RELEASED parts can be **revised** to start a new revision cycle.`,
+  lifecycle: `In PLM, a part moves through these lifecycle states:\n\n🔧 **INWORK** — Actively being designed. Default state when created.\n🔍 **UNDERREVIEW** — Submitted for approval. Reviewers can approve or reject from the Worklist.\n✅ **RELEASED** — Approved and production-ready. Cannot be directly edited.\n🚫 **OBSOLETE** — Retired. No longer in active use.\n\nOnly RELEASED parts can be **revised** to start a new revision cycle.`,
   bom: `A **Bill of Materials (BOM)** is a structured list of all components that make up a product assembly.\n\nIn this app:\n• Open any part → go to the **Structure** tab\n• Add child parts using the BOM Editor\n• Each BOM line links a parent part to a child part\n• BOM drives **Where Used** analysis — critical for change impact`,
   revision: `**Revision** tracks the letter version (A, B, C…) of a part design. **Iteration** tracks the number within that revision.\n\nRules:\n• A part starts at Rev A, Iter 1\n• A new Revision (A → B) is only allowed when the part is **RELEASED**\n• Revising creates a brand-new INWORK copy while the released version is preserved`,
   whereused: `**Where Used** shows all parent assemblies that reference a specific part via BOM lines.\n\nCritical for **impact analysis** — before changing a part, check Where Used to understand what assemblies will be affected.`,
   ecr: `An **ECR (Engineering Change Request)** is a formal request to change a part.\n\nWorkflow: Create ECR → Submit → Reviewers approve/reject → If approved, ECN issued → Parts revised and released.`,
   ecn: `An **ECN (Engineering Change Notice)** is the approved authorization to implement a design change. It follows an approved ECR.`,
   context: `A **PLM Context** is a workspace/project container. Everything (parts, folders, team) lives inside a context. Switch contexts using the left sidebar.`,
-  worklist: `Your **Worklist** contains all pending approval tasks assigned to you. Approve or reject each item to move parts through the lifecycle.`,
+  worklist: `Your **Worklist** shows all parts currently in **UNDERREVIEW** state.\n\nAs an Approver or Manager, you can:\n• **Approve** — promotes the part to RELEASED\n• **Reject** — sends the part back to INWORK\n\nNote: Only users with APPROVER or MANAGER role can approve.`,
   part: `A **Part** in PLM is a managed component. It has a Part Number, Name, Revision, Iteration, Lifecycle State, BOM Structure, and Audit History.`,
-  promote: `**Promoting** a part moves it to the next lifecycle state:\n• INWORK → UNDER_REVIEW (submits for approval)\n• UNDER_REVIEW → RELEASED (requires Worklist approval)\n\nYou can promote from the part detail page, or just say **"promote [partNumber]"** here.`,
+  promote: `**Submitting a part for review** moves it from INWORK → UNDERREVIEW.\n\nThis enters the approval workflow:\n1. Engineer submits (INWORK → UNDERREVIEW)\n2. Appears on Worklist for Approvers/Managers\n3. Approver approves → RELEASED, or rejects → back to INWORK\n\nSay **"submit P001"** or **"promote P001"** to start the review process.`,
   impact: `**Impact Analysis** uses AI to calculate the risk score, BOM depth, affected assemblies, and conflicting changes for a given part modification.\n\nSay **"run impact on [partNumber]"** to trigger the analysis directly from chat.`,
 };
+
+// ── Lifecycle state emoji map ────────────────────────────────────────────
+// NOTE: Java enum is UNDERREVIEW (no underscore) — must match exactly
+const S = { INWORK: '🔧', RELEASED: '✅', UNDERREVIEW: '🔍', OBSOLETE: '🚫' };
 
 // ── Intent Parser ─────────────────────────────────────────────────────────────
 const parseIntent = (text) => {
@@ -30,7 +34,7 @@ const parseIntent = (text) => {
   // Worklist
   if (/worklist|my tasks|pending approval|assigned to me|work items/.test(t)) return { type: 'WORKLIST' };
 
-  // Approve / Reject task
+  // Approve / Reject from worklist
   const approvMatch = t.match(/approve\s+(?:task\s+)?(?:my\s+first|#?(\d+)|first)?\s*(?:task)?/i);
   if (approvMatch && t.includes('approv')) return { type: 'APPROVE_TASK', id: approvMatch[1] || null };
   const rejectMatch = t.match(/reject\s+(?:task\s+)?(?:#?(\d+))?/i);
@@ -41,16 +45,17 @@ const parseIntent = (text) => {
   if (/\becr\b|engineering change request/.test(t)) return { type: 'EXPLAIN', topic: 'ecr' };
   if (/\becn\b|engineering change notice/.test(t)) return { type: 'EXPLAIN', topic: 'ecn' };
 
-  // Promote a part
-  const promoteMatch = t.match(/promote\s+(?:part\s+)?([a-z0-9\-_]+)/i);
-  if (promoteMatch) return { type: 'PROMOTE', query: promoteMatch[1] };
+  // Submit / Promote a part (INWORK -> UNDERREVIEW = submit for review)
+  const promoteMatch = t.match(/(?:promote|submit(?:\s+for(?:\s+review)?)?)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
+  if (promoteMatch && !['for', 'to', 'the', 'a', 'an'].includes(promoteMatch[1].toLowerCase())) {
+    return { type: 'PROMOTE', query: promoteMatch[1] };
+  }
 
   // Revise a part
   const reviseMatch = t.match(/revise\s+(?:part\s+)?([a-z0-9\-_]+)/i);
   if (reviseMatch) return { type: 'REVISE', query: reviseMatch[1] };
 
-  // ✅ FIX: Impact Analysis — correctly skip 'on'/'for' before part number
-  // Matches: "run impact on P001", "run impact P001", "impact analysis on P001", "impact on P001"
+  // Impact Analysis — correctly skip 'on'/'for' before part number
   const impactMatch = t.match(/(?:run\s+impact|impact(?:\s+analysis)?)\s+(?:on\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
   if (impactMatch && !['on', 'for', 'the', 'a', 'an'].includes(impactMatch[1].toLowerCase())) {
     return { type: 'IMPACT', query: impactMatch[1] };
@@ -76,7 +81,8 @@ const parseIntent = (text) => {
   if (/released parts|list released|show released/.test(t)) return { type: 'FILTER', state: 'RELEASED' };
   if (/inwork parts|list inwork|show inwork|in[- ]?work/.test(t)) return { type: 'FILTER', state: 'INWORK' };
   if (/obsolete/.test(t)) return { type: 'FILTER', state: 'OBSOLETE' };
-  if (/under[\s_-]?review|review parts/.test(t)) return { type: 'FILTER', state: 'UNDER_REVIEW' };
+  // NOTE: enum value is UNDERREVIEW (no underscore)
+  if (/under[\s_-]?review|review parts|pending review/.test(t)) return { type: 'FILTER', state: 'UNDERREVIEW' };
 
   // Search
   const searchMatch = t.match(/(?:search|find|look for|locate|where is)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
@@ -94,7 +100,8 @@ const parseIntent = (text) => {
   if (/\brevision\b|revise/.test(t)) return { type: 'EXPLAIN', topic: 'revision' };
   if (/where.?used|impact analysis/.test(t)) return { type: 'EXPLAIN', topic: 'whereused' };
   if (/\bcontext\b|workspace/.test(t)) return { type: 'EXPLAIN', topic: 'context' };
-  if (/promote|promotion/.test(t)) return { type: 'EXPLAIN', topic: 'promote' };
+  if (/promote|submit.*review|promotion/.test(t)) return { type: 'EXPLAIN', topic: 'promote' };
+  if (/\bworklist\b/.test(t)) return { type: 'EXPLAIN', topic: 'worklist' };
   if (/impact|risk analysis/.test(t)) return { type: 'EXPLAIN', topic: 'impact' };
   if (/what is a? ?part|what are parts/.test(t)) return { type: 'EXPLAIN', topic: 'part' };
 
@@ -104,8 +111,8 @@ const parseIntent = (text) => {
     return { type: 'ANALYZE', query: bare[1] };
   }
 
-  // Memory follow-ups: "impact on it", "promote it"
-  const followUp = t.match(/(?:impact|promote|revise|bom|where.?used|analyze)\s+(it|this|that|the part)$/i);
+  // Memory follow-ups
+  const followUp = t.match(/(?:impact|promote|submit|revise|bom|where.?used|analyze)\s+(it|this|that|the part)$/i);
   if (followUp) return { type: 'FOLLOWUP', action: t.split(' ')[0] };
 
   return { type: 'UNKNOWN' };
@@ -117,10 +124,8 @@ const mkMsg = (role, text, suggestions = [], meta = {}) => ({
   id: ++_uid, role, text, suggestions, ts: new Date(), ...meta,
 });
 
-const S = { INWORK: '🔧', RELEASED: '✅', UNDER_REVIEW: '🔍', OBSOLETE: '🚫' };
-
 const WELCOME = mkMsg('assistant',
-  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Promote or Revise parts directly from here\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
+  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Submit parts for review or Revise from here\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
   []
 );
 
@@ -154,13 +159,16 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
 
   useEffect(() => {
     if (memory.lastPart) {
+      const p = memory.lastPart;
       setQuickChips([
-        `Analyze ${memory.lastPart.partNumber}`,
-        `Run impact on ${memory.lastPart.partNumber}`,
-        memory.lastPart.lifecycleState === 'INWORK'
-          ? `Promote ${memory.lastPart.partNumber}`
-          : `BOM of ${memory.lastPart.partNumber}`,
-        `Where used ${memory.lastPart.partNumber}`,
+        `Analyze ${p.partNumber}`,
+        `Run impact on ${p.partNumber}`,
+        p.lifecycleState === 'INWORK'
+          ? `Submit ${p.partNumber} for review`
+          : p.lifecycleState === 'RELEASED'
+            ? `Revise ${p.partNumber}`
+            : `BOM of ${p.partNumber}`,
+        `Where used ${p.partNumber}`,
       ]);
     } else if (selectedContextId) {
       setQuickChips(['List all parts', 'Count parts', 'My Worklist', 'Show released parts']);
@@ -189,7 +197,7 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
       if (intent.type === 'FOLLOWUP' && memory.lastPart) {
         const action = intent.action;
         if (action === 'impact') intent = { type: 'IMPACT', query: memory.lastPart.partNumber };
-        else if (action === 'promote') intent = { type: 'PROMOTE', query: memory.lastPart.partNumber };
+        else if (action === 'promote' || action === 'submit') intent = { type: 'PROMOTE', query: memory.lastPart.partNumber };
         else if (action === 'revise') intent = { type: 'REVISE', query: memory.lastPart.partNumber };
         else if (action === 'bom') intent = { type: 'BOM_VIEW', query: memory.lastPart.partNumber };
         else intent = { type: 'ANALYZE', query: memory.lastPart.partNumber };
@@ -228,13 +236,13 @@ What would you like to know?`,
 
 🔍 **Live Data**
 • "List all parts" / "Count parts"
-• "Show released / INWORK / obsolete parts"
+• "Show released / INWORK / under review parts"
 • "Search [keyword]" / "Analyze [partNumber]"
 • "BOM of [partNumber]" / "Where used [partNumber]"
 
 ⚡ **Actions**
-• "Promote [partNumber]" — submits for approval
-• "Revise [partNumber]" — creates new revision
+• "Submit [partNumber] for review" — enters approval workflow
+• "Revise [partNumber]" — creates new revision (RELEASED only)
 • "Run impact on [partNumber]" — AI impact analysis
 • "Approve my first task" / "Reject task [id]"
 
@@ -252,7 +260,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
 
         case 'EXPLAIN':
           reply = mkMsg('assistant',
-            KB[intent.topic] ?? `I don't have a knowledge entry for that yet.\nTry: lifecycle, BOM, revision, where used, ECR, ECN, context, promote, impact, part.`,
+            KB[intent.topic] ?? `I don't have a knowledge entry for that yet.\nTry: lifecycle, BOM, revision, where used, ECR, ECN, context, promote, worklist, impact, part.`,
             ['Explain lifecycle', 'What is BOM?', 'What is an ECR?']
           ); break;
 
@@ -322,7 +330,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else {
             const lines = filtered.slice(0, 10).map(p => `• **${p.partNumber}** — ${p.name || '—'} | Rev ${p.revision}.${p.iteration}`).join('\n');
             reply = mkMsg('assistant',
-              `${S[intent.state]} **${filtered.length} ${intent.state} part(s):**\n\n${lines}`,
+              `${S[intent.state] || '📄'} **${filtered.length} ${intent.state} part(s):**\n\n${lines}`,
               filtered.slice(0, 2).map(p => `Analyze ${p.partNumber}`)
             );
           }
@@ -377,10 +385,11 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             } catch (_) {
               bomText = '\n\n**📦 BOM:** Unable to fetch'; wuText = '';
             }
+            // Correct state names use UNDERREVIEW (no underscore)
             const tip = found.lifecycleState === 'INWORK'
-              ? `💡 INWORK — say **"Promote ${found.partNumber}"** to submit for approval.`
-              : found.lifecycleState === 'UNDER_REVIEW'
-                ? '💡 UNDER REVIEW — check Worklist to approve or reject.'
+              ? `💡 INWORK — say **"Submit ${found.partNumber} for review"** to enter the approval workflow.`
+              : found.lifecycleState === 'UNDERREVIEW'
+                ? `💡 UNDERREVIEW — check Worklist to approve or reject. Only APPROVER/MANAGER can approve.`
                 : found.lifecycleState === 'RELEASED'
                   ? `💡 RELEASED — say **"Revise ${found.partNumber}"** to create a new revision.`
                   : '💡 OBSOLETE — this part has been retired.';
@@ -395,7 +404,11 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               bomText + wuText + `\n\n${tip}`,
               [
                 `Run impact on ${found.partNumber}`,
-                found.lifecycleState === 'INWORK' ? `Promote ${found.partNumber}` : found.lifecycleState === 'RELEASED' ? `Revise ${found.partNumber}` : 'List all parts',
+                found.lifecycleState === 'INWORK'
+                  ? `Submit ${found.partNumber} for review`
+                  : found.lifecycleState === 'RELEASED'
+                    ? `Revise ${found.partNumber}`
+                    : 'My Worklist',
                 `Where used ${found.partNumber}`,
               ],
               { _partId: found.id, _partNumber: found.partNumber }
@@ -485,28 +498,30 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             reply = mkMsg('assistant', `❌ Part **"${intent.query}"** not found.`, ['List all parts']);
           } else if (found.lifecycleState === 'RELEASED') {
             reply = mkMsg('assistant',
-              `✅ **${found.partNumber}** is already RELEASED.\n\nSay **"Revise ${found.partNumber}"** to create a new revision.`,
+              `✅ **${found.partNumber}** is already RELEASED.\n\nSay **"Revise ${found.partNumber}"** to create a new revision for editing.`,
               [`Revise ${found.partNumber}`, `Analyze ${found.partNumber}`]
             );
           } else if (found.lifecycleState === 'OBSOLETE') {
             reply = mkMsg('assistant', `🚫 **${found.partNumber}** is OBSOLETE and cannot be promoted.`, ['List all parts']);
-          } else if (found.lifecycleState === 'UNDER_REVIEW') {
+          } else if (found.lifecycleState === 'UNDERREVIEW') {
+            // UNDERREVIEW is the correct enum value (no underscore)
             reply = mkMsg('assistant',
-              `🔍 **${found.partNumber}** is already UNDER REVIEW.\n\nCheck your Worklist to approve or reject it.`,
+              `🔍 **${found.partNumber}** is already **UNDERREVIEW** (submitted for approval).\n\nIt\'s now in the Worklist for review. An Approver/Manager must approve it from there to move it to RELEASED.\n\nYou cannot bypass this step — this is the workflow.`,
               ['Go to worklist', `Analyze ${found.partNumber}`]
             );
           } else {
+            // INWORK -> UNDERREVIEW = submit for review (enters Worklist workflow)
             setMemory(m => ({ ...m, lastPart: found }));
             try {
-              // ✅ FIX: call without target param — backend auto-promotes to next state
-              await plmApi.promotePart(found.id);
+              // target=UNDERREVIEW (no underscore, matches Java LifecycleStateEnum)
+              await plmApi.promotePart(found.id, 'UNDERREVIEW');
               reply = mkMsg('assistant',
-                `✅ **${found.partNumber}** promoted to **UNDER_REVIEW**!\n\nA work item has been created. Reviewers can now approve or reject it from the Worklist.`,
+                `✅ **${found.partNumber}** submitted for review!\n\n**INWORK → UNDERREVIEW**\n\nIt is now in the approval workflow. An Approver or Manager must go to the **Worklist** to approve it.\n\n🔒 You cannot skip this step — only an Approver/Manager can move it to RELEASED.`,
                 ['Go to worklist', `Analyze ${found.partNumber}`]
               );
             } catch (err) {
               reply = mkMsg('assistant',
-                `⚠️ Promote failed: ${err?.response?.data?.message || err.message}\n\nYou can promote manually from the part detail page.`,
+                `⚠️ Submit failed: ${err?.response?.data?.message || err.message}\n\nYou can submit manually from the part detail page.`,
                 [`Analyze ${found.partNumber}`, 'Go to parts']
               );
             }
@@ -521,14 +536,17 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else if (found.lifecycleState !== 'RELEASED') {
             reply = mkMsg('assistant',
               `⚠️ **${found.partNumber}** cannot be revised. It must be **RELEASED** first.\n\nCurrent state: **${found.lifecycleState}**`,
-              [`Analyze ${found.partNumber}`, found.lifecycleState === 'INWORK' ? `Promote ${found.partNumber}` : 'List all parts']
+              [
+                `Analyze ${found.partNumber}`,
+                found.lifecycleState === 'INWORK' ? `Submit ${found.partNumber} for review` : 'List all parts'
+              ]
             );
           } else {
             setMemory(m => ({ ...m, lastPart: found }));
             try {
               const newPart = await plmApi.revisePart(found.id);
               reply = mkMsg('assistant',
-                `✅ **New revision created for ${found.partNumber}!**\n\nNew part: **${newPart?.partNumber || found.partNumber + ' (new rev)'}** | State: INWORK\n\nYou can now edit the new revision independently.`,
+                `✅ **New revision created for ${found.partNumber}!**\n\nNew part: **${newPart?.partNumber || found.partNumber + ' (new rev)'}** | State: INWORK\n\nYou can now edit the new revision independently. The released version is preserved.`,
                 ['Go to parts', 'List all parts']
               );
             } catch (err) {
@@ -546,15 +564,15 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             const items = await plmApi.listMyWorkItems();
             if (!items?.length) {
               reply = mkMsg('assistant',
-                `📋 **Your Worklist is empty.**\n\nNo pending approval tasks. You're all caught up! ✅`,
+                `📋 **Your Worklist is empty.**\n\nNo parts pending review. You're all caught up! ✅`,
                 ['Go to worklist', 'List all parts']
               );
             } else {
               const lines = items.slice(0, 8).map(w =>
-                `• **${w.partNumber || w.subjectPartNumber || 'Work Item'}** [ID: ${w.id}] — ${w.action || w.type || 'Approval'}`
+                `• **${w.partNumber || w.subjectPartNumber || 'Part'}** [ID: ${w.id}] — ${w.action || w.type || 'Pending Approval'}`
               ).join('\n');
               reply = mkMsg('assistant',
-                `📋 **${items.length} pending work item(s):**\n\n${lines}\n\nSay **"Approve my first task"** or **"Reject task [ID]"** to act.`,
+                `📋 **${items.length} pending item(s) in Worklist:**\n\n${lines}\n\nSay **"Approve my first task"** or **"Reject task [ID]"** to act (requires Approver/Manager role).`,
                 ['Approve my first task', 'Go to worklist']
               );
             }
@@ -576,13 +594,13 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 : items[0];
               await plmApi.approveWorkItem(task.id, 'Approved via PLM Assistant');
               reply = mkMsg('assistant',
-                `✅ **Task approved!**\n\n**${task.partNumber || task.subjectPartNumber || 'Work Item'}** [ID: ${task.id}] has been approved.\n\nThe part will now move to the next lifecycle state.`,
+                `✅ **Task approved!**\n\n**${task.partNumber || task.subjectPartNumber || 'Part'}** [ID: ${task.id}] has been approved.\n\nThe part will now move to **RELEASED** state.`,
                 ['My Worklist', 'List all parts']
               );
             }
           } catch (err) {
             reply = mkMsg('assistant',
-              `⚠️ Approval failed: ${err?.response?.data?.message || err.message}\n\nTry from the Worklist page directly.`,
+              `⚠️ Approval failed: ${err?.response?.data?.message || err.message}\n\nNote: Only APPROVER or MANAGER role can approve. Try from the Worklist page.`,
               ['Go to worklist']
             );
           }
@@ -600,7 +618,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 : items[0];
               await plmApi.rejectWorkItem(task.id, 'Rejected via PLM Assistant');
               reply = mkMsg('assistant',
-                `🔁 **Task rejected.**\n\n**${task.partNumber || task.subjectPartNumber || 'Work Item'}** [ID: ${task.id}] sent back to INWORK.`,
+                `🔁 **Task rejected.**\n\n**${task.partNumber || task.subjectPartNumber || 'Part'}** [ID: ${task.id}] sent back.\n\nThe part returns to **INWORK** state.`,
                 ['My Worklist', 'List all parts']
               );
             }
@@ -639,21 +657,23 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
         }
 
         default: {
-          // Memory context: vague "it/this/that" references
           if (memory.lastPart && /\b(it|this|that|the part)\b/.test(q.toLowerCase())) {
             reply = mkMsg('assistant',
               `💬 I think you're asking about **${memory.lastPart.partNumber}**. What would you like to do?`,
               [
                 `Analyze ${memory.lastPart.partNumber}`,
                 `Run impact on ${memory.lastPart.partNumber}`,
-                memory.lastPart.lifecycleState === 'INWORK' ? `Promote ${memory.lastPart.partNumber}` : `BOM of ${memory.lastPart.partNumber}`,
+                memory.lastPart.lifecycleState === 'INWORK'
+                  ? `Submit ${memory.lastPart.partNumber} for review`
+                  : memory.lastPart.lifecycleState === 'RELEASED'
+                    ? `Revise ${memory.lastPart.partNumber}`
+                    : `BOM of ${memory.lastPart.partNumber}`,
                 `Where used ${memory.lastPart.partNumber}`,
               ]
             );
             break;
           }
 
-          // Try backend
           let handled = false;
           try {
             const res = await fetch('/api/v1/ai/chat', {
@@ -677,7 +697,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
 
           if (!handled) {
             reply = mkMsg('assistant',
-              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Promote [partNumber]" / "Run impact on [partNumber]"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
+              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Submit [partNumber] for review" / "Run impact on [partNumber]"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
               selectedContextId
                 ? ['List all parts', 'Count parts', 'My Worklist', 'Help']
                 : ['Explain lifecycle', 'What is BOM?', 'Help']
