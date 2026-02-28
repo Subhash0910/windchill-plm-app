@@ -1,19 +1,20 @@
 package com.windchill.api.controller;
 
+import com.windchill.api.security.AuthenticatedUser;
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.domain.entity.Notification;
+import com.windchill.service.INotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Notification endpoints.
- * The /count endpoint was missing, causing a 404 log-spam on every page load
- * because the frontend polls it immediately after login.
+ * Full notification CRUD controller.
+ * All endpoints require a valid JWT — secured via SecurityConfig anyRequest().authenticated().
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -21,17 +22,55 @@ import java.util.Map;
 @Slf4j
 public class NotificationController {
 
-    /**
-     * Returns the unread notification count for the currently authenticated user.
-     * Returns 0 until a full notification system is implemented.
-     */
+    private final INotificationService notificationService;
+
+    /** Returns {unreadCount: N} — polled every 30 s by NotificationBell */
     @GetMapping("/count")
-    public ResponseEntity<ApiResponse<?>> getNotificationCount() {
-        log.debug("Fetching notification count");
-        return ResponseEntity.ok(ApiResponse.builder()
-                .success(true)
-                .message("Notification count fetched successfully")
-                .data(Map.of("count", 0))
-                .build());
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        long count = notificationService.getUnreadCount(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(Map.of("unreadCount", count)));
+    }
+
+    /** Returns list of unread notifications for the authenticated user */
+    @GetMapping("/unread")
+    public ResponseEntity<ApiResponse<List<Notification>>> getUnread(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        List<Notification> list = notificationService.getUnread(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    /** Returns ALL notifications (read + unread) */
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<Notification>>> getAll(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        List<Notification> list = notificationService.getAll(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    /** Mark a single notification as read */
+    @PutMapping("/{id}/read")
+    public ResponseEntity<ApiResponse<Void>> markAsRead(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        notificationService.markAsRead(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /** Mark ALL notifications for the user as read */
+    @PutMapping("/read-all")
+    public ResponseEntity<ApiResponse<Void>> markAllAsRead(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        notificationService.markAllAsRead(principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /** Delete a notification */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        notificationService.delete(id, principal.getId());
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
