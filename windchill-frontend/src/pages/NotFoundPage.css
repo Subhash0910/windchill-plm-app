@@ -1,0 +1,104 @@
+.nf-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 32px 16px;
+  box-sizing: border-box;
+}
+
+.nf-card {
+  background: white;
+  border-radius: 20px;
+  padding: 52px 44px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+  border: 1px solid #f1f5f9;
+}
+
+.nf-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.nf-emoji {
+  font-size: 52px;
+  filter: grayscale(0.2);
+}
+
+.nf-code {
+  font-size: 80px;
+  font-weight: 900;
+  color: #e2e8f0;
+  line-height: 1;
+  letter-spacing: -4px;
+}
+
+.nf-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 10px 0;
+}
+
+.nf-desc {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.nf-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.nf-btn {
+  padding: 10px 22px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.nf-btn--primary {
+  background: #4f46e5;
+  color: white;
+}
+.nf-btn--primary:hover { background: #4338ca; }
+
+.nf-btn--ghost {
+  background: #f1f5f9;
+  color: #374151;
+  border: 1px solid #e2e8f0;
+}
+.nf-btn--ghost:hover { background: #e2e8f0; }
+
+.nf-hint {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.nf-link {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: none;
+}
+.nf-link:hover { text-decoration: underline; }

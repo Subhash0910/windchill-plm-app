@@ -4,7 +4,6 @@ import LoginPage from '../pages/auth/LoginPage';
 import DashboardPage from '../pages/dashboard/DashboardPage';
 import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
-
 import PlmLayout from '../pages/plm/PlmLayout';
 import PartsPage from '../pages/plm/PartsPage';
 import PartDetailPage from '../pages/plm/PartDetailPage';
@@ -14,60 +13,73 @@ import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import ChangeTasksPage from '../pages/plm/ChangeTasksPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
 import AIDemo from '../pages/AIDemo';
+import NotFoundPage from '../pages/NotFoundPage';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const AppRoutes = () => {
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          }
-        />
+    <ErrorBoundary>
+      <Router>
+        <Routes>
 
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          }
-        />
+          {/* Public — redirect to dashboard if already logged in */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
 
-        <Route
-          path="/admin/users"
-          element={
-            <PrivateRoute>
-              <UsersAdminPage />
-            </PrivateRoute>
-          }
-        />
+          {/* Main Dashboard */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
 
-        <Route
-          path="/plm"
-          element={
-            <PrivateRoute>
-              <PlmLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<Navigate to="parts" replace />} />
-          <Route path="parts" element={<PartsPage />} />
-          <Route path="parts/:id" element={<PartDetailPage />} />
-          <Route path="worklist" element={<WorklistPage />} />
-          <Route path="changes" element={<ChangesHomePage />} />
-          <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
-          <Route path="changes/tasks" element={<ChangeTasksPage />} />
-          {/* AI Demo now inside PlmLayout to share context */}
-          <Route path="ai-demo" element={<AIDemo />} />
-        </Route>
+          {/* Admin */}
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute>
+                <UsersAdminPage />
+              </PrivateRoute>
+            }
+          />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Router>
+          {/* PLM Workspace — nested under PlmLayout */}
+          <Route
+            path="/plm"
+            element={
+              <PrivateRoute>
+                <PlmLayout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Navigate to="parts" replace />} />
+            <Route path="parts"              element={<PartsPage />} />
+            <Route path="parts/:id"          element={<PartDetailPage />} />
+            <Route path="worklist"           element={<WorklistPage />} />
+            <Route path="changes"            element={<ChangesHomePage />} />
+            <Route path="changes/ecr/:id"    element={<EcrDetailPage />} />
+            <Route path="changes/tasks"      element={<ChangeTasksPage />} />
+            <Route path="ai-demo"            element={<AIDemo />} />
+          </Route>
+
+          {/* Root redirect */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* 404 catch-all — must be last */}
+          <Route path="*" element={<NotFoundPage />} />
+
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 };
 
