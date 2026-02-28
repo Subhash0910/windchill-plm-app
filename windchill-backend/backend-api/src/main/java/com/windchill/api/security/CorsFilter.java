@@ -6,21 +6,27 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Set;
 
 /**
- * Additional CORS filter to ensure all preflight requests are handled correctly.
- * This acts as a catch-all for OPTIONS requests before they reach Spring Security.
+ * DISABLED — @Component removed intentionally.
+ *
+ * This filter used to be registered as a Servlet filter via @Component, which caused
+ * a dual-CORS-header problem: it ran at HIGHEST_PRECEDENCE adding CORS headers, then
+ * Spring Security's own CorsFilter (driven by SecurityConfig.corsConfigurationSource())
+ * added them again. Some browsers rejected requests with duplicate Access-Control-* headers.
+ *
+ * SecurityConfig already fully handles CORS via corsConfigurationSource() on both the
+ * actuator and main filter chains, so this standalone filter is not needed.
+ *
+ * Kept as a reference / can be re-enabled by adding @Component back if needed.
  */
-@Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorsFilter extends OncePerRequestFilter {
 
-    // Dev-safe allowed origins. Keep this explicit when credentials are enabled.
     private static final Set<String> ALLOWED_ORIGINS = Set.of(
             "http://localhost",
             "http://localhost:3000",
@@ -42,9 +48,6 @@ public class CorsFilter extends OncePerRequestFilter {
         String origin = request.getHeader("Origin");
         boolean originAllowed = origin != null && ALLOWED_ORIGINS.contains(origin);
 
-        // IMPORTANT:
-        // If the browser sends credentials (cookies / Authorization + withCredentials),
-        // we must NOT use wildcard "*" for Allow-Origin. We must echo an allowed origin.
         if (originAllowed) {
             response.setHeader("Access-Control-Allow-Origin", origin);
             response.setHeader("Vary", "Origin");
@@ -63,7 +66,6 @@ public class CorsFilter extends OncePerRequestFilter {
         response.setHeader("Access-Control-Max-Age", "3600");
         response.setHeader("Access-Control-Expose-Headers", "Authorization, Content-Type, X-Total-Count");
 
-        // Handle preflight requests
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;

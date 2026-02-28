@@ -150,11 +150,25 @@ public class UserServiceImpl implements IUserService {
         log.info("Password changed successfully for user: {}", userId);
     }
 
+    /**
+     * FIX: Use a targeted JPQL UPDATE instead of a full entity save().
+     *
+     * The old implementation loaded the full User entity and called userRepository.save(user),
+     * which caused Hibernate dirty-checking to issue a full UPDATE across ALL columns.
+     * If the entity state in the current persistence context diverged (e.g. stale snapshot,
+     * or a @PreUpdate / converter touching passwordHash), the save() would silently overwrite
+     * the password_hash in the DB — making the next passwordEncoder.matches() call fail
+     * intermittently (the classic 'Invalid credentials' after a successful login).
+     *
+     * The targeted @Modifying query only touches last_login_at, so password_hash is never
+     * at risk.
+     */
     @Override
     public User updateLastLogin(Long userId) {
-        User user = getUserById(userId);
-        user.setLastLoginAt(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
-        return userRepository.save(user);
+        log.debug("Updating last login for user: {}", userId);
+        String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+        userRepository.updateLastLoginAt(userId, now);
+        return getUserById(userId);
     }
 
     @Override
