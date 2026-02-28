@@ -69,6 +69,14 @@ const parseIntent = (text) => {
   const wuMatch = t.match(/(?:where.?used|used\s+in|parent.?assemblies?)\s+(?:of\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
   if (wuMatch && wuMatch[1]) return { type: 'WHERE_USED', query: wuMatch[1] };
 
+  // ── Batch 2: History + Compare ────────────────────────────────────────────
+  const histMatch = t.match(/(?:history|audit|timeline)\s+(?:of\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
+  if (histMatch && histMatch[1]) return { type: 'HISTORY', query: histMatch[1] };
+
+  const cmpMatch = t.match(/(?:compare|diff)\s+(?:part\s+)?([a-z0-9\-_]+)\s+(?:vs|versus|with|and)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
+  if (cmpMatch) return { type: 'COMPARE', left: cmpMatch[1], right: cmpMatch[2] };
+  // ──────────────────────────────────────────────────────────────────────────
+
   // Navigation
   if (/go to parts|open parts page|navigate.*parts/.test(t)) return { type: 'NAVIGATE', dest: 'parts' };
   if (/go to worklist|open worklist|navigate.*worklist/.test(t)) return { type: 'NAVIGATE', dest: 'worklist' };
@@ -222,7 +230,7 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
         else intent = { type: 'ANALYZE', query: memory.lastPart.partNumber };
       }
 
-      const needsCtx = ['LIST', 'COUNT', 'FILTER', 'SEARCH', 'ANALYZE', 'PROMOTE', 'REVISE', 'BOM_VIEW', 'WHERE_USED', 'IMPACT'].includes(intent.type);
+      const needsCtx = ['LIST', 'COUNT', 'FILTER', 'SEARCH', 'ANALYZE', 'PROMOTE', 'REVISE', 'BOM_VIEW', 'WHERE_USED', 'IMPACT', 'HISTORY', 'COMPARE'].includes(intent.type);
 
       if (needsCtx && !selectedContextId) {
         push(mkMsg('assistant',
@@ -267,6 +275,10 @@ What would you like to know?`,
 
 📋 **Workflow**
 • "My Worklist" / "My changes"
+
+🕒 **History & Compare** *(NEW)*
+• "History [partNumber]" — audit timeline
+• "Compare P001 vs P002" — side-by-side BOM + Where Used
 
 🗺️ **Navigation**
 • "Go to parts / worklist / changes / ai demo"
@@ -404,7 +416,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             } catch (_) {
               bomText = '\n\n**📦 BOM:** Unable to fetch'; wuText = '';
             }
-            // Correct state names use UNDERREVIEW (no underscore)
             const tip = found.lifecycleState === 'INWORK'
               ? `💡 INWORK — say **"Submit ${found.partNumber} for review"** to enter the approval workflow.`
               : found.lifecycleState === 'UNDERREVIEW'
@@ -523,13 +534,11 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else if (found.lifecycleState === 'OBSOLETE') {
             reply = mkMsg('assistant', `🚫 **${found.partNumber}** is OBSOLETE and cannot be promoted.`, ['List all parts']);
           } else if (found.lifecycleState === 'UNDERREVIEW') {
-            // UNDERREVIEW is the correct enum value (no underscore)
             reply = mkMsg('assistant',
               `🔍 **${found.partNumber}** is already **UNDERREVIEW** (submitted for approval).\n\nIt's now in the Worklist for review. An Approver/Manager must approve it from there to move it to RELEASED.\n\nYou cannot bypass this step — this is the workflow.`,
               ['Go to worklist', `Analyze ${found.partNumber}`]
             );
           } else {
-            // INWORK -> UNDERREVIEW = submit for review (enters Worklist workflow)
             setMemory(m => ({ ...m, lastPart: found }));
             try {
               // ── Batch 1: Pre-check — ensure at least one APPROVER exists ────────
@@ -548,7 +557,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               } catch (_) { /* if listContextMembers fails, proceed — don't block the engineer */ }
               // ────────────────────────────────────────────────────────────────────
 
-              // target=UNDERREVIEW (no underscore, matches Java LifecycleStateEnum)
               await plmApi.promotePart(found.id, 'UNDERREVIEW');
               reply = mkMsg('assistant',
                 `✅ **${found.partNumber}** submitted for review!\n\n**INWORK → UNDERREVIEW**\n\nIt is now in the approval workflow. An Approver or Manager must go to the **Worklist** to approve it.\n\n🔒 You cannot skip this step — only an Approver/Manager can move it to RELEASED.`,
@@ -691,6 +699,96 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
+        // ── Batch 2: Audit History Timeline ──────────────────────────────────
+        case 'HISTORY': {
+          const found = findPart(parts, intent.query);
+          if (!found) {
+            reply = mkMsg('assistant', `❌ Part **"${intent.query}"** not found.`, ['List all parts']);
+            break;
+          }
+          setMemory(m => ({ ...m, lastPart: found }));
+          try {
+            const auditRes = await plmApi.getAudit('PART', found.id);
+            const events = auditRes?.data || auditRes || [];
+            const lines = (events || []).slice(0, 12).map((e) => {
+              const whenRaw = e.timestamp || e.createdAt || e.date || e.ts;
+              const when = whenRaw ? new Date(whenRaw).toLocaleString() : '—';
+              const who = e.user || e.username || e.actor || e.performedBy;
+              const what =
+                e.action || e.eventType || e.event ||
+                (e.field ? `${e.field}: ${e.oldValue ?? '—'} → ${e.newValue ?? '—'}` : null) ||
+                e.message || 'Event';
+              return `• **${when}** — ${what}${who ? ` (by ${who})` : ''}`;
+            }).join('\n');
+            reply = mkMsg(
+              'assistant',
+              `🕒 **History for ${found.partNumber}** (${(events || []).length} event(s)):\n\n${lines || 'No audit records found.'}`,
+              [`Analyze ${found.partNumber}`, `Where used ${found.partNumber}`, `Run impact on ${found.partNumber}`]
+            );
+          } catch (err) {
+            reply = mkMsg('assistant',
+              `⚠️ Unable to fetch audit: ${err?.response?.data?.message || err.message}`,
+              [`Analyze ${found.partNumber}`]
+            );
+          }
+          break;
+        }
+
+        // ── Batch 2: Compare Two Parts Side-by-Side ───────────────────────────
+        case 'COMPARE': {
+          const a = findPart(parts, intent.left);
+          const b = findPart(parts, intent.right);
+          if (!a || !b) {
+            reply = mkMsg(
+              'assistant',
+              `❌ Compare failed.\n\nFound: ${a ? a.partNumber : `"${intent.left}" ❌`} vs ${b ? b.partNumber : `"${intent.right}" ❌`}\n\nMake sure both part numbers exist in this context.\nTry: "compare P001 vs P002"`,
+              ['List all parts']
+            );
+            break;
+          }
+          setMemory(m => ({ ...m, lastPart: a }));
+          const take = (arr, n = 5) =>
+            (arr || [])
+              .slice(0, n)
+              .map(x => x.partNumber || x.childPartNumber || x.childPart?.partNumber)
+              .filter(Boolean);
+          try {
+            const [bomA, bomB, wuA, wuB] = await Promise.all([
+              plmApi.listBom(a.id),
+              plmApi.listBom(b.id),
+              plmApi.getWhereUsed(a.id),
+              plmApi.getWhereUsed(b.id),
+            ]);
+            const fmtList = (arr) => {
+              const t = take(arr);
+              if (!t.length) return 'none';
+              return `${t.join(', ')}${(arr || []).length > 5 ? ` +${(arr || []).length - 5} more` : ''}`;
+            };
+            reply = mkMsg(
+              'assistant',
+              `📌 **Compare: ${a.partNumber} vs ${b.partNumber}**\n\n` +
+              `**Field**          | **${a.partNumber}**             | **${b.partNumber}**\n` +
+              `Revision           | ${a.revision}.${a.iteration}                | ${b.revision}.${b.iteration}\n` +
+              `State              | ${S[a.lifecycleState] || ''} ${a.lifecycleState}  | ${S[b.lifecycleState] || ''} ${b.lifecycleState}\n` +
+              `BOM children       | ${(bomA || []).length} — ${fmtList(bomA)}   | ${(bomB || []).length} — ${fmtList(bomB)}\n` +
+              `Where used         | ${(wuA || []).length} — ${fmtList(wuA)}   | ${(wuB || []).length} — ${fmtList(wuB)}\n`,
+              [
+                `Analyze ${a.partNumber}`,
+                `Analyze ${b.partNumber}`,
+                `Run impact on ${a.partNumber}`,
+                `Where used ${b.partNumber}`,
+              ]
+            );
+          } catch (err) {
+            reply = mkMsg('assistant',
+              `⚠️ Compare failed: ${err?.response?.data?.message || err.message}`,
+              ['List all parts']
+            );
+          }
+          break;
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         default: {
           if (memory.lastPart && /\b(it|this|that|the part)\b/.test(q.toLowerCase())) {
             reply = mkMsg('assistant',
@@ -732,7 +830,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
 
           if (!handled) {
             reply = mkMsg('assistant',
-              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Submit [partNumber] for review" / "Run impact on [partNumber]"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
+              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Submit [partNumber] for review" / "Run impact on [partNumber]"\n• "History [partNumber]" / "Compare P001 vs P002"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
               selectedContextId
                 ? ['List all parts', 'Count parts', 'My Worklist', 'Help']
                 : ['Explain lifecycle', 'What is BOM?', 'Help']
