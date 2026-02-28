@@ -87,26 +87,20 @@ const PlmLayout = () => {
     <div className="plm-shell">
       <Header title="Workspace" />
 
-      <div className="plm-topnav" style={{ overflowX: 'auto' }}>
-        <div className="plm-topnav-inner" style={{ minWidth: 'max-content' }}>
-          <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">Dashboard</Link>
-          <Link className={isWorkspace     ? 'plm-link active' : 'plm-link'} to="/plm">Workspace</Link>
-          <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
-          <Link className={isChanges       ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
-          <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">Change Tasks</Link>
+      <div className="plm-topnav">
+        <div className="plm-topnav-inner">
+          <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">🏠 Dashboard</Link>
+          <Link className={isWorkspace     ? 'plm-link active' : 'plm-link'} to="/plm">⚙️ Workspace</Link>
+          <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">✅ Worklist</Link>
+          <Link className={`plm-link plm-link--soon${isChanges ? ' active' : ''}`} to="/plm/changes">📋 Changes</Link>
+          <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">🔧 Change Tasks</Link>
           <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
           <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
           <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
           <Link className={isLibrary       ? 'plm-link active' : 'plm-link'} to="/plm/library">📚 Library</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
           <Link className={isAuditLog      ? 'plm-link active' : 'plm-link'} to="/plm/audit-log">📋 Audit Log</Link>
-          <Link
-            className={isAiDemo ? 'plm-link active' : 'plm-link'}
-            to="/plm/ai-demo"
-            style={{ color: '#667eea', fontWeight: isAiDemo ? 'bold' : 'normal' }}
-          >
-            ⚡ AI Demo
-          </Link>
+          <Link className={`plm-link plm-link--ai${isAiDemo ? ' active' : ''}`} to="/plm/ai-demo">⚡ AI Demo</Link>
         </div>
       </div>
 
