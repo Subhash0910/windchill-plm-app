@@ -5,11 +5,19 @@ import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './PartsPage.css';
 
+/** Derive a short human label for the currently selected folder */
+const folderLabel = (path) => {
+  if (!path || path === '/') return 'Root';
+  // Last segment: '/mfg1/sub' → 'sub', '/mfg1' → 'mfg1'
+  const parts = path.split('/').filter(Boolean);
+  return parts[parts.length - 1] || 'Root';
+};
+
 const PartsPage = () => {
   const { selectedContextId, selectedFolderId, selectedFolderPath } = useContext(PlmWorkspaceContext);
 
   const [parts,   setParts]   = useState([]);
-  const [folders, setFolders] = useState([]);   // <-- needed to resolve folderId → name
+  const [folders, setFolders] = useState([]);   // needed to resolve folderId → name
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
   const [showAllFolders, setShowAllFolders] = useState(false);
@@ -32,7 +40,6 @@ const PartsPage = () => {
     try {
       setLoading(true);
       setError(null);
-      // Fetch parts AND folders together so we can display correct folder names
       const [partsData, foldersData] = await Promise.all([
         plmApi.listParts(selectedContextId),
         plmApi.listFolders(selectedContextId),
@@ -54,8 +61,6 @@ const PartsPage = () => {
   const filtered = useMemo(() => {
     if (showAllFolders) return parts;
     if (selectedFolderId == null) return parts;
-    // Use Number() cast on both sides: folderId from JSON and selectedFolderId
-    // from context may differ in type if stored/retrieved via localStorage.
     return (parts || []).filter(p => Number(p.folderId) === Number(selectedFolderId));
   }, [parts, selectedFolderId, showAllFolders]);
 
@@ -81,6 +86,9 @@ const PartsPage = () => {
     setParts(prev => prev.filter(p => p.id !== partId));
   };
 
+  const activeFolderName   = folderLabel(selectedFolderPath);
+  const isNonRootFolder    = selectedFolderPath && selectedFolderPath !== '/';
+
   return (
     <div>
       <div className="page-title">Parts</div>
@@ -99,7 +107,26 @@ const PartsPage = () => {
 
       {!!selectedContextId && (
         <div className="create-box">
-          <div className="create-title">Create Part (INWORK)</div>
+          {/* —— Form title: shows exactly where the part will land —— */}
+          <div className="create-title" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            Create Part
+            <span
+              style={{
+                fontSize: '0.78em',
+                fontWeight: 500,
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: isNonRootFolder ? '#ede9fe' : '#f1f5f9',
+                color:      isNonRootFolder ? '#5b21b6' : '#64748b',
+                border:     `1px solid ${isNonRootFolder ? '#c4b5fd' : '#e2e8f0'}`,
+                letterSpacing: '0.01em',
+              }}
+            >
+              📁 {activeFolderName}
+            </span>
+            <span style={{ fontSize: '0.78em', color: '#94a3b8', fontWeight: 400 }}>(INWORK)</span>
+          </div>
+
           <div className="create-grid">
             <input
               className="plm-input"
