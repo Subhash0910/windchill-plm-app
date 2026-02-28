@@ -7,7 +7,7 @@ import com.windchill.domain.entity.Part;
 import com.windchill.domain.entity.PromotionRequest;
 import com.windchill.domain.entity.WorkItem;
 import com.windchill.repository.PromotionRequestRepository;
-import com.windchill.service.notification.INotificationService;
+import com.windchill.service.INotificationService;
 import com.windchill.service.plm.IPartService;
 import com.windchill.service.workflow.PromotionWorkflowService;
 import lombok.Data;
@@ -24,17 +24,15 @@ import java.util.List;
 @Slf4j
 public class WorkItemController {
 
-    private final PromotionWorkflowService  workflow;
-    private final IPartService              partService;
-    private final INotificationService      notificationService;
+    private final PromotionWorkflowService   workflow;
+    private final IPartService               partService;
+    private final INotificationService       notificationService;
     private final PromotionRequestRepository promotionRequestRepo;
 
-    /* ─────────────────────────────────────────────────────────────────────────
-     * GET /my  – return all work items assigned to the currently-authenticated user
-     * ───────────────────────────────────────────────────────────────────────── */
+    /* ── GET /my ───────────────────────────────────────────────────────────── */
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<?>> my() {
-        List<WorkItem>   raw   = workflow.myPendingWorkItems();
+        List<WorkItem>    raw   = workflow.myPendingWorkItems();
         List<WorkItemDto> items = raw.stream()
                 .map(w -> toDto(w, resolvePart(w.getPartId())))
                 .toList();
@@ -42,9 +40,7 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(items).build());
     }
 
-    /* ─────────────────────────────────────────────────────────────────────────
-     * POST /{id}/approve
-     * ───────────────────────────────────────────────────────────────────────── */
+    /* ── POST /{id}/approve ────────────────────────────────────────────────────── */
     @PostMapping("/{id}/approve")
     public ResponseEntity<ApiResponse<?>> approve(
             @PathVariable Long id,
@@ -54,21 +50,23 @@ public class WorkItemController {
         WorkItem saved   = workflow.approve(id, comment);
         Part     part    = resolvePart(saved.getPartId());
 
-        // Notify the person who submitted the part for review
+        // Notify the part submitter that their part was approved
         try {
             PromotionRequest pr = promotionRequestRepo
                     .findById(saved.getPromotionRequestId()).orElse(null);
             if (pr != null && pr.getRequestedByUserId() != null) {
                 String pNum  = part != null ? part.getPartNumber() : ("Part #" + saved.getPartId());
-                String pName = part != null && part.getName() != null ? part.getName() : "";
+                String pName = (part != null && part.getName() != null) ? part.getName() : "";
                 String label = pName.isBlank() ? pNum : pNum + " (" + pName + ")";
+                // Correct signature: (userId, title, message, type, entityType, entityId, entityNumber)
                 notificationService.create(
                         pr.getRequestedByUserId(),
-                        "PART_PROMOTED",
                         "Part approved \u2014 " + pNum,
                         label + " has been reviewed and is now RELEASED.",
+                        "PART_PROMOTED",
                         "PART",
-                        saved.getPartId()
+                        saved.getPartId(),
+                        pNum
                 );
                 log.info("Approve notification sent to userId={} for {}", pr.getRequestedByUserId(), pNum);
             }
@@ -80,9 +78,7 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(toDto(saved, part)).build());
     }
 
-    /* ─────────────────────────────────────────────────────────────────────────
-     * POST /{id}/reject
-     * ───────────────────────────────────────────────────────────────────────── */
+    /* ── POST /{id}/reject ─────────────────────────────────────────────────────── */
     @PostMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<?>> reject(
             @PathVariable Long id,
@@ -91,23 +87,25 @@ public class WorkItemController {
         WorkItem saved = workflow.reject(id, req == null ? null : req.getComment());
         Part     part  = resolvePart(saved.getPartId());
 
-        // Notify the person who submitted the part for review
+        // Notify the part submitter that their part was rejected
         try {
             PromotionRequest pr = promotionRequestRepo
                     .findById(saved.getPromotionRequestId()).orElse(null);
             if (pr != null && pr.getRequestedByUserId() != null) {
                 String pNum   = part != null ? part.getPartNumber() : ("Part #" + saved.getPartId());
-                String pName  = part != null && part.getName() != null ? part.getName() : "";
+                String pName  = (part != null && part.getName() != null) ? part.getName() : "";
                 String label  = pName.isBlank() ? pNum : pNum + " (" + pName + ")";
                 String reason = (req != null && req.getComment() != null && !req.getComment().isBlank())
                         ? req.getComment() : "No reason given";
+                // Correct signature: (userId, title, message, type, entityType, entityId, entityNumber)
                 notificationService.create(
                         pr.getRequestedByUserId(),
-                        "ECR_REJECTED",
                         "Part rejected \u2014 " + pNum,
                         label + " was rejected. Reason: " + reason,
+                        "ECR_REJECTED",
                         "PART",
-                        saved.getPartId()
+                        saved.getPartId(),
+                        pNum
                 );
                 log.info("Reject notification sent to userId={} for {}", pr.getRequestedByUserId(), pNum);
             }
@@ -119,16 +117,13 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(toDto(saved, part)).build());
     }
 
-    /* ─────────────────────────────────────────────────────────────────────────
-     * Helpers
-     * ───────────────────────────────────────────────────────────────────────── */
+    /* ── Helpers ──────────────────────────────────────────────────────────────── */
 
     /** Safe part lookup – returns null instead of throwing. */
     private Part resolvePart(Long partId) {
         if (partId == null) return null;
-        try {
-            return partService.getPart(partId);
-        } catch (Exception e) {
+        try { return partService.getPart(partId); }
+        catch (Exception e) {
             log.debug("resolvePart: could not load part #{}: {}", partId, e.getMessage());
             return null;
         }
