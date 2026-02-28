@@ -1,7 +1,7 @@
 import api from '../utils/api';
 
 export const plmApi = {
-  // Contexts
+  // ── Contexts ────────────────────────────────────────────────────────
   listContexts: async () => {
     const res = await api.get('/api/v1/plm/contexts');
     return res.data.data;
@@ -11,7 +11,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // Context Team / Members
+  // ── Context Team / Members ─────────────────────────────────────────
   listContextMembers: async (contextId) => {
     const res = await api.get(`/api/v1/plm/contexts/${contextId}/members`);
     return res.data.data;
@@ -29,7 +29,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // Folders
+  // ── Folders ────────────────────────────────────────────────────────
   listFolders: async (contextId) => {
     const res = await api.get(`/api/v1/plm/contexts/${contextId}/folders`);
     return res.data.data;
@@ -43,7 +43,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // Parts
+  // ── Parts ─────────────────────────────────────────────────────────
   listParts: async (contextId) => {
     const res = await api.get('/api/v1/plm/parts', { params: { contextId } });
     return res.data.data;
@@ -77,13 +77,24 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // Promotions
+  // ── Dashboard Stats ──────────────────────────────────────────────
+  /**
+   * Returns { totalParts, inwork, underReview, released, obsolete,
+   *           pendingWorkItems } for the given context.
+   * Powers the KPI cards on the Dashboard page.
+   */
+  getDashboardStats: async (contextId) => {
+    const res = await api.get('/api/v1/plm/dashboard/stats', { params: { contextId } });
+    return res.data.data;
+  },
+
+  // ── Promotions ──────────────────────────────────────────────────
   getLatestPromotion: async (partId) => {
     const res = await api.get(`/api/v1/plm/promotions/parts/${partId}/latest`);
     return res.data.data;
   },
 
-  // Worklist / Work Items
+  // ── Worklist / Work Items ────────────────────────────────────────
   listMyWorkItems: async () => {
     const res = await api.get('/api/v1/plm/workitems/my');
     return res.data.data;
@@ -98,7 +109,36 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // BOM
+  // ── Notifications ───────────────────────────────────────────────
+  /** Unread count — used by the bell badge */
+  getNotificationCount: async () => {
+    const res = await api.get('/api/v1/notifications/count');
+    return res.data?.data?.unreadCount ?? 0;
+  },
+  /** All notifications (read + unread) for the full notification panel */
+  getNotifications: async () => {
+    const res = await api.get('/api/v1/notifications');
+    return res.data?.data ?? [];
+  },
+  /** Only unread — used by the bell dropdown */
+  getUnreadNotifications: async () => {
+    const res = await api.get('/api/v1/notifications/unread');
+    return res.data?.data ?? [];
+  },
+  markNotificationRead: async (id) => {
+    const res = await api.put(`/api/v1/notifications/${id}/read`);
+    return res.data?.data;
+  },
+  markAllNotificationsRead: async () => {
+    const res = await api.put('/api/v1/notifications/read-all');
+    return res.data?.data;
+  },
+  deleteNotification: async (id) => {
+    const res = await api.delete(`/api/v1/notifications/${id}`);
+    return res.data?.data;
+  },
+
+  // ── BOM ───────────────────────────────────────────────────────────
   listBom: async (parentPartId) => {
     const res = await api.get(`/api/v1/plm/parts/${parentPartId}/bom`);
     return res.data.data;
@@ -112,13 +152,13 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // Audit
+  // ── Audit ──────────────────────────────────────────────────────────
   getAudit: async (entityType, entityId) => {
     const res = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });
     return res.data.data;
   },
 
-  // Changes (ECR)
+  // ── Changes (ECR) ────────────────────────────────────────────
   createEcr: async (payload) => {
     const res = await api.post('/api/changes/ecr', payload);
     return res.data;
@@ -146,7 +186,7 @@ export const plmApi = {
     return res.data;
   },
 
-  // Changes (tasks)
+  // ── Changes (tasks) ─────────────────────────────────────────
   getMyChangeTasks: async (pendingOnly = true) => {
     const res = await api.get('/api/changes/tasks/my', { params: { pendingOnly } });
     return res.data;
