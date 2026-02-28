@@ -34,6 +34,18 @@ public class PartController {
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(parts).build());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>> search(@RequestParam String query) {
+        log.info("🔍 Search request for parts matching: {}", query);
+        List<Part> parts = partService.searchPartsByNumber(query);
+        log.info("✅ Found {} parts matching '{}'", parts.size(), query);
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(APIConstants.SUCCESS)
+                .data(parts)
+                .build());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
         Part part = partService.getPart(id);
@@ -44,6 +56,12 @@ public class PartController {
     public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody Part details) {
         Part updated = partService.updatePart(id, details);
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(updated).build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
+        partService.deletePart(id);
+        return ResponseEntity.ok(ApiResponse.builder().success(true).message("Part deleted successfully").data(null).build());
     }
 
     @PostMapping("/{id}/promote")

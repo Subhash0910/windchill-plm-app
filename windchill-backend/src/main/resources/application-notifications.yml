@@ -1,0 +1,113 @@
+# ============================================================================
+# EMAIL & NOTIFICATION CONFIGURATION
+# ============================================================================
+
+# Email configuration (SMTP)
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:your-email@gmail.com}
+    password: ${EMAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        transport:
+          protocol: smtp
+    test-connection: false  # Set to true to test on startup
+
+  # Thymeleaf for email templates
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false  # Disable in development
+
+# Application-specific email settings
+app:
+  email:
+    enabled: ${EMAIL_ENABLED:true}  # Set to false to disable emails
+    from: ${EMAIL_FROM:noreply@windchill-plm.com}
+    batch-size: 50  # Max emails to send in one batch
+    retry-attempts: 3
+  
+  # Base URL for email links
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+
+# Async configuration for background tasks
+spring:
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 100
+      thread-name-prefix: async-
+    scheduling:
+      pool:
+        size: 5
+
+# ============================================================================
+# NOTIFICATION TYPES
+# ============================================================================
+# 
+# ECN_CREATED - New ECN created
+# ECN_APPROVED - ECN approved
+# ECN_REJECTED - ECN rejected
+# PART_STATE_CHANGED - Part lifecycle state changed
+# APPROVAL_REQUIRED - Your approval is required
+# COMMENT_ADDED - Someone commented
+# MENTION - You were mentioned
+# TASK_ASSIGNED - Task assigned to you
+# URGENT_CHANGE - Urgent change notification
+#
+# ============================================================================
+
+# ============================================================================
+# SMTP CONFIGURATION EXAMPLES
+# ============================================================================
+#
+# GMAIL:
+#   host: smtp.gmail.com
+#   port: 587
+#   username: your-email@gmail.com
+#   password: <app-password>  # Generate from Google Account Security
+#
+# SENDGRID:
+#   host: smtp.sendgrid.net
+#   port: 587
+#   username: apikey
+#   password: <your-sendgrid-api-key>
+#
+# AWS SES:
+#   host: email-smtp.us-east-1.amazonaws.com
+#   port: 587
+#   username: <your-ses-smtp-username>
+#   password: <your-ses-smtp-password>
+#
+# CUSTOM SMTP:
+#   host: smtp.yourcompany.com
+#   port: 25 or 587
+#   username: <username>
+#   password: <password>
+#
+# ============================================================================
+
+# ============================================================================
+# ENVIRONMENT VARIABLES (Production)
+# ============================================================================
+#
+# Set these in your deployment environment:
+#
+# EMAIL_USERNAME=noreply@windchill-plm.com
+# EMAIL_PASSWORD=your-secure-password
+# EMAIL_ENABLED=true
+# EMAIL_FROM=noreply@windchill-plm.com
+# APP_BASE_URL=https://plm.yourcompany.com
+#
+# ============================================================================

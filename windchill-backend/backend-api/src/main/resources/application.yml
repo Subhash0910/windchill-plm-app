@@ -2,6 +2,10 @@ spring:
   application:
     name: windchill-api
   
+  profiles:
+    active: dev
+    include: ai
+  
   datasource:
     url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
     username: windchill
@@ -93,6 +97,10 @@ logging:
 app:
   jwtSecret: windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890
   jwtExpirationInMs: 86400000
+
+# Change Impact routing config (CSV usernames)
+change-impact:
+  senior-reviewers: "senior1,senior2"
 
 springdoc:
   swagger-ui:

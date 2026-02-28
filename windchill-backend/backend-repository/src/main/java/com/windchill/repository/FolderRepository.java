@@ -10,4 +10,6 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findByContextIdAndIsDeletedFalseOrderByPathAsc(Long contextId);
     Optional<Folder> findByContextIdAndPathAndIsDeletedFalse(Long contextId, String path);
     List<Folder> findByContextIdAndParentIdAndIsDeletedFalseOrderByNameAsc(Long contextId, Long parentId);
+    
+    List<Folder> findByParentIdAndIsDeletedFalse(Long parentId);
 }

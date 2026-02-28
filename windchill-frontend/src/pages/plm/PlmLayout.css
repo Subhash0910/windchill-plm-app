@@ -1,11 +1,21 @@
 .plm-shell{
+  /* shared design tokens (simple, windchill-ish) */
+  --plm-border:#e7e9f3;
+  --plm-border-soft:#eef0f7;
+  --plm-bg:#f6f7fb;
+  --plm-surface:#ffffff;
+  --plm-text:#111827;
+  --plm-muted:#6b7280;
+  --plm-brand:#0f4d6d;
+  --plm-radius:12px;
+
   min-height:100vh;
-  background:#f6f7fb;
+  background:var(--plm-bg);
 }
 
 .plm-topnav{
-  background:#ffffff;
-  border-bottom:1px solid #e7e9f3;
+  background:var(--plm-surface);
+  border-bottom:1px solid var(--plm-border);
 }
 
 .plm-topnav-inner{
@@ -20,15 +30,16 @@
   text-decoration:none;
   color:#2b2f3a;
   padding:6px 10px;
-  border-radius:6px;
+  border-radius:10px;
   border:1px solid transparent;
-  font-weight:600;
+  font-weight:800;
   font-size:14px;
 }
 
 .plm-link.active{
-  background:#eef2ff;
-  border-color:#c7d2fe;
+  background:#e6f3fb;
+  border-color:#b6d8ea;
+  color:var(--plm-brand);
 }
 
 .plm-body{
@@ -38,21 +49,43 @@
   display:grid;
   grid-template-columns: 320px 1fr;
   gap:16px;
+  align-items:start;
 }
 
+/* Left is layout-only; blocks are the actual panels */
 .plm-left{
-  background:#fff;
-  border:1px solid #e7e9f3;
-  border-radius:10px;
-  padding:12px;
+  padding:0;
+  background:transparent;
+  border:none;
+  border-radius:0;
   height: calc(100vh - 190px);
   overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 
+.plm-left .plm-block{
+  background:var(--plm-surface);
+  margin-bottom:0;
+  border-color:var(--plm-border);
+}
+
+/* Main stays as a clean surface because many pages don't wrap themselves in cards */
 .plm-main{
-  background:#fff;
-  border:1px solid #e7e9f3;
-  border-radius:10px;
+  background:var(--plm-surface);
+  border:1px solid var(--plm-border);
+  border-radius:var(--plm-radius);
   padding:16px;
   min-height: calc(100vh - 190px);
+}
+
+@media (max-width: 980px){
+  .plm-body{
+    grid-template-columns: 1fr;
+  }
+  .plm-left{
+    height:auto;
+    overflow:visible;
+  }
 }

@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+DOCS/
+*.md
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# Build artifacts
+target/
+build/
+dist/
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/

@@ -8,4 +8,6 @@ public interface IFolderService {
     Folder ensureRootFolder(Long contextId);
     Folder createFolder(Long contextId, Long parentId, String name);
     List<Folder> listFolders(Long contextId);
+    
+    void deleteFolder(Long contextId, Long folderId);
 }

@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { plmApi } from '../../services/plmApi';
 import './PartsTable.css';
 
-const PartsTable = ({ parts }) => {
+const PartsTable = ({ parts, onPartDeleted }) => {
   const [showAllVersions, setShowAllVersions] = useState(false);
+  const [deleting, setDeleting] = useState(null);
 
   const visibleParts = useMemo(() => {
     const list = parts || [];
@@ -13,6 +15,36 @@ const PartsTable = ({ parts }) => {
   }, [parts, showAllVersions]);
 
   const hiddenCount = (parts || []).length - (visibleParts || []).length;
+
+  const handleDelete = async (part) => {
+    const confirmed = window.confirm(
+      `⚠️ DELETE PART?\n\n` +
+      `Part: ${part.partNumber} (${part.name})\n` +
+      `Revision: ${part.revision}.${part.iteration}\n\n` +
+      `This action CANNOT be undone!\n\n` +
+      `Click OK to permanently delete this part.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(part.id);
+      await plmApi.deletePart(part.id);
+      alert(`✅ Part ${part.partNumber} deleted successfully!`);
+      if (onPartDeleted) onPartDeleted(part.id);
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert(`❌ Failed to delete part:\n${error.response?.data?.message || error.message}`);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Helper to format folder display
+  const getFolderDisplay = (part) => {
+    if (!part.folderPath || part.folderPath === '/') return 'Root';
+    return part.folderPath;
+  };
 
   return (
     <div className="parts-table-wrap">
@@ -35,6 +67,7 @@ const PartsTable = ({ parts }) => {
           <tr>
             <th>Number</th>
             <th>Name</th>
+            <th>Folder</th>
             <th>Rev</th>
             <th>Iter</th>
             <th>State</th>
@@ -46,19 +79,41 @@ const PartsTable = ({ parts }) => {
             <tr key={p.id}>
               <td className="mono">{p.partNumber}</td>
               <td>{p.name}</td>
+              <td>
+                <span style={{ color: '#64748b', fontSize: '0.9em' }}>
+                  📁 {getFolderDisplay(p)}
+                </span>
+              </td>
               <td>{p.revision}</td>
               <td>{p.iteration}</td>
               <td>
                 <span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span>
               </td>
-              <td style={{ textAlign: 'right' }}>
+              <td style={{ textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <Link className="link" to={`/plm/parts/${p.id}`}>Open</Link>
+                <button
+                  onClick={() => handleDelete(p)}
+                  disabled={deleting === p.id}
+                  className="link"
+                  style={{
+                    color: '#dc2626',
+                    border: 'none',
+                    background: 'none',
+                    cursor: deleting === p.id ? 'not-allowed' : 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                    fontSize: 'inherit',
+                    opacity: deleting === p.id ? 0.5 : 1
+                  }}
+                >
+                  {deleting === p.id ? 'Deleting...' : 'Delete'}
+                </button>
               </td>
             </tr>
           ))}
           {(visibleParts || []).length === 0 && (
             <tr>
-              <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>
+              <td colSpan={7} className="plm-muted" style={{ padding: 12 }}>
                 No parts.
               </td>
             </tr>

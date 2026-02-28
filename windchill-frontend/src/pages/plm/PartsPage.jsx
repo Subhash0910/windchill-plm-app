@@ -11,6 +11,7 @@ const PartsPage = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAllFolders, setShowAllFolders] = useState(false);
 
   const [form, setForm] = useState({ partNumber: '', name: '', description: '' });
 
@@ -37,9 +38,13 @@ const PartsPage = () => {
   }, [selectedContextId]);
 
   const filtered = useMemo(() => {
+    // If "Show all folders" is checked, show ALL parts
+    if (showAllFolders) return parts;
+    
+    // Otherwise, filter by selected folder
     if (!selectedFolderId) return parts;
     return (parts || []).filter(p => p.folderId === selectedFolderId);
-  }, [parts, selectedFolderId]);
+  }, [parts, selectedFolderId, showAllFolders]);
 
   const create = async () => {
     if (!selectedContextId) return;
@@ -59,10 +64,22 @@ const PartsPage = () => {
     }
   };
 
+  const handlePartDeleted = (partId) => {
+    // Remove from local state immediately for instant UI feedback
+    setParts(prevParts => prevParts.filter(p => p.id !== partId));
+  };
+
   return (
     <div>
       <div className="page-title">Parts</div>
-      <div className="page-sub">Context-aware parts list. Folder filter: <span className="mono">{selectedFolderPath || '/'}</span></div>
+      <div className="page-sub">
+        Context-aware parts list. 
+        {showAllFolders ? (
+          <span className="mono" style={{ color: '#667eea', fontWeight: 'bold' }}> Showing all folders</span>
+        ) : (
+          <span> Folder filter: <span className="mono">{selectedFolderPath || '/'}</span></span>
+        )}
+      </div>
 
       {!selectedContextId && (
         <div className="plm-muted" style={{ marginTop: 10 }}>
@@ -87,7 +104,22 @@ const PartsPage = () => {
       {error && <div className="plm-error">{error}</div>}
       {loading && <div className="plm-muted">Loading parts...</div>}
 
-      {!!selectedContextId && !loading && <PartsTable parts={filtered} />}
+      {!!selectedContextId && !loading && (
+        <div style={{ marginTop: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={showAllFolders}
+              onChange={(e) => setShowAllFolders(e.target.checked)}
+            />
+            <span style={{ fontWeight: 500 }}>Show parts from all folders</span>
+            <span className="plm-muted" style={{ fontSize: '0.9em' }}>
+              ({filtered.length} of {parts.length} parts)
+            </span>
+          </label>
+          <PartsTable parts={filtered} onPartDeleted={handlePartDeleted} />
+        </div>
+      )}
     </div>
   );
 };

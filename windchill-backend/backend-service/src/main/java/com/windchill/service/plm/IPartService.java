@@ -14,4 +14,9 @@ public interface IPartService {
     Part revise(Long id);
 
     List<Part> whereUsed(Long partId);
+    
+    void deletePart(Long id);
+    
+    // Search parts by part number (case-insensitive)
+    List<Part> searchPartsByNumber(String query);
 }

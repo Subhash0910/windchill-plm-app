@@ -6,6 +6,7 @@ import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Folder;
 import com.windchill.repository.FolderRepository;
+import com.windchill.repository.PartRepository;
 import com.windchill.repository.PlmContextRepository;
 import com.windchill.service.plm.security.PlmAclService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class FolderServiceImpl implements IFolderService {
 
     private final FolderRepository folderRepository;
     private final PlmContextRepository contextRepository;
+    private final PartRepository partRepository;
     private final IAuditService auditService;
     private final PlmAclService acl;
 
@@ -94,5 +96,42 @@ public class FolderServiceImpl implements IFolderService {
         // NOTE: do not mark this method readOnly, because we may lazily bootstrap the Root folder.
         ensureRootFolder(contextId);
         return folderRepository.findByContextIdAndIsDeletedFalseOrderByPathAsc(contextId);
+    }
+
+    @Override
+    public void deleteFolder(Long contextId, Long folderId) {
+        requireContextExists(contextId);
+        acl.requireContextRole(contextId, RoleEnum.ADMIN, RoleEnum.MANAGER);
+
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder", "id", folderId));
+
+        // Verify folder belongs to the specified context
+        if (!folder.getContextId().equals(contextId)) {
+            throw new BusinessException("Folder does not belong to this context");
+        }
+
+        // Prevent deletion of root folder
+        if (folder.getParentId() == null || "/".equals(folder.getPath())) {
+            throw new BusinessException("Cannot delete root folder");
+        }
+
+        // Check if folder contains any parts
+        long partCount = partRepository.countByFolderIdAndIsDeletedFalse(folderId);
+        if (partCount > 0) {
+            throw new BusinessException("Cannot delete folder containing " + partCount + " part(s). Move or delete parts first.");
+        }
+
+        // Check for subfolders
+        List<Folder> subfolders = folderRepository.findByParentIdAndIsDeletedFalse(folderId);
+        if (!subfolders.isEmpty()) {
+            throw new BusinessException("Cannot delete folder with " + subfolders.size() + " subfolder(s). Delete subfolders first.");
+        }
+
+        // Delete the folder
+        folderRepository.deleteById(folderId);
+        
+        auditService.log(PlmEntityTypeEnum.FOLDER, folderId, "DELETE", "Folder deleted: " + folder.getPath());
+        log.info("Folder deleted: id={} path={}", folderId, folder.getPath());
     }
 }

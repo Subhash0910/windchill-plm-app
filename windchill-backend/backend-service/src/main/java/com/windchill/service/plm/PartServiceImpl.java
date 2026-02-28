@@ -9,6 +9,7 @@ import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.plm.security.PlmAclService;
+import com.windchill.service.workflow.PromotionWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class PartServiceImpl implements IPartService {
     private final BomLineRepository bomLineRepository;
     private final IAuditService auditService;
     private final PlmAclService acl;
+    private final PromotionWorkflowService promotionWorkflowService;
 
     @Override
     public Part createPart(Part part) {
@@ -79,6 +82,36 @@ public class PartServiceImpl implements IPartService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Part> searchPartsByNumber(String query) {
+        if (query == null || query.isBlank()) {
+            log.warn("searchPartsByNumber called with empty query");
+            return List.of();
+        }
+        
+        log.info("Searching parts by number: {}", query);
+        
+        // Find all parts matching the query
+        List<Part> allMatches = partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query);
+        
+        // Filter by context access - only return parts user has access to
+        List<Part> accessible = allMatches.stream()
+            .filter(part -> {
+                try {
+                    acl.requireContextMember(part.getContextId());
+                    return true;
+                } catch (Exception e) {
+                    // User doesn't have access to this context
+                    return false;
+                }
+            })
+            .collect(Collectors.toList());
+        
+        log.info("Found {} accessible parts matching '{}'", accessible.size(), query);
+        return accessible;
+    }
+
+    @Override
     public Part updatePart(Long id, Part details) {
         Part part = getPart(id);
         acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
@@ -103,6 +136,13 @@ public class PartServiceImpl implements IPartService {
     public Part promote(Long id, LifecycleStateEnum target) {
         Part part = getPart(id);
         LifecycleStateEnum from = part.getLifecycleState();
+
+        // For INWORK -> UNDERREVIEW, start a Promotion Request workflow (ALL approvers)
+        if (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDERREVIEW) {
+            promotionWorkflowService.startPromotionRequest(part.getId(), LifecycleStateEnum.UNDERREVIEW);
+            // reload latest state
+            return getPart(part.getId());
+        }
 
         if (target == LifecycleStateEnum.UNDERREVIEW) {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
@@ -183,6 +223,27 @@ public class PartServiceImpl implements IPartService {
             }
         }
         return filtered;
+    }
+
+    @Override
+    public void deletePart(Long id) {
+        Part part = getPart(id);
+        acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+
+        // Check if part is used in any BOMs as a child (prevent orphaned references)
+        List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(id);
+        if (parentIds != null && !parentIds.isEmpty()) {
+            throw new BusinessException("Cannot delete part. It is used in " + parentIds.size() + " BOM(s). Remove from BOMs first.");
+        }
+
+        // Delete associated BOM lines where this part is the parent
+        bomLineRepository.deleteByParentPartId(id);
+
+        // Delete the part
+        partRepository.deleteById(id);
+        
+        auditService.log(PlmEntityTypeEnum.PART, id, "DELETE", "Part deleted: " + part.getPartNumber());
+        log.info("Part deleted: id={} partNumber={}", id, part.getPartNumber());
     }
 
     private String incrementRevision(String current) {

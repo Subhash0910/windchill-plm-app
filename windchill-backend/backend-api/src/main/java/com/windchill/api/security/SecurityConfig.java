@@ -6,6 +6,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,102 +37,86 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Allow multiple origins for development and Docker
+
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost",
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://localhost:80",
-            "http://frontend",
-            "http://windchill-frontend",
-            "*"  // Fallback for development
+                "http://localhost",
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:80",
+                "http://127.0.0.1",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+                "http://frontend",
+                "http://windchill-frontend"
         ));
-        
-        // CRITICAL: Must include OPTIONS method for preflight requests
+
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
-        
-        // Allow all headers
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        
-        // Expose authorization header
+
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+                "Origin"
+        ));
+
         configuration.setExposedHeaders(Arrays.asList(
-            "Authorization", "Content-Type", "X-Total-Count"
+                "Authorization", "Content-Type", "X-Total-Count"
         ));
-        
-        // Allow credentials (cookies, auth headers)
-        configuration.setAllowCredentials(false);  // Changed to false when using * origins
-        
-        // Cache preflight for 1 hour
+
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
-    /**
-     * FIRST SecurityFilterChain for ACTUATOR endpoints (Order = 1)
-     * This chain completely bypasses security for /actuator/** paths
-     * @Order(1) ensures this is evaluated FIRST before the main chain
-     */
     @Bean
     @Order(1)
     public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher(new AntPathRequestMatcher("/actuator/**"))
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
-        
+                .securityMatcher(new AntPathRequestMatcher("/actuator/**"))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+
         return http.build();
     }
 
-    /**
-     * SECOND SecurityFilterChain for ALL OTHER endpoints (Order = 2)
-     * This is evaluated AFTER the actuator chain
-     */
     @Bean
     @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Enable CORS with our configuration
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
-            // Disable CSRF since we're using JWT tokens (stateless)
-            .csrf(csrf -> csrf.disable())
-            
-            // Use stateless session management for JWT
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
-            // Configure request authorization
-            .authorizeHttpRequests(authz -> authz
-                // Allow OPTIONS requests (preflight)
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
-                // Allow all auth endpoints
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/auth/login").permitAll()
-                .requestMatchers("/api/v1/auth/register").permitAll()
-                
-                // Allow Swagger/OpenAPI documentation
-                .requestMatchers("/swagger-ui/**").permitAll()
-                .requestMatchers("/v3/api-docs/**").permitAll()
-                .requestMatchers("/swagger-ui.html").permitAll()
-                .requestMatchers("/webjars/**").permitAll()
-                
-                // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-            
-            // Add JWT filter before authentication filter
-            .addFilterBefore(
-                new JwtAuthenticationFilter(jwtTokenProvider),
-                UsernamePasswordAuthenticationFilter.class
-            );
-        
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
+
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/ai/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
         return http.build();
     }
 }

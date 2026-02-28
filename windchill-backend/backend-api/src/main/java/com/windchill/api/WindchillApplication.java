@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.windchill"})
-@EntityScan(basePackages = {"com.windchill.domain.entity"})
-@EnableJpaRepositories(basePackages = {"com.windchill.repository"})
+@EntityScan(basePackages = {"com.windchill"})
+@EnableJpaRepositories(basePackages = {"com.windchill"})
 public class WindchillApplication {
 
     public static void main(String[] args) {

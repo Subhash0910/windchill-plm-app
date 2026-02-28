@@ -38,6 +38,10 @@ export const plmApi = {
     const res = await api.post(`/api/v1/plm/contexts/${contextId}/folders`, payload);
     return res.data.data;
   },
+  deleteFolder: async (contextId, folderId) => {
+    const res = await api.delete(`/api/v1/plm/contexts/${contextId}/folders/${folderId}`);
+    return res.data.data;
+  },
 
   // Parts
   listParts: async (contextId) => {
@@ -56,6 +60,10 @@ export const plmApi = {
     const res = await api.put(`/api/v1/plm/parts/${id}`, payload);
     return res.data.data;
   },
+  deletePart: async (id) => {
+    const res = await api.delete(`/api/v1/plm/parts/${id}`);
+    return res.data.data;
+  },
   promotePart: async (id, target) => {
     const res = await api.post(`/api/v1/plm/parts/${id}/promote`, null, { params: { target } });
     return res.data.data;
@@ -66,6 +74,27 @@ export const plmApi = {
   },
   getWhereUsed: async (id) => {
     const res = await api.get(`/api/v1/plm/parts/${id}/where-used`);
+    return res.data.data;
+  },
+
+  // Promotions
+  getLatestPromotion: async (partId) => {
+    const res = await api.get(`/api/v1/plm/promotions/parts/${partId}/latest`);
+    return res.data.data;
+  },
+
+  // Worklist / Work Items
+  listMyWorkItems: async () => {
+    const res = await api.get('/api/v1/plm/workitems/my');
+    return res.data.data;
+  },
+  approveWorkItem: async (id, comment) => {
+    const payload = comment ? { comment } : null;
+    const res = await api.post(`/api/v1/plm/workitems/${id}/approve`, payload);
+    return res.data.data;
+  },
+  rejectWorkItem: async (id, comment) => {
+    const res = await api.post(`/api/v1/plm/workitems/${id}/reject`, { comment });
     return res.data.data;
   },
 
@@ -87,5 +116,48 @@ export const plmApi = {
   getAudit: async (entityType, entityId) => {
     const res = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });
     return res.data.data;
+  },
+
+  // Changes (ECR)
+  createEcr: async (payload) => {
+    const res = await api.post('/api/changes/ecr', payload);
+    return res.data;
+  },
+  submitEcr: async (id, payload) => {
+    const res = await api.post(`/api/changes/ecr/${id}/submit`, payload);
+    return res.data;
+  },
+  listEcrs: async (statusOrNull) => {
+    const params = {};
+    if (statusOrNull) params.status = statusOrNull;
+    const res = await api.get('/api/changes/ecr', { params });
+    return res.data;
+  },
+  getEcrDetails: async (id) => {
+    const res = await api.get(`/api/changes/ecr/${id}/details`);
+    return res.data;
+  },
+  getEcrInsights: async (id) => {
+    const res = await api.get(`/api/changes/ecr/${id}/insights`);
+    return res.data;
+  },
+  analyzeEcr: async (id) => {
+    const res = await api.post(`/api/changes/ecr/${id}/analyze`);
+    return res.data;
+  },
+
+  // Changes (tasks)
+  getMyChangeTasks: async (pendingOnly = true) => {
+    const res = await api.get('/api/changes/tasks/my', { params: { pendingOnly } });
+    return res.data;
+  },
+  approveChangeTask: async (taskId, comment) => {
+    const payload = comment ? { comment } : { comment: '' };
+    const res = await api.post(`/api/changes/tasks/${taskId}/approve`, payload);
+    return res.data;
+  },
+  rejectChangeTask: async (taskId, comment) => {
+    const res = await api.post(`/api/changes/tasks/${taskId}/reject`, { comment: comment || '' });
+    return res.data;
   },
 };

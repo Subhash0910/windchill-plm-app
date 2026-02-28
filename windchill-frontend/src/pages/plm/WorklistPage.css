@@ -1,0 +1,161 @@
+.wl-page {
+  padding: 14px;
+}
+
+.wl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wl-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.wl-sub {
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.wl-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wl-card {
+  margin-top: 12px;
+  border: 1px solid #eef0f7;
+  background: #fff;
+  border-radius: 12px;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.wl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.wl-table th {
+  background: #f8fafc;
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid #eef0f7;
+  color: #374151;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.wl-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f2f4fb;
+  text-align: left;
+  white-space: nowrap;
+  color: #111827;
+}
+
+.wl-table tr:hover td {
+  background: #fafbff;
+}
+
+.wl-empty {
+  padding: 18px;
+  color: #6b7280;
+}
+
+.wl-error {
+  margin: 10px 0 0;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.wl-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wl-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wl-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.wl-btn.wl-approve {
+  border-color: #86efac;
+  background: #dcfce7;
+}
+
+.wl-btn.wl-reject {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.wl-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  display: inline-block;
+  letter-spacing: .02em;
+}
+
+.wl-pending {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.wl-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.wl-rejected {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.wl-cancelled {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.wl-input {
+  width: 260px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #e7e9f3;
+  background:#fff;
+}
+
+.wl-highlight td {
+  background: #fff7ed;
+}
+
+.wl-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #0f4d6d;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: underline;
+}

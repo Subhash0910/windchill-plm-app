@@ -6,6 +6,7 @@ import BomEditor from '../../components/plm/BomEditor';
 import AuditPanel from '../../components/plm/AuditPanel';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
+import { AuthContext } from '../../context/AuthContext';
 import './PartDetailPage.css';
 
 const TAB = {
@@ -24,9 +25,15 @@ const PartDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { selectedContextId } = useContext(PlmWorkspaceContext);
+  const auth = useContext(AuthContext);
+  const meUserId = auth?.user?.userId;
 
   const [part, setPart] = useState(null);
   const [partsInCtx, setPartsInCtx] = useState([]);
+
+  const [promotion, setPromotion] = useState(null);
+  const [promotionLoading, setPromotionLoading] = useState(false);
+  const [promotionError, setPromotionError] = useState(null);
 
   const [whereUsed, setWhereUsed] = useState([]);
   const [whereUsedLoading, setWhereUsedLoading] = useState(false);
@@ -40,6 +47,24 @@ const PartDetailPage = () => {
   const [activeTab, setActiveTab] = useState(TAB.STRUCTURE);
   const [relatedView, setRelatedView] = useState(RELATED_VIEW.VERSIONS);
   const [edit, setEdit] = useState({ name: '', description: '' });
+
+  const loadPromotion = async (partId) => {
+    if (!partId) {
+      setPromotion(null);
+      return;
+    }
+    try {
+      setPromotionLoading(true);
+      setPromotionError(null);
+      const data = await plmApi.getLatestPromotion(partId);
+      setPromotion(data || null);
+    } catch (e) {
+      setPromotion(null);
+      setPromotionError(e.response?.data?.message || e.message || 'Failed to load promotion status');
+    } finally {
+      setPromotionLoading(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -56,6 +81,9 @@ const PartDetailPage = () => {
       const p = await plmApi.getPart(id);
       setPart(p);
       setEdit({ name: p.name || '', description: p.description || '' });
+
+      // Promotion status panel
+      await loadPromotion(p.id);
 
       // Load parts list for BOM child picker + versions list (same context)
       const ctxId = p.contextId || selectedContextId;
@@ -94,6 +122,16 @@ const PartDetailPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Refresh when tab regains focus (useful after approvals in another window)
+  useEffect(() => {
+    const onFocus = () => {
+      load();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   useEffect(() => {
     if (!part) return;
     if (activeTab !== TAB.RELATED) return;
@@ -125,6 +163,7 @@ const PartDetailPage = () => {
       setError(null);
       const updated = await plmApi.promotePart(part.id, target);
       setPart(updated);
+      await loadPromotion(part.id);
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to promote');
     } finally {
@@ -204,6 +243,31 @@ const PartDetailPage = () => {
     );
   };
 
+  const pr = promotion?.request;
+  const prItems = promotion?.workItems || [];
+  const prComments = promotion?.comments || [];
+
+  const StatusPill = ({ value }) => {
+    const v = String(value || '').toUpperCase();
+    const bg = v.includes('APPROVED') ? '#16a34a' : v.includes('REJECT') ? '#dc2626' : '#0f4d6d';
+    return (
+      <span style={{
+        display: 'inline-block',
+        padding: '2px 10px',
+        borderRadius: 999,
+        color: '#fff',
+        background: bg,
+        fontWeight: 700,
+        fontSize: 12,
+      }}>{v || '-'}</span>
+    );
+  };
+
+  const openWorkItemInWorklist = (workItemId) => {
+    if (!workItemId) return;
+    navigate(`/plm/worklist?workItemId=${encodeURIComponent(String(workItemId))}`);
+  };
+
   return (
     <div>
       <div className="detail-head">
@@ -213,7 +277,8 @@ const PartDetailPage = () => {
             <span className="mono">{part.partNumber}</span> — Rev <span className="mono">{part.revision}.{part.iteration}</span>
           </div>
         </div>
-        <div className="detail-actions">
+        <div className="detail-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="secondary" size="sm" onClick={load} disabled={loading || saving}>Refresh</Button>
           <Button variant="secondary" size="sm" onClick={() => navigate('/plm/parts')}>Back</Button>
         </div>
       </div>
@@ -247,6 +312,87 @@ const PartDetailPage = () => {
           </div>
 
           {error && <div className="plm-error">{error}</div>}
+
+          {/* Promotion panel */}
+          <div style={{ marginTop: 14, borderTop: '1px solid #eef2f7', paddingTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 800 }}>Promotion Request</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {promotionLoading ? <span className="plm-muted">Loading…</span> : (pr?.status ? <StatusPill value={pr.status} /> : null)}
+                <Button variant="secondary" size="sm" onClick={() => loadPromotion(part.id)} disabled={promotionLoading}>Reload</Button>
+              </div>
+            </div>
+
+            {promotionError && <div className="plm-error" style={{ marginTop: 8 }}>{promotionError}</div>}
+
+            {!promotionLoading && !promotionError && !pr && (
+              <div className="plm-muted" style={{ marginTop: 8 }}>No promotion request found for this part.</div>
+            )}
+
+            {pr && (
+              <div style={{ marginTop: 10 }}>
+                <div className="plm-muted">Requested by: <span className="mono">{pr.requestedBy || pr.requestedByUserId}</span></div>
+                {pr.completedAt && (
+                  <div className="plm-muted">Completed: <span className="mono">{String(pr.completedAt)}</span> by <span className="mono">{pr.completedBy || pr.completedByUserId}</span></div>
+                )}
+
+                <div style={{ overflowX: 'auto', marginTop: 10 }}>
+                  <table className="parts-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Due</th>
+                        <th>Completed</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {prItems.map(w => {
+                        const isMe = meUserId && String(meUserId) === String(w.assigneeUserId);
+                        return (
+                          <tr key={w.id}>
+                            <td className="mono">
+                              {w.assignee || w.assigneeUserId}
+                              {isMe ? <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 800, color: '#0f4d6d' }}>(You)</span> : null}
+                            </td>
+                            <td><StatusPill value={w.status} /></td>
+                            <td className="mono">{w.dueAt ? String(w.dueAt) : '-'}</td>
+                            <td className="mono">{w.completedAt ? String(w.completedAt) : '-'}</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>Open</Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {prItems.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="plm-muted" style={{ padding: 12 }}>No approver work items found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Comments</div>
+                  {prComments.length === 0 && <div className="plm-muted">No comments.</div>}
+                  {prComments.length > 0 && (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {prComments.map(c => (
+                        <div key={c.id} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 10, background: '#fff' }}>
+                          <div className="plm-muted" style={{ marginBottom: 6 }}>
+                            <span className="mono">{c.commentedBy || c.commentedByUserId}</span> · <span className="mono">{String(c.createdAt)}</span>
+                          </div>
+                          <div>{c.comment}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div style={{ marginTop: 12 }}>
             <div className="plm-muted">

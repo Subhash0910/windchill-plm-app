@@ -1,20 +1,26 @@
 .btn {
   padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
 
+/* Enterprise feel: no jumpy lift; subtle focus ring */
 .btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: none;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 77, 109, 0.18);
 }
 
 .btn:disabled {
@@ -23,26 +29,28 @@
 }
 
 .btn--primary {
-  background-color: #2180ae;
+  background-color: #0f4d6d;
+  border-color: #0f4d6d;
   color: white;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background-color: #1a6a91;
+  background-color: #0c3f5a;
+  border-color: #0c3f5a;
 }
 
 .btn--secondary {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
+  background-color: #f8fafc;
+  color: #111827;
+  border: 1px solid #e7e9f3;
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: #e0e0e0;
+  background-color: #eef2f7;
 }
 
 .btn--sm {
-  padding: 6px 12px;
+  padding: 6px 10px;
   font-size: 12px;
 }
 
