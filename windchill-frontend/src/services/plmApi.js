@@ -1,7 +1,7 @@
 import api from '../utils/api';
 
 export const plmApi = {
-  // ── Contexts ────────────────────────────────────────────────────────
+  // ── Contexts ─────────────────────────────────────────────────────────
   listContexts: async () => {
     const res = await api.get('/api/v1/plm/contexts');
     return res.data.data;
@@ -11,7 +11,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Context Team / Members ─────────────────────────────────────────
+  // ── Context Team / Members ───────────────────────────────────
   listContextMembers: async (contextId) => {
     const res = await api.get(`/api/v1/plm/contexts/${contextId}/members`);
     return res.data.data;
@@ -29,7 +29,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Folders ────────────────────────────────────────────────────────
+  // ── Folders ──────────────────────────────────────────────────
   listFolders: async (contextId) => {
     const res = await api.get(`/api/v1/plm/contexts/${contextId}/folders`);
     return res.data.data;
@@ -43,7 +43,7 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Parts ─────────────────────────────────────────────────────────
+  // ── Parts ─────────────────────────────────────────────────────
   listParts: async (contextId) => {
     const res = await api.get('/api/v1/plm/parts', { params: { contextId } });
     return res.data.data;
@@ -77,24 +77,19 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Dashboard Stats ──────────────────────────────────────────────
-  /**
-   * Returns { totalParts, inwork, underReview, released, obsolete,
-   *           pendingWorkItems } for the given context.
-   * Powers the KPI cards on the Dashboard page.
-   */
+  // ── Dashboard Stats ──────────────────────────────────────────
   getDashboardStats: async (contextId) => {
     const res = await api.get('/api/v1/plm/dashboard/stats', { params: { contextId } });
     return res.data.data;
   },
 
-  // ── Promotions ──────────────────────────────────────────────────
+  // ── Promotions ────────────────────────────────────────────
   getLatestPromotion: async (partId) => {
     const res = await api.get(`/api/v1/plm/promotions/parts/${partId}/latest`);
     return res.data.data;
   },
 
-  // ── Worklist / Work Items ────────────────────────────────────────
+  // ── Worklist / Work Items ──────────────────────────────────
   listMyWorkItems: async () => {
     const res = await api.get('/api/v1/plm/workitems/my');
     return res.data.data;
@@ -109,18 +104,15 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Notifications ───────────────────────────────────────────────
-  /** Unread count — used by the bell badge */
+  // ── Notifications ───────────────────────────────────────────
   getNotificationCount: async () => {
     const res = await api.get('/api/v1/notifications/count');
     return res.data?.data?.unreadCount ?? 0;
   },
-  /** All notifications (read + unread) for the full notification panel */
   getNotifications: async () => {
     const res = await api.get('/api/v1/notifications');
     return res.data?.data ?? [];
   },
-  /** Only unread — used by the bell dropdown */
   getUnreadNotifications: async () => {
     const res = await api.get('/api/v1/notifications/unread');
     return res.data?.data ?? [];
@@ -138,7 +130,7 @@ export const plmApi = {
     return res.data?.data;
   },
 
-  // ── BOM ───────────────────────────────────────────────────────────
+  // ── BOM ────────────────────────────────────────────────────────
   listBom: async (parentPartId) => {
     const res = await api.get(`/api/v1/plm/parts/${parentPartId}/bom`);
     return res.data.data;
@@ -152,13 +144,13 @@ export const plmApi = {
     return res.data.data;
   },
 
-  // ── Audit ──────────────────────────────────────────────────────────
+  // ── Audit ──────────────────────────────────────────────────────
   getAudit: async (entityType, entityId) => {
     const res = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });
     return res.data.data;
   },
 
-  // ── Changes (ECR) ────────────────────────────────────────────
+  // ── Changes (ECR) ───────────────────────────────────────
   createEcr: async (payload) => {
     const res = await api.post('/api/changes/ecr', payload);
     return res.data;
@@ -186,7 +178,7 @@ export const plmApi = {
     return res.data;
   },
 
-  // ── Changes (tasks) ─────────────────────────────────────────
+  // ── Changes (tasks) ─────────────────────────────────────
   getMyChangeTasks: async (pendingOnly = true) => {
     const res = await api.get('/api/changes/tasks/my', { params: { pendingOnly } });
     return res.data;
@@ -199,5 +191,37 @@ export const plmApi = {
   rejectChangeTask: async (taskId, comment) => {
     const res = await api.post(`/api/changes/tasks/${taskId}/reject`, { comment: comment || '' });
     return res.data;
+  },
+
+  // ── Documents ───────────────────────────────────────────────
+  /** GET /api/v1/documents — full document library */
+  getAllDocuments: async () => {
+    const res = await api.get('/api/v1/documents');
+    return res.data?.data ?? [];
+  },
+  /** GET /api/v1/documents/search?keyword= */
+  searchDocuments: async (keyword) => {
+    const res = await api.get('/api/v1/documents/search', { params: { keyword } });
+    return res.data?.data ?? [];
+  },
+  /** POST /api/v1/documents */
+  createDocument: async (payload) => {
+    const res = await api.post('/api/v1/documents', payload);
+    return res.data?.data;
+  },
+  /** PUT /api/v1/documents/{id} */
+  updateDocument: async (id, payload) => {
+    const res = await api.put(`/api/v1/documents/${id}`, payload);
+    return res.data?.data;
+  },
+  /** DELETE /api/v1/documents/{id} */
+  deleteDocument: async (id) => {
+    const res = await api.delete(`/api/v1/documents/${id}`);
+    return res.data?.data;
+  },
+  /** GET /api/v1/documents/project/{projectId} */
+  getDocumentsByProject: async (projectId) => {
+    const res = await api.get(`/api/v1/documents/project/${projectId}`);
+    return res.data?.data ?? [];
   },
 };

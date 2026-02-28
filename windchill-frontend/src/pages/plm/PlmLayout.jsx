@@ -20,13 +20,15 @@ const PlmLayout = () => {
   const isChanges       = isChangesGroup && !isChangeTasks;
   const isAiDemo        = location.pathname.startsWith('/plm/ai-demo');
   const isNotifications = location.pathname.startsWith('/plm/notifications');
+  const isDocuments     = location.pathname.startsWith('/plm/documents');
 
   // Workspace = any /plm route that isn’t one of the named sections
   const isWorkspace = location.pathname.startsWith('/plm')
     && !isWorklist
     && !isChangesGroup
     && !isAiDemo
-    && !isNotifications;
+    && !isNotifications
+    && !isDocuments;
 
   const getCurrentPage = () => {
     if (isWorkspace)     return 'workspace';
@@ -35,6 +37,7 @@ const PlmLayout = () => {
     if (isChangeTasks)   return 'change-tasks';
     if (isAiDemo)        return 'ai-demo';
     if (isNotifications) return 'notifications';
+    if (isDocuments)     return 'documents';
     return 'unknown';
   };
 
@@ -95,6 +98,7 @@ const PlmLayout = () => {
           <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
           <Link className={isChanges       ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
           <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">Change Tasks</Link>
+          <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
           <Link
             className={isAiDemo ? 'plm-link active' : 'plm-link'}
@@ -112,7 +116,6 @@ const PlmLayout = () => {
           <ContextTeamPanel />
           <FolderTree />
         </aside>
-
         <main className="plm-main">
           <Outlet context={{ aiActionTrigger }} />
         </main>
