@@ -183,6 +183,25 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
 
   const push = useCallback((m) => setMessages(prev => [...prev, m]), []);
 
+  // ── Batch 1: Worklist heads-up on chat open ───────────────────────────────
+  useEffect(() => {
+    if (!isOpen || !selectedContextId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const items = await plmApi.listMyWorkItems();
+        if (!cancelled && items?.length) {
+          push(mkMsg('assistant',
+            `📋 **Heads up!** You have **${items.length}** item(s) pending in your Worklist.\n\nSay **"My Worklist"** to review or **"Approve my first task"** to act right now.`,
+            ['My Worklist', 'Approve my first task']
+          ));
+        }
+      } catch (_) { /* silent — worklist is optional context */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, selectedContextId, push]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const send = useCallback(async (textArg) => {
     const q = (textArg ?? input).trim();
     if (!q || isLoading) return;
@@ -506,13 +525,29 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else if (found.lifecycleState === 'UNDERREVIEW') {
             // UNDERREVIEW is the correct enum value (no underscore)
             reply = mkMsg('assistant',
-              `🔍 **${found.partNumber}** is already **UNDERREVIEW** (submitted for approval).\n\nIt\'s now in the Worklist for review. An Approver/Manager must approve it from there to move it to RELEASED.\n\nYou cannot bypass this step — this is the workflow.`,
+              `🔍 **${found.partNumber}** is already **UNDERREVIEW** (submitted for approval).\n\nIt's now in the Worklist for review. An Approver/Manager must approve it from there to move it to RELEASED.\n\nYou cannot bypass this step — this is the workflow.`,
               ['Go to worklist', `Analyze ${found.partNumber}`]
             );
           } else {
             // INWORK -> UNDERREVIEW = submit for review (enters Worklist workflow)
             setMemory(m => ({ ...m, lastPart: found }));
             try {
+              // ── Batch 1: Pre-check — ensure at least one APPROVER exists ────────
+              try {
+                const members = await plmApi.listContextMembers(selectedContextId);
+                const hasApprover = (members || []).some(
+                  m => m.role === 'APPROVER' || m.role === 'MANAGER'
+                );
+                if (!hasApprover) {
+                  reply = mkMsg('assistant',
+                    `⚠️ **Cannot submit ${found.partNumber} for review.**\n\n**No APPROVER or MANAGER** is assigned to this context.\n\nIf submitted now, the part will be stuck in UNDERREVIEW with nobody to approve it.\n\nAdd an Approver to the context team first, then try again.`,
+                    [`Analyze ${found.partNumber}`, 'Go to worklist']
+                  );
+                  break;
+                }
+              } catch (_) { /* if listContextMembers fails, proceed — don't block the engineer */ }
+              // ────────────────────────────────────────────────────────────────────
+
               // target=UNDERREVIEW (no underscore, matches Java LifecycleStateEnum)
               await plmApi.promotePart(found.id, 'UNDERREVIEW');
               reply = mkMsg('assistant',
