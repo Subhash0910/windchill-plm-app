@@ -30,7 +30,7 @@ const parseIntent = (text) => {
   // Worklist
   if (/worklist|my tasks|pending approval|assigned to me|work items/.test(t)) return { type: 'WORKLIST' };
 
-  // Approve / Reject task via chat
+  // Approve / Reject task
   const approvMatch = t.match(/approve\s+(?:task\s+)?(?:my\s+first|#?(\d+)|first)?\s*(?:task)?/i);
   if (approvMatch && t.includes('approv')) return { type: 'APPROVE_TASK', id: approvMatch[1] || null };
   const rejectMatch = t.match(/reject\s+(?:task\s+)?(?:#?(\d+))?/i);
@@ -49,9 +49,12 @@ const parseIntent = (text) => {
   const reviseMatch = t.match(/revise\s+(?:part\s+)?([a-z0-9\-_]+)/i);
   if (reviseMatch) return { type: 'REVISE', query: reviseMatch[1] };
 
-  // Impact Analysis
-  const impactMatch = t.match(/(?:run\s+impact|impact\s+(?:analysis\s+)?(?:on|for)|analyze\s+impact)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
-  if (impactMatch) return { type: 'IMPACT', query: impactMatch[1] };
+  // ✅ FIX: Impact Analysis — correctly skip 'on'/'for' before part number
+  // Matches: "run impact on P001", "run impact P001", "impact analysis on P001", "impact on P001"
+  const impactMatch = t.match(/(?:run\s+impact|impact(?:\s+analysis)?)\s+(?:on\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
+  if (impactMatch && !['on', 'for', 'the', 'a', 'an'].includes(impactMatch[1].toLowerCase())) {
+    return { type: 'IMPACT', query: impactMatch[1] };
+  }
 
   // BOM view
   const bomMatch = t.match(/(?:bom|structure|children|child parts?)\s+(?:of\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
@@ -81,7 +84,9 @@ const parseIntent = (text) => {
 
   // Analyze
   const analyzeMatch = t.match(/(?:analyze|inspect|check|details?|info(?:rmation)?(?:\s+(?:about|on|for))?)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
-  if (analyzeMatch) return { type: 'ANALYZE', query: analyzeMatch[1] };
+  if (analyzeMatch && !['on', 'for', 'about'].includes(analyzeMatch[1].toLowerCase())) {
+    return { type: 'ANALYZE', query: analyzeMatch[1] };
+  }
 
   // Explain PLM concepts
   if (/lifecycle|life cycle|states?\b|workflow/.test(t)) return { type: 'EXPLAIN', topic: 'lifecycle' };
@@ -93,13 +98,13 @@ const parseIntent = (text) => {
   if (/impact|risk analysis/.test(t)) return { type: 'EXPLAIN', topic: 'impact' };
   if (/what is a? ?part|what are parts/.test(t)) return { type: 'EXPLAIN', topic: 'part' };
 
-  // Bare part number
-  const bare = t.match(/^([a-z0-9]{3,}(?:[-_][a-z0-9]+)*)$/i);
-  if (bare && !/^(list|show|find|what|how|why|help|hi|hello|hey|status|all|go|open|count|approve|reject)$/.test(bare[1])) {
+  // Bare part number typed directly
+  const bare = t.match(/^([a-z0-9]{2,}(?:[-_][a-z0-9]+)*)$/i);
+  if (bare && !/^(list|show|find|what|how|why|help|hi|hello|hey|status|all|go|open|count|approve|reject|on|for|the|it|this|that)$/.test(bare[1])) {
     return { type: 'ANALYZE', query: bare[1] };
   }
 
-  // Memory follow-ups: "now show released", "impact on it", "promote it"
+  // Memory follow-ups: "impact on it", "promote it"
   const followUp = t.match(/(?:impact|promote|revise|bom|where.?used|analyze)\s+(it|this|that|the part)$/i);
   if (followUp) return { type: 'FOLLOWUP', action: t.split(' ')[0] };
 
@@ -115,11 +120,10 @@ const mkMsg = (role, text, suggestions = [], meta = {}) => ({
 const S = { INWORK: '🔧', RELEASED: '✅', UNDER_REVIEW: '🔍', OBSOLETE: '🚫' };
 
 const WELCOME = mkMsg('assistant',
-  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Promote parts directly from here\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
+  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Promote or Revise parts directly from here\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
   []
 );
 
-// ── Helper: find part by number/name in a list ────────────────────────────────
 const findPart = (parts, query) => {
   const q = query.toLowerCase();
   return (parts || []).find(p =>
@@ -145,35 +149,25 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [quickChips, setQuickChips] = useState([]);
-
-  // ── Conversation Memory ──────────────────────────────────────────────────
-  const [memory, setMemory] = useState({
-    lastPart: null,       // { id, partNumber, name, lifecycleState, revision, iteration }
-    lastQuery: null,      // last user text
-    lastIntent: null,     // last parsed intent
-  });
-
+  const [memory, setMemory] = useState({ lastPart: null, lastQuery: null, lastIntent: null });
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    if (selectedContextId) {
-      setQuickChips(['List all parts', 'Count parts', 'My Worklist', 'Show released parts']);
-    } else {
-      setQuickChips(['Explain lifecycle', 'What is BOM?', 'What is an ECR?', 'Help']);
-    }
-  }, [selectedContextId]);
-
-  // Auto-update quick chips when memory changes
   useEffect(() => {
     if (memory.lastPart) {
       setQuickChips([
         `Analyze ${memory.lastPart.partNumber}`,
         `Run impact on ${memory.lastPart.partNumber}`,
-        memory.lastPart.lifecycleState === 'INWORK' ? `Promote ${memory.lastPart.partNumber}` : `BOM of ${memory.lastPart.partNumber}`,
+        memory.lastPart.lifecycleState === 'INWORK'
+          ? `Promote ${memory.lastPart.partNumber}`
+          : `BOM of ${memory.lastPart.partNumber}`,
         `Where used ${memory.lastPart.partNumber}`,
       ]);
+    } else if (selectedContextId) {
+      setQuickChips(['List all parts', 'Count parts', 'My Worklist', 'Show released parts']);
+    } else {
+      setQuickChips(['Explain lifecycle', 'What is BOM?', 'What is an ECR?', 'Help']);
     }
-  }, [memory.lastPart]);
+  }, [memory.lastPart, selectedContextId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -181,7 +175,6 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
 
   const push = useCallback((m) => setMessages(prev => [...prev, m]), []);
 
-  // ── Core send handler ────────────────────────────────────────────────────
   const send = useCallback(async (textArg) => {
     const q = (textArg ?? input).trim();
     if (!q || isLoading) return;
@@ -206,27 +199,22 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
 
       if (needsCtx && !selectedContextId) {
         push(mkMsg('assistant',
-          `⚠️ **No context selected.**\n\nPlease select a PLM Context from the left sidebar first — then I can query your live parts data.`,
+          `⚠️ **No context selected.**\n\nPlease select a PLM Context from the left sidebar first.`,
           ['What is a context?', 'Help']
         ));
         return;
       }
 
       let parts = null;
-      if (needsCtx) {
-        parts = await plmApi.listParts(selectedContextId);
-      }
+      if (needsCtx) parts = await plmApi.listParts(selectedContextId);
 
       let reply;
 
       switch (intent.type) {
 
-        // ── Greet ──────────────────────────────────────────────────────────
         case 'GREET':
           reply = mkMsg('assistant',
-            `Hey! 👋 ${selectedContextId
-              ? "I can see you've got a context selected — I'm connected to your live data!"
-              : 'Select a context on the left to let me access your parts data.'}
+            `Hey! 👋 ${selectedContextId ? "Context is active — I'm connected to your live data!" : 'Select a context on the left to access your parts data.'}
 
 What would you like to know?`,
             selectedContextId
@@ -234,7 +222,6 @@ What would you like to know?`,
               : ['Explain lifecycle', 'What is BOM?', 'Help']
           ); break;
 
-        // ── Help ───────────────────────────────────────────────────────────
         case 'HELP':
           reply = mkMsg('assistant',
             `**What I can do:**
@@ -252,8 +239,7 @@ What would you like to know?`,
 • "Approve my first task" / "Reject task [id]"
 
 📋 **Workflow**
-• "My Worklist" — pending approvals
-• "My changes" — ECR list
+• "My Worklist" / "My changes"
 
 🗺️ **Navigation**
 • "Go to parts / worklist / changes / ai demo"
@@ -264,14 +250,12 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             ['List all parts', 'My Worklist', 'Explain lifecycle']
           ); break;
 
-        // ── Explain ────────────────────────────────────────────────────────
         case 'EXPLAIN':
           reply = mkMsg('assistant',
             KB[intent.topic] ?? `I don't have a knowledge entry for that yet.\nTry: lifecycle, BOM, revision, where used, ECR, ECN, context, promote, impact, part.`,
             ['Explain lifecycle', 'What is BOM?', 'What is an ECR?']
           ); break;
 
-        // ── Navigate ───────────────────────────────────────────────────────
         case 'NAVIGATE': {
           const routes = { parts: '/plm/parts', worklist: '/plm/worklist', changes: '/plm/changes', 'ai-demo': '/plm/ai-demo' };
           const route = routes[intent.dest];
@@ -282,11 +266,10 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Status ─────────────────────────────────────────────────────────
         case 'STATUS': {
           if (!selectedContextId) {
             reply = mkMsg('assistant',
-              `**System Status**\n\n• ✅ Frontend: Running\n• ✅ Backend: Connected\n• ⚠️ Context: None selected\n\nSelect a context to see live part statistics.`,
+              `**System Status**\n\n• ✅ Frontend: Running\n• ⚠️ Context: None selected`,
               ['What is a context?']
             );
           } else {
@@ -301,7 +284,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── List ───────────────────────────────────────────────────────────
         case 'LIST': {
           if (!parts?.length) {
             reply = mkMsg('assistant',
@@ -321,7 +303,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Count ──────────────────────────────────────────────────────────
         case 'COUNT': {
           const counts = (parts || []).reduce((a, p) => ({ ...a, [p.lifecycleState]: (a[p.lifecycleState] || 0) + 1 }), {});
           const lines = Object.entries(counts).map(([st, c]) => `• ${S[st] || '📄'} **${st}**: ${c}`).join('\n') || '• No parts yet';
@@ -331,12 +312,11 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           ); break;
         }
 
-        // ── Filter ─────────────────────────────────────────────────────────
         case 'FILTER': {
           const filtered = (parts || []).filter(p => p.lifecycleState === intent.state);
           if (!filtered.length) {
             reply = mkMsg('assistant',
-              `🔍 No **${intent.state}** parts found in this context.\nTotal parts: ${(parts || []).length}`,
+              `🔍 No **${intent.state}** parts in this context.\nTotal: ${(parts || []).length}`,
               ['List all parts', 'Count parts']
             );
           } else {
@@ -349,7 +329,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Search ─────────────────────────────────────────────────────────
         case 'SEARCH': {
           const qLow = intent.query.toLowerCase();
           const found = (parts || []).filter(p =>
@@ -359,7 +338,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           );
           if (!found.length) {
             reply = mkMsg('assistant',
-              `🔍 No parts found matching **"${intent.query}"**.\n\nTotal parts in context: ${(parts || []).length}. Try a broader term.`,
+              `🔍 No parts found matching **"${intent.query}"**.\nTotal parts: ${(parts || []).length}.`,
               ['List all parts', 'Count parts']
             );
           } else {
@@ -375,14 +354,13 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Analyze ────────────────────────────────────────────────────────
         case 'ANALYZE': {
           const found = findPart(parts, intent.query);
           if (!found) {
             reply = mkMsg('assistant',
-              `❌ **Part "${intent.query}" not found** in this context.\n\nThere are currently **${(parts || []).length}** part(s) in this context.`,
+              `❌ **Part "${intent.query}" not found** in this context.\nThere are **${(parts || []).length}** part(s) here.`,
               (parts || []).length > 0
-                ? ['List all parts', ...(parts.slice(0, 2).map(p => `Analyze ${p.partNumber}`))]
+                ? ['List all parts', ...parts.slice(0, 2).map(p => `Analyze ${p.partNumber}`)]
                 : ['List all parts', 'What is a part?']
             );
           } else {
@@ -399,13 +377,12 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             } catch (_) {
               bomText = '\n\n**📦 BOM:** Unable to fetch'; wuText = '';
             }
-            const canRevise = found.lifecycleState === 'RELEASED';
             const tip = found.lifecycleState === 'INWORK'
-              ? '💡 INWORK — say **"Promote ' + found.partNumber + '"** to submit for approval.'
+              ? `💡 INWORK — say **"Promote ${found.partNumber}"** to submit for approval.`
               : found.lifecycleState === 'UNDER_REVIEW'
                 ? '💡 UNDER REVIEW — check Worklist to approve or reject.'
-                : canRevise
-                  ? '💡 RELEASED — say **"Revise ' + found.partNumber + '"** to create a new revision.'
+                : found.lifecycleState === 'RELEASED'
+                  ? `💡 RELEASED — say **"Revise ${found.partNumber}"** to create a new revision.`
                   : '💡 OBSOLETE — this part has been retired.';
 
             reply = mkMsg('assistant',
@@ -427,7 +404,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── BOM View ───────────────────────────────────────────────────────
         case 'BOM_VIEW': {
           const found = findPart(parts, intent.query);
           if (!found) {
@@ -437,7 +413,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             const bom = await plmApi.listBom(found.id);
             if (!bom?.length) {
               reply = mkMsg('assistant',
-                `📦 **BOM of ${found.partNumber}**\n\nNo child components. This part is a leaf component (no sub-assembly).`,
+                `📦 **BOM of ${found.partNumber}**\n\nNo child components — this is a leaf component.`,
                 [`Analyze ${found.partNumber}`, `Where used ${found.partNumber}`]
               );
             } else {
@@ -451,7 +427,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Where Used ─────────────────────────────────────────────────────
         case 'WHERE_USED': {
           const found = findPart(parts, intent.query);
           if (!found) {
@@ -461,13 +436,13 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             const wu = await plmApi.getWhereUsed(found.id);
             if (!wu?.length) {
               reply = mkMsg('assistant',
-                `📎 **Where Used: ${found.partNumber}**\n\nNot referenced by any parent assembly. Safe to modify without impacting upstream parts.`,
+                `📎 **Where Used: ${found.partNumber}**\n\nNot referenced by any parent assembly. Safe to modify without upstream impact.`,
                 [`Analyze ${found.partNumber}`, `Run impact on ${found.partNumber}`]
               );
             } else {
               const lines = wu.map(p => `• **${p.partNumber}** — ${p.name || '—'} | ${S[p.lifecycleState] || ''} *${p.lifecycleState}*`).join('\n');
               reply = mkMsg('assistant',
-                `📎 **Where Used: ${found.partNumber} — ${wu.length} parent(s):**\n\n${lines}\n\n⚠️ Changing this part will affect **${wu.length}** assembly(ies). Consider running impact analysis.`,
+                `📎 **Where Used: ${found.partNumber} — ${wu.length} parent(s):**\n\n${lines}\n\n⚠️ Changing this part affects **${wu.length}** assembly(ies). Consider running impact analysis.`,
                 [`Run impact on ${found.partNumber}`, `Analyze ${found.partNumber}`]
               );
             }
@@ -475,7 +450,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Impact Analysis ────────────────────────────────────────────────
         case 'IMPACT': {
           const found = findPart(parts, intent.query);
           if (!found) {
@@ -483,9 +457,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else {
             setMemory(m => ({ ...m, lastPart: found }));
             const isAiDemoPage = location.pathname.includes('/ai-demo');
-
             if (onAction) {
-              // Navigate to AI Demo if not already there, then trigger analysis
               if (!isAiDemoPage) {
                 sessionStorage.setItem('pendingAiAction', JSON.stringify({
                   action: 'RUN_IMPACT_ANALYSIS',
@@ -499,23 +471,21 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 change_type: 'DESIGN_CHANGE'
               });
             }
-
             reply = mkMsg('assistant',
-              `⚡ **Running AI Impact Analysis for ${found.partNumber}...**\n\n${isAiDemoPage ? 'Check the analysis panel above.' : 'Navigating to AI Demo page and launching analysis...'}\n\nThe analysis will show:\n• Risk Score (0-10)\n• BOM Depth\n• Affected assemblies\n• Suggested actions`,
+              `⚡ **Running AI Impact Analysis for ${found.partNumber}...**\n\n${isAiDemoPage ? 'Check the analysis panel above ↑' : 'Navigating to AI Demo and launching analysis...'}\n\nThe analysis shows:\n• Risk Score (0-10)\n• BOM Depth\n• Affected parent assemblies\n• Suggested actions`,
               [`Analyze ${found.partNumber}`, `Where used ${found.partNumber}`]
             );
           }
           break;
         }
 
-        // ── Promote ────────────────────────────────────────────────────────
         case 'PROMOTE': {
           const found = findPart(parts, intent.query);
           if (!found) {
             reply = mkMsg('assistant', `❌ Part **"${intent.query}"** not found.`, ['List all parts']);
           } else if (found.lifecycleState === 'RELEASED') {
             reply = mkMsg('assistant',
-              `✅ **${found.partNumber}** is already RELEASED.\n\nIf you want to make changes, say **"Revise ${found.partNumber}"** to create a new revision.`,
+              `✅ **${found.partNumber}** is already RELEASED.\n\nSay **"Revise ${found.partNumber}"** to create a new revision.`,
               [`Revise ${found.partNumber}`, `Analyze ${found.partNumber}`]
             );
           } else if (found.lifecycleState === 'OBSOLETE') {
@@ -526,10 +496,10 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               ['Go to worklist', `Analyze ${found.partNumber}`]
             );
           } else {
-            // Perform the promote
             setMemory(m => ({ ...m, lastPart: found }));
             try {
-              await plmApi.promotePart(found.id, 'UNDER_REVIEW');
+              // ✅ FIX: call without target param — backend auto-promotes to next state
+              await plmApi.promotePart(found.id);
               reply = mkMsg('assistant',
                 `✅ **${found.partNumber}** promoted to **UNDER_REVIEW**!\n\nA work item has been created. Reviewers can now approve or reject it from the Worklist.`,
                 ['Go to worklist', `Analyze ${found.partNumber}`]
@@ -544,7 +514,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Revise ─────────────────────────────────────────────────────────
         case 'REVISE': {
           const found = findPart(parts, intent.query);
           if (!found) {
@@ -559,12 +528,12 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             try {
               const newPart = await plmApi.revisePart(found.id);
               reply = mkMsg('assistant',
-                `✅ **New revision created for ${found.partNumber}!**\n\nNew part: **${newPart?.partNumber || found.partNumber + ' (new rev)'}** — State: INWORK\n\nYou can now edit the new revision independently.`,
+                `✅ **New revision created for ${found.partNumber}!**\n\nNew part: **${newPart?.partNumber || found.partNumber + ' (new rev)'}** | State: INWORK\n\nYou can now edit the new revision independently.`,
                 ['Go to parts', 'List all parts']
               );
             } catch (err) {
               reply = mkMsg('assistant',
-                `⚠️ Revise failed: ${err?.response?.data?.message || err.message}\n\nYou can revise manually from the part detail page.`,
+                `⚠️ Revise failed: ${err?.response?.data?.message || err.message}\n\nYou can revise from the part detail page.`,
                 [`Analyze ${found.partNumber}`, 'Go to parts']
               );
             }
@@ -572,7 +541,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Worklist ───────────────────────────────────────────────────────
         case 'WORKLIST': {
           try {
             const items = await plmApi.listMyWorkItems();
@@ -583,10 +551,10 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               );
             } else {
               const lines = items.slice(0, 8).map(w =>
-                `• **${w.partNumber || w.subjectPartNumber || 'Work Item'}** [ID: ${w.id}] — ${w.action || w.type || 'Approval'} | from ${w.submittedBy || w.createdBy || '—'}`
+                `• **${w.partNumber || w.subjectPartNumber || 'Work Item'}** [ID: ${w.id}] — ${w.action || w.type || 'Approval'}`
               ).join('\n');
               reply = mkMsg('assistant',
-                `📋 **${items.length} pending work item(s):**\n\n${lines}\n\nSay **"Approve my first task"** or **"Reject task [ID]"** to act on them.`,
+                `📋 **${items.length} pending work item(s):**\n\n${lines}\n\nSay **"Approve my first task"** or **"Reject task [ID]"** to act.`,
                 ['Approve my first task', 'Go to worklist']
               );
             }
@@ -597,14 +565,12 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Approve Task ───────────────────────────────────────────────────
         case 'APPROVE_TASK': {
           try {
             const items = await plmApi.listMyWorkItems();
             if (!items?.length) {
               reply = mkMsg('assistant', `📋 **Your Worklist is empty** — no tasks to approve.`, ['Go to worklist']);
             } else {
-              // find by id or take first
               const task = intent.id
                 ? items.find(i => String(i.id) === String(intent.id)) || items[0]
                 : items[0];
@@ -616,14 +582,13 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             }
           } catch (err) {
             reply = mkMsg('assistant',
-              `⚠️ Approval failed: ${err?.response?.data?.message || err.message}\n\nTry approving from the Worklist page directly.`,
+              `⚠️ Approval failed: ${err?.response?.data?.message || err.message}\n\nTry from the Worklist page directly.`,
               ['Go to worklist']
             );
           }
           break;
         }
 
-        // ── Reject Task ────────────────────────────────────────────────────
         case 'REJECT_TASK': {
           try {
             const items = await plmApi.listMyWorkItems();
@@ -635,27 +600,26 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 : items[0];
               await plmApi.rejectWorkItem(task.id, 'Rejected via PLM Assistant');
               reply = mkMsg('assistant',
-                `🔁 **Task rejected.**\n\n**${task.partNumber || task.subjectPartNumber || 'Work Item'}** [ID: ${task.id}] has been sent back.\n\nThe part returns to INWORK state.`,
+                `🔁 **Task rejected.**\n\n**${task.partNumber || task.subjectPartNumber || 'Work Item'}** [ID: ${task.id}] sent back to INWORK.`,
                 ['My Worklist', 'List all parts']
               );
             }
           } catch (err) {
             reply = mkMsg('assistant',
-              `⚠️ Reject failed: ${err?.response?.data?.message || err.message}\n\nTry rejecting from the Worklist page directly.`,
+              `⚠️ Reject failed: ${err?.response?.data?.message || err.message}\n\nTry from the Worklist page.`,
               ['Go to worklist']
             );
           }
           break;
         }
 
-        // ── Changes ────────────────────────────────────────────────────────
         case 'CHANGES': {
           try {
             const ecrs = await plmApi.listEcrs(null);
             const list = ecrs?.data || ecrs || [];
             if (!list.length) {
               reply = mkMsg('assistant',
-                `📝 **No ECRs found.**\n\nYou haven't created any Engineering Change Requests yet.`,
+                `📝 **No ECRs found.**\n\nNo Engineering Change Requests yet.`,
                 ['What is an ECR?', 'Go to changes']
               );
             } else {
@@ -674,12 +638,11 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Unknown — try backend, fall back gracefully ────────────────────
         default: {
-          // Try to resolve from memory first
-          if (memory.lastPart && (q.includes('it') || q.includes('this') || q.includes('that'))) {
+          // Memory context: vague "it/this/that" references
+          if (memory.lastPart && /\b(it|this|that|the part)\b/.test(q.toLowerCase())) {
             reply = mkMsg('assistant',
-              `💬 I think you're asking about **${memory.lastPart.partNumber}**. Here are some things I can do with it:`,
+              `💬 I think you're asking about **${memory.lastPart.partNumber}**. What would you like to do?`,
               [
                 `Analyze ${memory.lastPart.partNumber}`,
                 `Run impact on ${memory.lastPart.partNumber}`,
@@ -690,6 +653,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             break;
           }
 
+          // Try backend
           let handled = false;
           try {
             const res = await fetch('/api/v1/ai/chat', {
@@ -700,27 +664,20 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               },
               body: JSON.stringify({
                 message: q,
-                context: {
-                  page: currentPage || location.pathname,
-                  selectedContextId,
-                  lastPart: memory.lastPart?.partNumber || null,
-                },
+                context: { page: currentPage || location.pathname, selectedContextId, lastPart: memory.lastPart?.partNumber || null },
                 sessionId: `web-${Date.now()}`,
               }),
             });
             if (res.ok) {
               const result = await res.json();
               const d = result.data || result;
-              if (d?.text) {
-                reply = mkMsg('assistant', d.text, d.suggestions || []);
-                handled = true;
-              }
+              if (d?.text) { reply = mkMsg('assistant', d.text, d.suggestions || []); handled = true; }
             }
-          } catch (_) { /* backend unavailable */ }
+          } catch (_) {}
 
           if (!handled) {
             reply = mkMsg('assistant',
-              `🤔 I didn't quite understand **"${q}"**.\n\nTry:\n• "Search [keyword]"\n• "Analyze [part number]"\n• "Promote [part number]"\n• "Run impact on [part number]"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type "Help" for full commands`,
+              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Promote [partNumber]" / "Run impact on [partNumber]"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
               selectedContextId
                 ? ['List all parts', 'Count parts', 'My Worklist', 'Help']
                 : ['Explain lifecycle', 'What is BOM?', 'Help']
@@ -742,7 +699,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
     }
   }, [input, isLoading, selectedContextId, currentPage, location.pathname, navigate, push, memory, onAction]);
 
-  // ── Chip click ─────────────────────────────────────────────────────────────
   const handleChip = useCallback((chip) => {
     if (chip.startsWith('Open ')) {
       const pn = chip.replace('Open ', '');
@@ -756,7 +712,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
     send(chip);
   }, [messages, navigate, onAction, send]);
 
-  // ── Markdown-lite renderer ─────────────────────────────────────────────────
   const renderText = (text) =>
     text.split('\n').map((line, i, arr) => {
       const segments = line.split(/(\*\*[^*]+\*\*)/g);
@@ -774,7 +729,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
 
   return (
     <>
-      {/* FAB */}
       {!isOpen && (
         <button className="ai-chat-bubble" onClick={() => setIsOpen(true)} title="PLM Assistant">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -784,10 +738,8 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
         </button>
       )}
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="ai-chat-window">
-          {/* Header */}
           <div className="ai-chat-header">
             <div className="ai-chat-title">
               <div className="ai-avatar">
@@ -797,7 +749,10 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
               </div>
               <div>
                 <strong>PLM Assistant</strong>
-                <small>{selectedContextId ? '🟢 Live data connected' : '🟡 Select a context'}{memory.lastPart ? ` · ${memory.lastPart.partNumber}` : ''}</small>
+                <small>
+                  {selectedContextId ? '🟢 Live' : '🟡 No context'}
+                  {memory.lastPart ? ` · ${memory.lastPart.partNumber}` : ''}
+                </small>
               </div>
             </div>
             <button className="btn-close-chat" onClick={() => setIsOpen(false)} title="Close">
@@ -807,7 +762,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             </button>
           </div>
 
-          {/* Messages */}
           <div className="ai-chat-messages">
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message chat-message--${msg.role}`}>
@@ -833,7 +787,6 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 </div>
               </div>
             ))}
-
             {isLoading && (
               <div className="chat-message chat-message--assistant">
                 <div className="message-avatar">
@@ -849,14 +802,12 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick chips */}
           <div className="ai-quick-chips">
             {quickChips.map((c, i) => (
               <button key={i} className="suggestion-chip suggestion-chip--quick" onClick={() => handleChip(c)}>{c}</button>
             ))}
           </div>
 
-          {/* Input */}
           <div className="ai-chat-input">
             <input
               type="text"
