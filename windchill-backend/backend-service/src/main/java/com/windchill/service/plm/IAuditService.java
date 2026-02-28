@@ -7,9 +7,16 @@ import java.util.List;
 
 public interface IAuditService {
 
-    /** Get all audit logs for a specific entity (used by PartDetailPage audit tab) */
+    /**
+     * Write a new audit entry — called by BomServiceImpl, PartServiceImpl,
+     * PromotionWorkflowService, FolderServiceImpl, AIImpactServiceImpl,
+     * PlmContextServiceImpl whenever a PLM entity changes.
+     */
+    void log(PlmEntityTypeEnum entityType, Long entityId, String action, String actor);
+
+    /** Read audit trail for one specific entity (used by PartDetailPage audit tab). */
     List<AuditLog> getLogs(PlmEntityTypeEnum entityType, Long entityId);
 
-    /** Get recent audit logs across all entities, sorted DESC by createdAt */
+    /** Read recent audit entries across ALL entities (used by AuditLogPage global feed). */
     List<AuditLog> getAllLogs(int limit);
 }
