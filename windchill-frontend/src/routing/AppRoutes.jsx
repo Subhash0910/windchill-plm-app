@@ -11,6 +11,7 @@ import WorklistPage from '../pages/plm/WorklistPage';
 import ChangesHomePage from '../pages/plm/ChangesHomePage';
 import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import ChangeTasksPage from '../pages/plm/ChangeTasksPage';
+import NotificationsPage from '../pages/plm/NotificationsPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
 import AIDemo from '../pages/AIDemo';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -68,6 +69,7 @@ const AppRoutes = () => {
             <Route path="changes"            element={<ChangesHomePage />} />
             <Route path="changes/ecr/:id"    element={<EcrDetailPage />} />
             <Route path="changes/tasks"      element={<ChangeTasksPage />} />
+            <Route path="notifications"      element={<NotificationsPage />} />
             <Route path="ai-demo"            element={<AIDemo />} />
           </Route>
 
