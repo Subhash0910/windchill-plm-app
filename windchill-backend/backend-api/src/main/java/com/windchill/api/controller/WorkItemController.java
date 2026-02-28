@@ -40,7 +40,7 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(items).build());
     }
 
-    /* ── POST /{id}/approve ────────────────────────────────────────────────────── */
+    /* ── POST /{id}/approve ─────────────────────────────────────────────── */
     @PostMapping("/{id}/approve")
     public ResponseEntity<ApiResponse<?>> approve(
             @PathVariable Long id,
@@ -50,7 +50,6 @@ public class WorkItemController {
         WorkItem saved   = workflow.approve(id, comment);
         Part     part    = resolvePart(saved.getPartId());
 
-        // Notify the part submitter that their part was approved
         try {
             PromotionRequest pr = promotionRequestRepo
                     .findById(saved.getPromotionRequestId()).orElse(null);
@@ -58,7 +57,6 @@ public class WorkItemController {
                 String pNum  = part != null ? part.getPartNumber() : ("Part #" + saved.getPartId());
                 String pName = (part != null && part.getName() != null) ? part.getName() : "";
                 String label = pName.isBlank() ? pNum : pNum + " (" + pName + ")";
-                // Correct signature: (userId, title, message, type, entityType, entityId, entityNumber)
                 notificationService.create(
                         pr.getRequestedByUserId(),
                         "Part approved \u2014 " + pNum,
@@ -78,7 +76,7 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(toDto(saved, part)).build());
     }
 
-    /* ── POST /{id}/reject ─────────────────────────────────────────────────────── */
+    /* ── POST /{id}/reject ──────────────────────────────────────────────── */
     @PostMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<?>> reject(
             @PathVariable Long id,
@@ -87,7 +85,6 @@ public class WorkItemController {
         WorkItem saved = workflow.reject(id, req == null ? null : req.getComment());
         Part     part  = resolvePart(saved.getPartId());
 
-        // Notify the part submitter that their part was rejected
         try {
             PromotionRequest pr = promotionRequestRepo
                     .findById(saved.getPromotionRequestId()).orElse(null);
@@ -97,7 +94,6 @@ public class WorkItemController {
                 String label  = pName.isBlank() ? pNum : pNum + " (" + pName + ")";
                 String reason = (req != null && req.getComment() != null && !req.getComment().isBlank())
                         ? req.getComment() : "No reason given";
-                // Correct signature: (userId, title, message, type, entityType, entityId, entityNumber)
                 notificationService.create(
                         pr.getRequestedByUserId(),
                         "Part rejected \u2014 " + pNum,
@@ -117,9 +113,8 @@ public class WorkItemController {
                 ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(toDto(saved, part)).build());
     }
 
-    /* ── Helpers ──────────────────────────────────────────────────────────────── */
+    /* ── Helpers ────────────────────────────────────────────────────────── */
 
-    /** Safe part lookup – returns null instead of throwing. */
     private Part resolvePart(Long partId) {
         if (partId == null) return null;
         try { return partService.getPart(partId); }
@@ -138,7 +133,8 @@ public class WorkItemController {
                 .partNumber(part != null ? part.getPartNumber() : null)
                 .partName(part  != null ? part.getName()        : null)
                 .assigneeUserId(w.getAssigneeUserId())
-                .status(w.getStatus())
+                // WorkItem.getStatus() returns WorkItemStatusEnum — convert to String
+                .status(w.getStatus() != null ? w.getStatus().name() : null)
                 .dueAt(w.getDueAt())
                 .completedAt(w.getCompletedAt())
                 .build();
