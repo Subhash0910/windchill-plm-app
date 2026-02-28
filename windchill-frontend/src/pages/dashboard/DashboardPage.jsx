@@ -12,7 +12,7 @@ const S_COLOR = {
   RELEASED:    { bg: '#dcfce7', text: '#166534', dot: '#22c55e' },
   OBSOLETE:    { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' },
 };
-const S_ICON = { INWORK: '\ud83d\udd27', UNDERREVIEW: '\ud83d\udd0d', RELEASED: '\u2705', OBSOLETE: '\ud83d\udeab' };
+const S_ICON = { INWORK: '🔧', UNDERREVIEW: '🔍', RELEASED: '✅', OBSOLETE: '🚫' };
 
 const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
   const navigate = useNavigate();
@@ -54,17 +54,18 @@ const DashboardPage = () => {
       plmApi.listMyWorkItems(),
       plmApi.listEcrs(null),
     ]).then(([pR, wR, eR]) => {
-      const p = pR.status === 'fulfilled' ? (pR.value || []) : [];
-      const w = wR.status === 'fulfilled' ? (wR.value || []) : [];
-      const e = eR.status === 'fulfilled' ? (eR.value?.data || eR.value || []) : [];
+      const p = pR.status === 'fulfilled' ? (Array.isArray(pR.value) ? pR.value : []) : [];
+      const w = wR.status === 'fulfilled' ? (Array.isArray(wR.value) ? wR.value : []) : [];
+      const rawE = eR.status === 'fulfilled' ? (eR.value?.data ?? eR.value) : [];
+      const e = Array.isArray(rawE) ? rawE : [];
       setParts(p);
       setWorkItems(w);
-      setEcrs(Array.isArray(e) ? e : []);
-      setRecentParts([...p].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5));
+      setEcrs(e);
+      setRecentParts([...p].sort((x, y) => (y.id || 0) - (x.id || 0)).slice(0, 5));
     }).finally(() => setLoading(false));
   }, [selectedContextId]);
 
-  const counts   = parts.reduce((a, p) => ({ ...a, [p.lifecycleState]: (a[p.lifecycleState] || 0) + 1 }), {});
+  const counts   = parts.reduce((acc, p) => ({ ...acc, [p.lifecycleState]: (acc[p.lifecycleState] || 0) + 1 }), {});
   const underRev = counts['UNDERREVIEW'] || 0;
   const released = counts['RELEASED']    || 0;
   const inwork   = counts['INWORK']      || 0;
@@ -78,10 +79,10 @@ const DashboardPage = () => {
   };
 
   const quickActions = [
-    { icon: '\u2699\ufe0f',  label: 'Parts',          sub: `${parts.length} total`,      to: '/plm/parts',    color: 'blue'   },
-    { icon: '\ud83d\udccb',  label: 'Worklist',        sub: `${workItems.length} pending`, to: '/plm/worklist', color: 'amber'  },
-    { icon: '\ud83d\udcdd',  label: 'Changes',         sub: `${ecrs.length} ECRs`,        to: '/plm/changes',  color: 'purple' },
-    { icon: '\u26a1',        label: 'Impact Analysis', sub: 'AI-powered',                 to: '/plm/ai-demo',  color: 'green'  },
+    { icon: '⚙️',  label: 'Parts',          sub: `${parts.length} total`,       to: '/plm/parts',    color: 'blue'   },
+    { icon: '📋',  label: 'Worklist',        sub: `${workItems.length} pending`,  to: '/plm/worklist', color: 'amber'  },
+    { icon: '📝',  label: 'Changes',         sub: `${ecrs.length} ECRs`,          to: '/plm/changes',  color: 'purple' },
+    { icon: '⚡',        label: 'Impact Analysis', sub: 'AI-powered',                  to: '/plm/ai-demo',  color: 'green'  },
   ];
 
   return (
@@ -92,7 +93,11 @@ const DashboardPage = () => {
         {/* Welcome Banner */}
         <div className="dashboard-welcome">
           <div className="welcome-text">
-            <h1>{greeting()}, <span>{user?.fullName || user?.username || 'Engineer'}</span> \ud83d\udc4b</h1>
+            <h1>
+              {greeting()},{' '}
+              <span>{user?.fullName || user?.username || 'Engineer'}</span>
+              {' '}👋
+            </h1>
             <p>
               {selectedContextId
                 ? <>
@@ -110,9 +115,8 @@ const DashboardPage = () => {
 
         {/* KPI Cards */}
         <div className="kpi-grid">
-          {/* Total parts in context */}
           <KPICard
-            icon="\u2699\ufe0f"
+            icon={'⚙️'}
             label="Total Parts"
             value={parts.length}
             sub={selectedContextId ? selectedContextName : 'No context'}
@@ -120,23 +124,17 @@ const DashboardPage = () => {
             to="/plm/parts"
             loading={loading}
           />
-          {/*
-            UNDER REVIEW = parts whose lifecycleState === 'UNDERREVIEW' (system-wide in context).
-            This is NOT the same as workItems (tasks assigned to ME).
-            Clicking goes to /plm/parts so user can see which parts are under review.
-            Your personal tasks are in the Worklist.
-          */}
           <KPICard
-            icon="\ud83d\udd0d"
+            icon={'🔍'}
             label="Under Review"
             value={underRev}
-            sub={underRev > 0 ? 'Parts awaiting approval' : 'All clear \u2713'}
+            sub={underRev > 0 ? 'Parts awaiting approval' : 'All clear ✓'}
             color="amber"
             to="/plm/parts"
             loading={loading}
           />
           <KPICard
-            icon="\u2705"
+            icon={'✅'}
             label="Released Parts"
             value={released}
             sub={`${inwork} in work`}
@@ -144,7 +142,7 @@ const DashboardPage = () => {
             loading={loading}
           />
           <KPICard
-            icon="\ud83d\udcdd"
+            icon={'📝'}
             label="Open ECRs"
             value={openEcrs}
             sub={`${ecrs.length} total`}
@@ -162,7 +160,7 @@ const DashboardPage = () => {
             <h2 className="section-title">Lifecycle Breakdown</h2>
             {!selectedContextId ? (
               <div className="empty-state">
-                <span>\ud83d\uddc2\ufe0f</span>
+                <span>🗂️</span>
                 <p>Select a context to see part distribution</p>
                 <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Open Workspace</button>
               </div>
@@ -170,7 +168,7 @@ const DashboardPage = () => {
               <div className="skeleton-list">{[1,2,3,4].map(i => <div key={i} className="skeleton-row" />)}</div>
             ) : parts.length === 0 ? (
               <div className="empty-state">
-                <span>\ud83d\udce6</span>
+                <span>📦</span>
                 <p>No parts in this context yet</p>
                 <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Create First Part</button>
               </div>
@@ -206,11 +204,11 @@ const DashboardPage = () => {
             <div className="dash-section">
               <h2 className="section-title">Quick Actions</h2>
               <div className="quick-actions">
-                {quickActions.map((a, i) => (
-                  <button key={i} className={`qa-btn qa-btn--${a.color}`} onClick={() => navigate(a.to)}>
-                    <span className="qa-icon">{a.icon}</span>
-                    <span className="qa-label">{a.label}</span>
-                    <span className="qa-sub">{a.sub}</span>
+                {quickActions.map((action, i) => (
+                  <button key={i} className={`qa-btn qa-btn--${action.color}`} onClick={() => navigate(action.to)}>
+                    <span className="qa-icon">{action.icon}</span>
+                    <span className="qa-label">{action.label}</span>
+                    <span className="qa-sub">{action.sub}</span>
                   </button>
                 ))}
               </div>
@@ -219,7 +217,7 @@ const DashboardPage = () => {
             {/* My Worklist Alert */}
             {!loading && workItems.length > 0 && (
               <div className="dash-section dash-section--alert">
-                <h2 className="section-title">\u26a0\ufe0f Pending Your Action</h2>
+                <h2 className="section-title">⚠️ Pending Your Action</h2>
                 <p className="alert-text">
                   You have <strong>{workItems.length}</strong> item(s) waiting for your approval.
                 </p>
@@ -247,7 +245,7 @@ const DashboardPage = () => {
                       <div key={p.id} className="rp-row" onClick={() => navigate(`/plm/parts/${p.id}`)}>
                         <div className="rp-info">
                           <strong>{p.partNumber}</strong>
-                          <span>{p.name || '\u2014'}</span>
+                          <span>{p.name || '—'}</span>
                         </div>
                         <span className="rp-badge" style={{ background: c.bg, color: c.text }}>
                           {S_ICON[p.lifecycleState]} {p.lifecycleState}
