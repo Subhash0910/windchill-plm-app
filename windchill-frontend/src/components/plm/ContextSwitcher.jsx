@@ -5,6 +5,12 @@ import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './ContextSwitcher.css';
 
+const TYPE_COLORS = {
+  PRODUCT: { bg: '#dbeafe', text: '#1e40af' },
+  PROJECT: { bg: '#ede9fe', text: '#5b21b6' },
+  LIBRARY: { bg: '#dcfce7', text: '#166534' },
+};
+
 const ContextSwitcher = () => {
   const navigate = useNavigate();
   const { selectedContextId, setSelectedContextId } = useContext(PlmWorkspaceContext);
@@ -26,19 +32,15 @@ const ContextSwitcher = () => {
       const list = data || [];
       setContexts(list);
 
-      // If we have a selectedContextId that no longer exists (DB reset, ACL changes), clear it.
       if (selectedContextId && !list.some(c => c.id === selectedContextId)) {
         setSelectedContextId(null);
         return;
       }
-
-      // If no context selected, auto-select first available
       if (!selectedContextId && list.length > 0) {
         setSelectedContextId(list[0].id);
       }
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to load contexts');
-      // On error loading contexts, ensure we don't keep a stale context selection.
       setSelectedContextId(null);
     } finally {
       setLoading(false);
@@ -50,10 +52,20 @@ const ContextSwitcher = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Route based on context type:
+   *   PRODUCT / LIBRARY  →  /plm/parts   (parts workspace)
+   *   PROJECT            →  /plm/projects (project page)
+   */
   const onChange = (e) => {
-    const id = Number(e.target.value);
+    const id  = Number(e.target.value);
+    const ctx = contexts.find(c => c.id === id);
     setSelectedContextId(id);
-    navigate('/plm/parts');
+    if (ctx?.contextType === 'PROJECT') {
+      navigate('/plm/projects');
+    } else {
+      navigate('/plm/parts');
+    }
   };
 
   const create = async () => {
@@ -64,11 +76,17 @@ const ContextSwitcher = () => {
       setForm({ code: '', name: '', contextType: 'PRODUCT', description: '' });
       await load();
       setSelectedContextId(created.id);
-      navigate('/plm/parts');
+      if (created.contextType === 'PROJECT') {
+        navigate('/plm/projects');
+      } else {
+        navigate('/plm/parts');
+      }
     } catch (e) {
       setError(e.response?.data?.message || e.message || 'Failed to create context');
     }
   };
+
+  const typeStyle = selected ? (TYPE_COLORS[selected.contextType] || TYPE_COLORS.PRODUCT) : null;
 
   return (
     <div className="plm-block">
@@ -95,8 +113,42 @@ const ContextSwitcher = () => {
 
       {selected && (
         <div className="plm-kv">
-          <div><span className="k">Type</span><span className="v">{selected.contextType}</span></div>
+          <div>
+            <span className="k">Type</span>
+            <span
+              className="v"
+              style={{
+                background: typeStyle?.bg,
+                color:      typeStyle?.text,
+                padding:    '2px 8px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize:   '0.75rem',
+              }}
+            >
+              {selected.contextType}
+            </span>
+          </div>
           <div><span className="k">Code</span><span className="v">{selected.code}</span></div>
+          {selected.contextType === 'PROJECT' && (
+            <div style={{ marginTop: 4 }}>
+              <button
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#5b21b6',
+                  background: '#ede9fe',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '3px 10px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+                onClick={() => navigate('/plm/projects')}
+              >
+                🗂️ View Projects page →
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './ProjectsPage.css';
 
 const STATUS_COLORS = {
@@ -25,6 +27,30 @@ const progressColor = (p) => {
 };
 
 const ProjectsPage = () => {
+  const navigate = useNavigate();
+  const { setSelectedContextId } = useContext(PlmWorkspaceContext);
+
+  // ── PLM Project Contexts (from plm_contexts table, type=PROJECT) ──
+  const [plmContexts,  setPlmContexts]  = useState([]);
+  const [ctxLoading,   setCtxLoading]   = useState(true);
+
+  const loadContexts = useCallback(async () => {
+    setCtxLoading(true);
+    try {
+      const all = await plmApi.listContexts();
+      setPlmContexts((all || []).filter(c => c.contextType === 'PROJECT'));
+    } catch { setPlmContexts([]); }
+    finally { setCtxLoading(false); }
+  }, []);
+
+  useEffect(() => { loadContexts(); }, [loadContexts]);
+
+  const openContext = (ctx) => {
+    setSelectedContextId(ctx.id);
+    navigate('/plm/parts');
+  };
+
+  // ── Project entities (from projects table) ───────────────────────────────
   const [projects,       setProjects]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [search,         setSearch]         = useState('');
@@ -121,11 +147,59 @@ const ProjectsPage = () => {
       <div className="pj-page-header">
         <div>
           <h1 className="pj-page-title">🗂️ Projects</h1>
-          <p className="pj-page-sub">Track projects, progress &amp; timelines</p>
+          <p className="pj-page-sub">PLM project contexts &amp; project tracker</p>
         </div>
         <button className="pj-btn-create" onClick={openCreate}>+ New Project</button>
       </div>
 
+      {/* ──────────────────── SECTION 1 — PLM Project Contexts ──────────────────── */}
+      <div className="pj-ctx-section">
+        <div className="pj-section-header">
+          <h2 className="pj-section-title">🏢 PLM Project Contexts</h2>
+          <p className="pj-section-sub">
+            Windchill-style project containers (created via the Context panel on the left)
+          </p>
+        </div>
+
+        {ctxLoading ? (
+          <div className="pj-ctx-loading">↻ Loading contexts…</div>
+        ) : plmContexts.length === 0 ? (
+          <div className="pj-ctx-empty">
+            <span>No PROJECT-type contexts yet.</span>
+            &nbsp;Use the <strong>Context → New</strong> panel on the left
+            sidebar and choose type <strong>PROJECT</strong> to create one.
+          </div>
+        ) : (
+          <div className="pj-ctx-table">
+            {plmContexts.map(ctx => (
+              <div className="pj-ctx-row" key={ctx.id}>
+                <span className="pj-ctx-type-pill">PROJECT</span>
+                <span className="pj-ctx-code">{ctx.code}</span>
+                <span className="pj-ctx-name">{ctx.name}</span>
+                {ctx.description && (
+                  <span className="pj-ctx-desc" title={ctx.description}>
+                    {ctx.description.length > 50 ? ctx.description.slice(0, 50) + '…' : ctx.description}
+                  </span>
+                )}
+                <button
+                  className="pj-ctx-open-btn"
+                  onClick={() => openContext(ctx)}
+                  title={`Switch to ${ctx.name} context and open workspace`}
+                >
+                  Open Workspace →
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="pj-section-divider">
+        <span>📋 Project Tracker</span>
+      </div>
+
+      {/* ──────────────────── SECTION 2 — Project entities ────────────────────── */}
       <div className="pj-search-wrap">
         <span className="pj-search-icon">🔍</span>
         <input className="pj-search" placeholder="Search by code, name…" value={search} onChange={e => setSearch(e.target.value)} />
@@ -171,9 +245,9 @@ const ProjectsPage = () => {
         <div className="pj-loading"><div className="pj-spinner" /><p>Loading projects…</p></div>
       ) : projects.length === 0 ? (
         <div className="pj-empty">
-          <span>🗂️</span>
-          <h3>{search ? 'No results found' : 'No projects yet'}</h3>
-          <p>{search ? `No projects match “${search}”` : 'Create the first project using the button above'}</p>
+          <span>📋</span>
+          <h3>{search ? 'No results found' : 'No project tracker entries yet'}</h3>
+          <p>{search ? `No projects match "${search}"` : 'Click “+ New Project” above to add one'}</p>
         </div>
       ) : (
         <>
@@ -196,7 +270,6 @@ const ProjectsPage = () => {
 
                   {proj.description && <p className="pj-card-desc">{proj.description}</p>}
 
-                  {/* Progress */}
                   <div className="pj-prog-section">
                     <div className="pj-prog-label">
                       <span>Progress</span>
