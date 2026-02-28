@@ -1,22 +1,26 @@
 spring:
   application:
     name: windchill-api
-  
+
   profiles:
-    active: dev
+    # Override via SPRING_PROFILES_ACTIVE env var on your server.
+    # Use 'dev' locally, 'prod' for any deployed environment.
+    active: ${SPRING_PROFILES_ACTIVE:dev}
     include: ai
-  
+
   datasource:
     url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
     username: windchill
-    password: windchill123
+    # docker-compose overrides this via SPRING_DATASOURCE_PASSWORD.
+    # The fallback below is for local bare-metal runs only — never use in prod.
+    password: ${SPRING_DATASOURCE_PASSWORD:windchill123}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
       connection-timeout: 20000
       idle-timeout: 300000
-  
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -30,8 +34,7 @@ spring:
     show-sql: false
     open-in-view: false
 
-  # Spring Boot 3 Redis config (spring.data.redis.* is the canonical namespace,
-  # but spring.redis.* is still supported in many cases). Keep this for non-Docker runs.
+  # Spring Boot 3 Redis config
   redis:
     host: redis
     port: 6379
@@ -43,7 +46,7 @@ spring:
         max-idle: 8
         min-idle: 0
         max-wait: -1ms
-  
+
   jackson:
     default-property-inclusion: non_null
     serialization:
@@ -54,13 +57,18 @@ spring:
 
   mvc:
     cors:
-      allowed-origins: "http://localhost,http://localhost:3000,http://localhost:80,http://frontend,http://frontend:80"
+      # APP_BASE_URL is injected by docker-compose from your .env file.
+      # In dev it defaults to http://localhost:3000.
+      # In production set APP_BASE_URL=https://yourdomain.com in your .env.
+      # The prod profile (application-prod.yml) overrides this to ONLY
+      # allow APP_BASE_URL — no localhost fallback — for tighter security.
+      allowed-origins: "http://localhost,http://localhost:3000,http://localhost:80,http://frontend,http://frontend:80,${APP_BASE_URL:http://localhost:3000}"
       allowed-methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
       allowed-headers: "*"
       allow-credentials: true
       max-age: 3600
     throw-exception-if-no-handler-found: false
-  
+
   web:
     resources:
       add-mappings: false
@@ -91,11 +99,12 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
 
-# Use app.* keys because JwtTokenProvider reads app.jwtSecret/app.jwtExpirationInMs.
-# IMPORTANT: HS512 requires a key >= 512 bits (64 bytes). This default is long enough
-# for dev, but you should override it via env var APP_JWTSECRET in real deployments.
+# JWT — JwtTokenProvider reads app.jwtSecret and app.jwtExpirationInMs.
+# APP_JWTSECRET env var maps to app.jwtSecret via Spring relaxed binding.
+# IMPORTANT: generate a strong secret for production:
+#   openssl rand -base64 64
 app:
-  jwtSecret: windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890
+  jwtSecret: ${APP_JWTSECRET:windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890}
   jwtExpirationInMs: 86400000
 
 # Change Impact routing config (CSV usernames)

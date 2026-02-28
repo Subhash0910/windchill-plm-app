@@ -1,6 +1,6 @@
 services:
 
-  # ── MySQL 8 Database ──────────────────────────────────────────────────────
+  # ── MySQL 8 Database ────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: windchill-mysql
@@ -23,7 +23,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # ── Redis ─────────────────────────────────────────────────────────────────
+  # ── Redis ────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: windchill-redis
@@ -37,7 +37,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Spring Boot Backend ───────────────────────────────────────────────────
+  # ── Spring Boot Backend ───────────────────────────────────────────
   backend:
     build:
       context: ./windchill-backend
@@ -49,35 +49,48 @@ services:
       redis:
         condition: service_healthy
     environment:
-      # Database — must match application.yml service name 'mysql'
+      # ── Spring profile ──
+      # Set SPRING_PROFILES_ACTIVE=prod in your .env on the production server.
+      # Leave unset (defaults to 'dev') for local development.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+
+      # ── Database ──
+      # Service name 'mysql' resolves within windchill-network.
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
       SPRING_DATASOURCE_USERNAME: windchill
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-windchill123}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
 
-      # JPA / Hibernate
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # ── JPA / Hibernate ──
+      # Override to 'validate' in production to prevent accidental schema drift.
+      # application-prod.yml already sets this to validate when profile=prod.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       SPRING_JPA_SHOW_SQL: "false"
 
-      # Redis — must match application.yml host 'redis'
+      # ── Redis ──
+      # Service name 'redis' resolves within windchill-network.
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
 
-      # JWT
+      # ── JWT ──
+      # REQUIRED in production: set JWT_SECRET in your .env file.
+      # Generate: openssl rand -base64 64
       APP_JWTSECRET: ${JWT_SECRET:-windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890}
       APP_JWTEXPIRATIONINMS: "86400000"
 
-      # File storage
+      # ── File storage ──
       FILE_STORAGE_PATH: /opt/windchill/files
 
-      # Email
+      # ── Email (optional) ──
       EMAIL_USERNAME: ${EMAIL_USERNAME:-}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@windchill-plm.com}
 
-      # App
+      # ── App URL (CORS) ──
+      # Set APP_BASE_URL=https://yourdomain.com in .env for production.
+      # This value is injected into CORS allowed-origins in application.yml.
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
 
     ports:
@@ -93,7 +106,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # ── React Frontend (Nginx) ────────────────────────────────────────────────
+  # ── React Frontend (Nginx) ───────────────────────────────────────
   frontend:
     build:
       context: ./windchill-frontend
