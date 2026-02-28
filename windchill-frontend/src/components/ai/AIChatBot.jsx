@@ -19,7 +19,7 @@ const KB = {
   impact: `**Impact Analysis** uses AI to calculate the risk score, BOM depth, affected assemblies, and conflicting changes for a given part modification.\n\nSay **"run impact on [partNumber]"** to trigger the analysis directly from chat.`,
 };
 
-// ── Lifecycle state emoji map ────────────────────────────────────────────
+// ── Lifecycle state emoji map ─────────────────────────────────────────────────
 // NOTE: Java enum is UNDERREVIEW (no underscore) — must match exactly
 const S = { INWORK: '🔧', RELEASED: '✅', UNDERREVIEW: '🔍', OBSOLETE: '🚫' };
 
@@ -30,6 +30,9 @@ const parseIntent = (text) => {
   if (/^(hi|hello|hey|yo|sup|hola)\b/.test(t)) return { type: 'GREET' };
   if (/\bhelp\b|what can you|capabilities|what do you|commands/.test(t)) return { type: 'HELP' };
   if (/status|overview|summary|system|dashboard/.test(t)) return { type: 'STATUS' };
+
+  // Clear chat
+  if (/clear chat|clear history|reset chat|new chat|start over/.test(t)) return { type: 'CLEAR' };
 
   // Worklist
   if (/worklist|my tasks|pending approval|assigned to me|work items/.test(t)) return { type: 'WORKLIST' };
@@ -42,11 +45,22 @@ const parseIntent = (text) => {
 
   // Changes / ECR
   if (/my changes|list ecr|show ecr|open ecr|change requests/.test(t)) return { type: 'CHANGES' };
+
+  // Create ECR — Batch 4
+  const createEcrMatch = t.match(/(?:create|raise|open|new)\s+(?:an?\s+)?ecr\s+(?:for\s+)?(?:part\s+)?([a-z0-9\-_]+)(?:\s+[-—]\s*|\s+reason\s*[:\-]?\s*|\s+because\s+|\s+for\s+)?(.+)?/i);
+  if (createEcrMatch && !['for', 'the', 'a', 'an'].includes(createEcrMatch[1]?.toLowerCase())) {
+    return { type: 'CREATE_ECR', query: createEcrMatch[1], reason: createEcrMatch[2]?.trim() || null };
+  }
+
   if (/\becr\b|engineering change request/.test(t)) return { type: 'EXPLAIN', topic: 'ecr' };
   if (/\becn\b|engineering change notice/.test(t)) return { type: 'EXPLAIN', topic: 'ecn' };
 
-  // Submit / Promote a part (INWORK -> UNDERREVIEW = submit for review)
-  const promoteMatch = t.match(/(?:promote|submit(?:\s+for(?:\s+review)?)?)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
+  // Who can approve — Batch 4
+  if (/who can approve|list approvers?|show approvers?|who.*approve|approvers? in/.test(t)) return { type: 'APPROVERS' };
+
+  // Submit / Promote a part (INWORK -> UNDERREVIEW)
+  const promoteMatch = t.match(/(?:promote|submit(?:\s+for(?:\s+review)?)?)\\s+(?:part\s+)?([a-z0-9\-_]+)/i)
+    || t.match(/(?:promote|submit(?:\s+for(?:\s+review)?)?)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
   if (promoteMatch && !['for', 'to', 'the', 'a', 'an'].includes(promoteMatch[1].toLowerCase())) {
     return { type: 'PROMOTE', query: promoteMatch[1] };
   }
@@ -55,7 +69,7 @@ const parseIntent = (text) => {
   const reviseMatch = t.match(/revise\s+(?:part\s+)?([a-z0-9\-_]+)/i);
   if (reviseMatch) return { type: 'REVISE', query: reviseMatch[1] };
 
-  // Impact Analysis — correctly skip 'on'/'for' before part number
+  // Impact Analysis
   const impactMatch = t.match(/(?:run\s+impact|impact(?:\s+analysis)?)\s+(?:on\s+|for\s+)?(?:part\s+)?([a-z0-9\-_]+)/i);
   if (impactMatch && !['on', 'for', 'the', 'a', 'an'].includes(impactMatch[1].toLowerCase())) {
     return { type: 'IMPACT', query: impactMatch[1] };
@@ -75,7 +89,7 @@ const parseIntent = (text) => {
 
   const cmpMatch = t.match(/(?:compare|diff)\s+(?:part\s+)?([a-z0-9\-_]+)\s+(?:vs|versus|with|and)\s+(?:part\s+)?([a-z0-9\-_]+)/i);
   if (cmpMatch) return { type: 'COMPARE', left: cmpMatch[1], right: cmpMatch[2] };
-  // ──────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Navigation
   if (/go to parts|open parts page|navigate.*parts/.test(t)) return { type: 'NAVIGATE', dest: 'parts' };
@@ -89,7 +103,6 @@ const parseIntent = (text) => {
   if (/released parts|list released|show released/.test(t)) return { type: 'FILTER', state: 'RELEASED' };
   if (/inwork parts|list inwork|show inwork|in[- ]?work/.test(t)) return { type: 'FILTER', state: 'INWORK' };
   if (/obsolete/.test(t)) return { type: 'FILTER', state: 'OBSOLETE' };
-  // NOTE: enum value is UNDERREVIEW (no underscore)
   if (/under[\s_-]?review|review parts|pending review/.test(t)) return { type: 'FILTER', state: 'UNDERREVIEW' };
 
   // Search
@@ -115,7 +128,7 @@ const parseIntent = (text) => {
 
   // Bare part number typed directly
   const bare = t.match(/^([a-z0-9]{2,}(?:[-_][a-z0-9]+)*)$/i);
-  if (bare && !/^(list|show|find|what|how|why|help|hi|hello|hey|status|all|go|open|count|approve|reject|on|for|the|it|this|that)$/.test(bare[1])) {
+  if (bare && !/^(list|show|find|what|how|why|help|hi|hello|hey|status|all|go|open|count|approve|reject|on|for|the|it|this|that|clear|new)$/.test(bare[1])) {
     return { type: 'ANALYZE', query: bare[1] };
   }
 
@@ -133,7 +146,7 @@ const mkMsg = (role, text, suggestions = [], meta = {}) => ({
 });
 
 const WELCOME = mkMsg('assistant',
-  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Submit parts for review or Revise from here\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
+  `👋 Hi! I'm your **PLM Assistant** — wired into your live data.\n\nI can:\n🔍 Search, analyze & inspect your real parts\n📊 Count, filter by lifecycle state\n📎 Check BOM & Where Used\n📋 Show Worklist, approve/reject tasks\n🔥 Run AI Impact Analysis from chat\n⚡ Submit parts for review or Revise from here\n📝 Create ECRs directly from chat\n💡 Explain any PLM concept\n\nJust type anything — I understand plain English!`,
   []
 );
 
@@ -145,6 +158,9 @@ const findPart = (parts, query) => {
     p.name?.toLowerCase().includes(q)
   );
 };
+
+// ── Batch 3: localStorage persistence key per context ─────────────────────────
+const chatKey = (ctxId) => `plm_chat_${ctxId || 'global'}`;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
@@ -189,7 +205,38 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // ── Batch 3: Load persisted messages when context changes ─────────────────
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(chatKey(selectedContextId));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length) {
+          setMessages(parsed.map(m => ({ ...m, ts: m.ts ? new Date(m.ts) : new Date() })));
+          return;
+        }
+      }
+    } catch (_) {}
+    setMessages([WELCOME]);
+  }, [selectedContextId]);
+
+  // ── Batch 3: Save messages to localStorage on every change ────────────────
+  useEffect(() => {
+    try {
+      localStorage.setItem(chatKey(selectedContextId), JSON.stringify(messages));
+    } catch (_) {}
+  }, [messages, selectedContextId]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const push = useCallback((m) => setMessages(prev => [...prev, m]), []);
+
+  // ── Batch 3: Clear chat ───────────────────────────────────────────────────
+  const clearChat = useCallback(() => {
+    try { localStorage.removeItem(chatKey(selectedContextId)); } catch (_) {}
+    setMessages([WELCOME]);
+    setMemory({ lastPart: null, lastQuery: null, lastIntent: null });
+  }, [selectedContextId]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   // ── Batch 1: Worklist heads-up on chat open ───────────────────────────────
   useEffect(() => {
@@ -204,7 +251,7 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
             ['My Worklist', 'Approve my first task']
           ));
         }
-      } catch (_) { /* silent — worklist is optional context */ }
+      } catch (_) { /* silent */ }
     })();
     return () => { cancelled = true; };
   }, [isOpen, selectedContextId, push]);
@@ -230,7 +277,8 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
         else intent = { type: 'ANALYZE', query: memory.lastPart.partNumber };
       }
 
-      const needsCtx = ['LIST', 'COUNT', 'FILTER', 'SEARCH', 'ANALYZE', 'PROMOTE', 'REVISE', 'BOM_VIEW', 'WHERE_USED', 'IMPACT', 'HISTORY', 'COMPARE'].includes(intent.type);
+      const needsCtx = ['LIST', 'COUNT', 'FILTER', 'SEARCH', 'ANALYZE', 'PROMOTE', 'REVISE',
+        'BOM_VIEW', 'WHERE_USED', 'IMPACT', 'HISTORY', 'COMPARE', 'CREATE_ECR', 'APPROVERS'].includes(intent.type);
 
       if (needsCtx && !selectedContextId) {
         push(mkMsg('assistant',
@@ -247,11 +295,19 @@ const AIChatBot = ({ onAction, selectedPart, currentPage }) => {
 
       switch (intent.type) {
 
+        // ── Batch 3: Clear ────────────────────────────────────────────────────
+        case 'CLEAR': {
+          clearChat();
+          reply = mkMsg('assistant',
+            `🧹 **Chat cleared!** Fresh start.\n\n${selectedContextId ? 'Context is still active.' : 'Select a context to access your parts data.'}`,
+            selectedContextId ? ['List all parts', 'Count parts', 'My Worklist'] : ['Help', 'Explain lifecycle']
+          );
+          break;
+        }
+
         case 'GREET':
           reply = mkMsg('assistant',
-            `Hey! 👋 ${selectedContextId ? "Context is active — I'm connected to your live data!" : 'Select a context on the left to access your parts data.'}
-
-What would you like to know?`,
+            `Hey! 👋 ${selectedContextId ? "Context is active — I'm connected to your live data!" : 'Select a context on the left to access your parts data.'}\n\nWhat would you like to know?`,
             selectedContextId
               ? ['List all parts', 'Count parts', 'My Worklist', 'Show released parts']
               : ['Explain lifecycle', 'What is BOM?', 'Help']
@@ -259,33 +315,7 @@ What would you like to know?`,
 
         case 'HELP':
           reply = mkMsg('assistant',
-            `**What I can do:**
-
-🔍 **Live Data**
-• "List all parts" / "Count parts"
-• "Show released / INWORK / under review parts"
-• "Search [keyword]" / "Analyze [partNumber]"
-• "BOM of [partNumber]" / "Where used [partNumber]"
-
-⚡ **Actions**
-• "Submit [partNumber] for review" — enters approval workflow
-• "Revise [partNumber]" — creates new revision (RELEASED only)
-• "Run impact on [partNumber]" — AI impact analysis
-• "Approve my first task" / "Reject task [id]"
-
-📋 **Workflow**
-• "My Worklist" / "My changes"
-
-🕒 **History & Compare** *(NEW)*
-• "History [partNumber]" — audit timeline
-• "Compare P001 vs P002" — side-by-side BOM + Where Used
-
-🗺️ **Navigation**
-• "Go to parts / worklist / changes / ai demo"
-
-💡 **Knowledge**
-• "Explain lifecycle" / "What is BOM?" / "What is ECR?"
-${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
+            `**What I can do:**\n\n🔍 **Live Data**\n• "List all parts" / "Count parts"\n• "Show released / INWORK / under review parts"\n• "Search [keyword]" / "Analyze [partNumber]"\n• "BOM of [partNumber]" / "Where used [partNumber]"\n\n⚡ **Actions**\n• "Submit [partNumber] for review" — enters approval workflow\n• "Revise [partNumber]" — creates new revision (RELEASED only)\n• "Run impact on [partNumber]" — AI impact analysis\n• "Approve my first task" / "Reject task [id]"\n• "Create ECR for [partNumber] — [reason]" *(NEW)*\n\n📋 **Workflow**\n• "My Worklist" / "My changes"\n• "Who can approve" — list context approvers *(NEW)*\n\n🕒 **History & Compare**\n• "History [partNumber]" — audit timeline\n• "Compare P001 vs P002" — side-by-side BOM + Where Used\n\n🧹 **Chat**\n• "Clear chat" — wipe history & start fresh *(NEW)*\n\n🗺️ **Navigation**\n• "Go to parts / worklist / changes / ai demo"\n\n💡 **Knowledge**\n• "Explain lifecycle" / "What is BOM?" / "What is ECR?"\n${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
             ['List all parts', 'My Worklist', 'Explain lifecycle']
           ); break;
 
@@ -541,12 +571,10 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           } else {
             setMemory(m => ({ ...m, lastPart: found }));
             try {
-              // ── Batch 1: Pre-check — ensure at least one APPROVER exists ────────
+              // ── Batch 1: Pre-check — ensure at least one APPROVER exists ────
               try {
                 const members = await plmApi.listContextMembers(selectedContextId);
-                const hasApprover = (members || []).some(
-                  m => m.role === 'APPROVER' || m.role === 'MANAGER'
-                );
+                const hasApprover = (members || []).some(m => m.role === 'APPROVER' || m.role === 'MANAGER');
                 if (!hasApprover) {
                   reply = mkMsg('assistant',
                     `⚠️ **Cannot submit ${found.partNumber} for review.**\n\n**No APPROVER or MANAGER** is assigned to this context.\n\nIf submitted now, the part will be stuck in UNDERREVIEW with nobody to approve it.\n\nAdd an Approver to the context team first, then try again.`,
@@ -554,8 +582,8 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                   );
                   break;
                 }
-              } catch (_) { /* if listContextMembers fails, proceed — don't block the engineer */ }
-              // ────────────────────────────────────────────────────────────────────
+              } catch (_) { /* proceed if check fails */ }
+              // ────────────────────────────────────────────────────────────────
 
               await plmApi.promotePart(found.id, 'UNDERREVIEW');
               reply = mkMsg('assistant',
@@ -699,7 +727,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           break;
         }
 
-        // ── Batch 2: Audit History Timeline ──────────────────────────────────
+        // ── Batch 2: Audit History Timeline ───────────────────────────────────
         case 'HISTORY': {
           const found = findPart(parts, intent.query);
           if (!found) {
@@ -787,6 +815,81 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
           }
           break;
         }
+
+        // ── Batch 4: Create ECR ───────────────────────────────────────────────
+        case 'CREATE_ECR': {
+          const found = findPart(parts, intent.query);
+          if (!found) {
+            reply = mkMsg('assistant',
+              `❌ Part **"${intent.query}"** not found.\n\nTry: "create ECR for P001 — design tolerance update"`,
+              ['List all parts']
+            );
+            break;
+          }
+          if (!intent.reason) {
+            setMemory(m => ({ ...m, lastPart: found }));
+            reply = mkMsg('assistant',
+              `📝 **Creating ECR for ${found.partNumber}**\n\nWhat's the reason for the change?\n\nReply with:\n**create ECR for ${found.partNumber} — [your reason here]**\n\nExample: "create ECR for ${found.partNumber} — tolerance updated per customer spec"`,
+              [`Create ECR for ${found.partNumber} — design change`, `Create ECR for ${found.partNumber} — tolerance update`]
+            );
+            break;
+          }
+          setMemory(m => ({ ...m, lastPart: found }));
+          try {
+            const newEcr = await plmApi.createEcr({
+              partId: found.id,
+              partNumber: found.partNumber,
+              reason: intent.reason,
+              contextId: selectedContextId,
+            });
+            const ecrNum = newEcr?.ecrNumber || newEcr?.data?.ecrNumber || newEcr?.id || 'ECR';
+            reply = mkMsg('assistant',
+              `✅ **ECR created!**\n\n**ECR #:** ${ecrNum}\n**Part:** ${found.partNumber}\n**Reason:** ${intent.reason}\n**Status:** DRAFT\n\nGo to Changes page to submit it for review.`,
+              ['Go to changes', `Analyze ${found.partNumber}`, 'My changes']
+            );
+          } catch (err) {
+            reply = mkMsg('assistant',
+              `⚠️ ECR creation failed: ${err?.response?.data?.message || err.message}\n\nYou can create it manually from the Changes page.`,
+              ['Go to changes', `Analyze ${found.partNumber}`]
+            );
+          }
+          break;
+        }
+
+        // ── Batch 4: Who Can Approve ──────────────────────────────────────────
+        case 'APPROVERS': {
+          if (!selectedContextId) {
+            reply = mkMsg('assistant',
+              `⚠️ No context selected. Select a context first to see its approvers.`,
+              ['What is a context?']
+            );
+            break;
+          }
+          try {
+            const members = await plmApi.listContextMembers(selectedContextId);
+            const approvers = (members || []).filter(m => m.role === 'APPROVER' || m.role === 'MANAGER');
+            if (!approvers.length) {
+              reply = mkMsg('assistant',
+                `⚠️ **No approvers found in this context.**\n\nNo APPROVER or MANAGER is assigned here. Parts submitted for review will be stuck in UNDERREVIEW with nobody to approve.\n\nAdd an APPROVER or MANAGER to the context team first.`,
+                ['Go to worklist', 'List all parts']
+              );
+            } else {
+              const lines = approvers.map(m =>
+                `• **${m.username || m.name || m.email || 'User'}** — ${m.role}${m.email ? ` (${m.email})` : ''}`
+              ).join('\n');
+              reply = mkMsg('assistant',
+                `✅ **${approvers.length} Approver(s) in this context:**\n\n${lines}\n\nAny of these users can approve UNDERREVIEW parts from the Worklist.`,
+                ['My Worklist', 'List all parts']
+              );
+            }
+          } catch (err) {
+            reply = mkMsg('assistant',
+              `⚠️ Could not fetch members: ${err?.response?.data?.message || err.message}`,
+              ['Go to worklist']
+            );
+          }
+          break;
+        }
         // ─────────────────────────────────────────────────────────────────────
 
         default: {
@@ -830,7 +933,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
 
           if (!handled) {
             reply = mkMsg('assistant',
-              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Submit [partNumber] for review" / "Run impact on [partNumber]"\n• "History [partNumber]" / "Compare P001 vs P002"\n• "My Worklist" / "My changes"\n• "Explain BOM" / "Explain lifecycle"\n• Type **"Help"** for full command list`,
+              `🤔 I didn't understand **"${q}"**.\n\nTry:\n• "Analyze [partNumber]" / "Search [keyword]"\n• "Submit [partNumber] for review" / "Run impact on [partNumber]"\n• "History [partNumber]" / "Compare P001 vs P002"\n• "Create ECR for [partNumber] — [reason]"\n• "Who can approve" / "My Worklist"\n• "Clear chat" — start fresh\n• Type **"Help"** for full command list`,
               selectedContextId
                 ? ['List all parts', 'Count parts', 'My Worklist', 'Help']
                 : ['Explain lifecycle', 'What is BOM?', 'Help']
@@ -850,7 +953,7 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, selectedContextId, currentPage, location.pathname, navigate, push, memory, onAction]);
+  }, [input, isLoading, selectedContextId, currentPage, location.pathname, navigate, push, memory, onAction, clearChat]);
 
   const handleChip = useCallback((chip) => {
     if (chip.startsWith('Open ')) {
@@ -908,11 +1011,22 @@ ${!selectedContextId ? '\n⚠️ Select a context first for live data.' : ''}`,
                 </small>
               </div>
             </div>
-            <button className="btn-close-chat" onClick={() => setIsOpen(false)} title="Close">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            {/* ── Batch 3: header actions ── */}
+            <div className="ai-chat-header-actions">
+              <button className="btn-clear-chat" onClick={clearChat} title="Clear chat">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="3 6 5 6 21 6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 6l-1 14H6L5 6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 11v6M14 11v6" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M9 6V4h6v2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <button className="btn-close-chat" onClick={() => setIsOpen(false)} title="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="ai-chat-messages">
