@@ -19,20 +19,24 @@ const NotificationBell = () => {
   const [loading,       setLoading]       = useState(false);
   const dropRef = useRef(null);
 
-  /* ─ fetch unread count (runs on mount + every 30 s) ─ */
+  /* ── fetch unread count (mount + every 30 s) ── */
   const fetchCount = useCallback(async () => {
     try {
       const res = await api.get('/api/v1/notifications/count');
-      setCount(res.data.unreadCount || 0);
+      // Backend returns ApiResponse<Map> → { success, data: { unreadCount: N }, message }
+      const n = res.data?.data?.unreadCount ?? res.data?.unreadCount ?? 0;
+      setCount(Number(n));
     } catch { /* silent */ }
   }, []);
 
-  /* ─ fetch unread list when panel opens ─ */
+  /* ── fetch unread list when panel opens ── */
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/api/v1/notifications/unread');
-      setNotifications(res.data || []);
+      // Backend returns ApiResponse<List> → { success, data: [...], message }
+      const data = res.data?.data ?? res.data ?? [];
+      setNotifications(Array.isArray(data) ? data : []);
     } catch {
       setNotifications([]);
     } finally {
@@ -48,7 +52,7 @@ const NotificationBell = () => {
 
   useEffect(() => { if (open) fetchList(); }, [open, fetchList]);
 
-  /* ─ close on outside click ─ */
+  /* ── close on outside click ── */
   useEffect(() => {
     const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setOpen(false);
@@ -57,11 +61,11 @@ const NotificationBell = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /* ─ actions ─ */
+  /* ── actions ── */
   const markRead = async (id) => {
     try {
       await api.put(`/api/v1/notifications/${id}/read`);
-      setNotifications(n => n.filter(x => x.id !== id));
+      setNotifications(prev => prev.filter(x => x.id !== id));
       setCount(c => Math.max(0, c - 1));
     } catch { /* silent */ }
   };
@@ -79,7 +83,7 @@ const NotificationBell = () => {
     const wasUnread = notifications.find(x => x.id === id && !x.read);
     try {
       await api.delete(`/api/v1/notifications/${id}`);
-      setNotifications(n => n.filter(x => x.id !== id));
+      setNotifications(prev => prev.filter(x => x.id !== id));
       if (wasUnread) setCount(c => Math.max(0, c - 1));
     } catch { /* silent */ }
   };
@@ -97,6 +101,7 @@ const NotificationBell = () => {
 
   return (
     <div className="nb-wrap" ref={dropRef}>
+
       {/* Bell trigger */}
       <button
         className="nb-bell"
@@ -131,7 +136,7 @@ const NotificationBell = () => {
             ) : notifications.length === 0 ? (
               <div className="nb-empty">
                 <span>🎉</span>
-                <p>You’re all caught up!</p>
+                <p>You're all caught up!</p>
               </div>
             ) : (
               notifications.map(n => (
@@ -151,7 +156,7 @@ const NotificationBell = () => {
                     onClick={(e) => deleteNotif(n.id, e)}
                     title="Dismiss"
                   >
-                    ×
+                    &times;
                   </button>
                 </div>
               ))
