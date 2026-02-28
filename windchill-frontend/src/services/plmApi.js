@@ -194,34 +194,81 @@ export const plmApi = {
   },
 
   // ── Documents ───────────────────────────────────────────────
-  /** GET /api/v1/documents — full document library */
   getAllDocuments: async () => {
     const res = await api.get('/api/v1/documents');
     return res.data?.data ?? [];
   },
-  /** GET /api/v1/documents/search?keyword= */
   searchDocuments: async (keyword) => {
     const res = await api.get('/api/v1/documents/search', { params: { keyword } });
     return res.data?.data ?? [];
   },
-  /** POST /api/v1/documents */
   createDocument: async (payload) => {
     const res = await api.post('/api/v1/documents', payload);
     return res.data?.data;
   },
-  /** PUT /api/v1/documents/{id} */
   updateDocument: async (id, payload) => {
     const res = await api.put(`/api/v1/documents/${id}`, payload);
     return res.data?.data;
   },
-  /** DELETE /api/v1/documents/{id} */
   deleteDocument: async (id) => {
     const res = await api.delete(`/api/v1/documents/${id}`);
     return res.data?.data;
   },
-  /** GET /api/v1/documents/project/{projectId} */
   getDocumentsByProject: async (projectId) => {
     const res = await api.get(`/api/v1/documents/project/${projectId}`);
     return res.data?.data ?? [];
+  },
+
+  // ── Products ───────────────────────────────────────────────
+  getAllProducts: async () => {
+    const res = await api.get('/api/v1/products');
+    return res.data?.data ?? [];
+  },
+  searchProducts: async (keyword) => {
+    const res = await api.get('/api/v1/products/search', { params: { keyword } });
+    return res.data?.data ?? [];
+  },
+  createProduct: async (payload) => {
+    const res = await api.post('/api/v1/products', payload);
+    return res.data?.data;
+  },
+  updateProduct: async (id, payload) => {
+    const res = await api.put(`/api/v1/products/${id}`, payload);
+    return res.data?.data;
+  },
+  deleteProduct: async (id) => {
+    const res = await api.delete(`/api/v1/products/${id}`);
+    return res.data?.data;
+  },
+  getProductsByProject: async (projectId) => {
+    const res = await api.get(`/api/v1/products/project/${projectId}`);
+    return res.data?.data ?? [];
+  },
+
+  // ── Projects ───────────────────────────────────────────────
+  getAllProjects: async () => {
+    const res = await api.get('/api/v1/projects');
+    return res.data?.data ?? [];
+  },
+  searchProjects: async (keyword) => {
+    const res = await api.get('/api/v1/projects/search', { params: { keyword } });
+    return res.data?.data ?? [];
+  },
+  createProject: async (payload) => {
+    const res = await api.post('/api/v1/projects', payload);
+    return res.data?.data;
+  },
+  updateProject: async (id, payload) => {
+    const res = await api.put(`/api/v1/projects/${id}`, payload);
+    return res.data?.data;
+  },
+  /** PUT /api/v1/projects/{id}/progress?progress=N — unique endpoint */
+  updateProjectProgress: async (id, progress) => {
+    const res = await api.put(`/api/v1/projects/${id}/progress`, null, { params: { progress } });
+    return res.data?.data;
+  },
+  deleteProject: async (id) => {
+    const res = await api.delete(`/api/v1/projects/${id}`);
+    return res.data?.data;
   },
 };

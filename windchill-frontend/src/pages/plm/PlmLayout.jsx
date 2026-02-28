@@ -10,7 +10,7 @@ import './PlmLayout.css';
 const PlmLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedPart, setSelectedPart] = useState(null);
+  const [selectedPart, setSelectedPart]     = useState(null);
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
 
   const isDashboard     = location.pathname.startsWith('/dashboard');
@@ -21,14 +21,17 @@ const PlmLayout = () => {
   const isAiDemo        = location.pathname.startsWith('/plm/ai-demo');
   const isNotifications = location.pathname.startsWith('/plm/notifications');
   const isDocuments     = location.pathname.startsWith('/plm/documents');
+  const isProducts      = location.pathname.startsWith('/plm/products');
+  const isProjects      = location.pathname.startsWith('/plm/projects');
 
-  // Workspace = any /plm route that isn’t one of the named sections
   const isWorkspace = location.pathname.startsWith('/plm')
     && !isWorklist
     && !isChangesGroup
     && !isAiDemo
     && !isNotifications
-    && !isDocuments;
+    && !isDocuments
+    && !isProducts
+    && !isProjects;
 
   const getCurrentPage = () => {
     if (isWorkspace)     return 'workspace';
@@ -38,36 +41,32 @@ const PlmLayout = () => {
     if (isAiDemo)        return 'ai-demo';
     if (isNotifications) return 'notifications';
     if (isDocuments)     return 'documents';
+    if (isProducts)      return 'products';
+    if (isProjects)      return 'projects';
     return 'unknown';
   };
 
   const handleChatAction = (action, params) => {
-    console.log('🤖 AI Action:', action, params);
     switch (action) {
       case 'RUN_IMPACT_ANALYSIS': handleImpactAnalysis(params); break;
       case 'SEARCH_PART':         handlePartSearch(params);     break;
       case 'NAVIGATE_TO_ECN':     navigate('/plm/changes');     break;
       case 'NAVIGATE_TO_PARTS':   navigate('/plm/parts');       break;
-      default: console.log('Unknown action:', action);
+      default: break;
     }
   };
 
   const handleImpactAnalysis = (params) => {
     const { part_number, change_type } = params;
     if (!isAiDemo) {
-      sessionStorage.setItem('pendingAiAction', JSON.stringify({
-        action: 'RUN_IMPACT_ANALYSIS',
-        params: { part_number, change_type },
-      }));
+      sessionStorage.setItem('pendingAiAction', JSON.stringify({ action: 'RUN_IMPACT_ANALYSIS', params: { part_number, change_type } }));
       navigate('/plm/ai-demo');
     } else {
       setAiActionTrigger({ part_number, change_type, timestamp: Date.now() });
     }
   };
 
-  const handlePartSearch = (params) => {
-    navigate(`/plm/parts?search=${params.part_number}`);
-  };
+  const handlePartSearch = (params) => { navigate(`/plm/parts?search=${params.part_number}`); };
 
   useEffect(() => {
     if (isAiDemo) {
@@ -77,12 +76,9 @@ const PlmLayout = () => {
           const { action, params } = JSON.parse(pending);
           sessionStorage.removeItem('pendingAiAction');
           setTimeout(() => {
-            if (action === 'RUN_IMPACT_ANALYSIS')
-              setAiActionTrigger({ ...params, timestamp: Date.now() });
+            if (action === 'RUN_IMPACT_ANALYSIS') setAiActionTrigger({ ...params, timestamp: Date.now() });
           }, 500);
-        } catch (e) {
-          sessionStorage.removeItem('pendingAiAction');
-        }
+        } catch { sessionStorage.removeItem('pendingAiAction'); }
       }
     }
   }, [isAiDemo]);
@@ -91,14 +87,16 @@ const PlmLayout = () => {
     <div className="plm-shell">
       <Header title="Workspace" />
 
-      <div className="plm-topnav">
-        <div className="plm-topnav-inner">
+      <div className="plm-topnav" style={{ overflowX: 'auto' }}>
+        <div className="plm-topnav-inner" style={{ minWidth: 'max-content' }}>
           <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">Dashboard</Link>
           <Link className={isWorkspace     ? 'plm-link active' : 'plm-link'} to="/plm">Workspace</Link>
           <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">Worklist</Link>
           <Link className={isChanges       ? 'plm-link active' : 'plm-link'} to="/plm/changes">Changes</Link>
           <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">Change Tasks</Link>
           <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
+          <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
+          <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
           <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
           <Link
             className={isAiDemo ? 'plm-link active' : 'plm-link'}

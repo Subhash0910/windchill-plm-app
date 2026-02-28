@@ -13,52 +13,50 @@ import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import ChangeTasksPage from '../pages/plm/ChangeTasksPage';
 import NotificationsPage from '../pages/plm/NotificationsPage';
 import DocumentsPage from '../pages/plm/DocumentsPage';
+import ProductsPage from '../pages/plm/ProductsPage';
+import ProjectsPage from '../pages/plm/ProjectsPage';
 import TeamManagementPage from '../pages/plm/TeamManagementPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
 import AIDemo from '../pages/AIDemo';
 import NotFoundPage from '../pages/NotFoundPage';
 import ErrorBoundary from '../components/ErrorBoundary';
 
-const AppRoutes = () => {
-  return (
-    <ErrorBoundary>
-      <Router>
-        <Routes>
+const AppRoutes = () => (
+  <ErrorBoundary>
+    <Router>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
 
-          {/* Public */}
-          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+        {/* Dashboard */}
+        <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        {/* Admin */}
+        <Route path="/admin/users" element={<PrivateRoute><UsersAdminPage /></PrivateRoute>} />
 
-          {/* Admin */}
-          <Route path="/admin/users" element={<PrivateRoute><UsersAdminPage /></PrivateRoute>} />
+        {/* PLM Workspace */}
+        <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
+          <Route index element={<Navigate to="parts" replace />} />
+          <Route path="parts"           element={<PartsPage />} />
+          <Route path="parts/:id"       element={<PartDetailPage />} />
+          <Route path="worklist"        element={<WorklistPage />} />
+          <Route path="changes"         element={<ChangesHomePage />} />
+          <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
+          <Route path="changes/tasks"   element={<ChangeTasksPage />} />
+          <Route path="documents"       element={<DocumentsPage />} />
+          <Route path="products"        element={<ProductsPage />} />
+          <Route path="projects"        element={<ProjectsPage />} />
+          <Route path="notifications"   element={<NotificationsPage />} />
+          <Route path="team"            element={<TeamManagementPage />} />
+          <Route path="ai-demo"         element={<AIDemo />} />
+        </Route>
 
-          {/* PLM Workspace — nested under PlmLayout */}
-          <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
-            <Route index element={<Navigate to="parts" replace />} />
-            <Route path="parts"           element={<PartsPage />} />
-            <Route path="parts/:id"       element={<PartDetailPage />} />
-            <Route path="worklist"        element={<WorklistPage />} />
-            <Route path="changes"         element={<ChangesHomePage />} />
-            <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
-            <Route path="changes/tasks"   element={<ChangeTasksPage />} />
-            <Route path="documents"       element={<DocumentsPage />} />
-            <Route path="notifications"   element={<NotificationsPage />} />
-            <Route path="team"            element={<TeamManagementPage />} />
-            <Route path="ai-demo"         element={<AIDemo />} />
-          </Route>
-
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-
-        </Routes>
-      </Router>
-    </ErrorBoundary>
-  );
-};
+        {/* Redirects */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Router>
+  </ErrorBoundary>
+);
 
 export default AppRoutes;
