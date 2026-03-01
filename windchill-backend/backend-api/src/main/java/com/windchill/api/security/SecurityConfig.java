@@ -1,5 +1,6 @@
 package com.windchill.api.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -19,13 +20,27 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+
+    /**
+     * Injected from APP_BASE_URL env var (set on Render/Railway/VPS).
+     * Defaults to localhost:3000 for local Docker Compose dev.
+     * This is the production frontend origin that must be allowed by CORS.
+     *
+     * NOTE: spring.mvc.cors in application.yml is ignored because
+     * Spring Security's filter chain runs first. The only way to
+     * allow a dynamic origin is to inject it here via @Value.
+     */
+    @Value("${APP_BASE_URL:http://localhost:3000}")
+    private String appBaseUrl;
 
     public SecurityConfig(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -55,7 +70,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList(
+        // Base origins always allowed (local dev + Docker Compose)
+        List<String> origins = new ArrayList<>(Arrays.asList(
                 "http://localhost",
                 "http://localhost:3000",
                 "http://localhost:5173",
@@ -66,6 +82,14 @@ public class SecurityConfig {
                 "http://frontend",
                 "http://windchill-frontend"
         ));
+
+        // Add the production frontend URL from APP_BASE_URL env var.
+        // On Render this is set to https://windchill-plm-app.vercel.app
+        if (appBaseUrl != null && !appBaseUrl.isBlank()) {
+            origins.add(appBaseUrl.trim());
+        }
+
+        configuration.setAllowedOrigins(origins);
 
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
@@ -120,7 +144,9 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Support both /api/v1/auth/** (standard) and /auth/** (direct calls)
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/v1/ai/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
