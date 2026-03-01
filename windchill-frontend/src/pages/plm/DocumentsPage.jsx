@@ -18,7 +18,7 @@ const EMPTY_FORM = {
   title:          '',
   description:    '',
   documentType:   'SPECIFICATION',
-  version:        '1.0',
+  versionNumber:  '1.0',
   status:         'DRAFT',
   projectId:      '',
 };
@@ -76,7 +76,7 @@ const DocumentsPage = () => {
       title:          doc.title          || '',
       description:    doc.description    || '',
       documentType:   doc.documentType   || 'SPECIFICATION',
-      version:        doc.version        || '1.0',
+      versionNumber:  doc.versionNumber  || '1.0',
       status:         doc.status         || 'DRAFT',
       projectId:      doc.projectId      || '',
     });
@@ -170,7 +170,7 @@ const DocumentsPage = () => {
                 </div>
                 <div className="dp-field">
                   <label>Version</label>
-                  <input value={form.version} onChange={f('version')} placeholder="1.0" />
+                  <input value={form.versionNumber} onChange={f('versionNumber')} placeholder="1.0" />
                 </div>
               </div>
               <div className="dp-field dp-field--full">
@@ -218,7 +218,7 @@ const DocumentsPage = () => {
         <div className="dp-empty">
           <span>📄</span>
           <h3>{search ? 'No results found' : 'No documents yet'}</h3>
-          <p>{search ? `No documents match “${search}”` : 'Create the first document using the button above'}</p>
+          <p>{search ? `No documents match "${search}"` : 'Create the first document using the button above'}</p>
         </div>
       ) : (
         <div className="dp-table-wrap">
@@ -243,7 +243,7 @@ const DocumentsPage = () => {
                     <td className="dp-docnum">{d.documentNumber}</td>
                     <td className="dp-title">{d.title || '—'}</td>
                     <td><span className="dp-type-tag">{d.documentType || '—'}</span></td>
-                    <td className="dp-version">v{d.version || '?'}</td>
+                    <td className="dp-version">v{d.versionNumber || '?'}</td>
                     <td><span className="dp-status-badge" style={{ background: c.bg, color: c.text }}>{d.status}</span></td>
                     <td className="dp-proj">{d.projectId || '—'}</td>
                     <td className="dp-date">{timeAgo(d.createdAt)}</td>
