@@ -14,14 +14,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create directories for models
-RUN mkdir -p /app/models /app/data
+# Create directories
+RUN mkdir -p /app/models /app/data /app/logs
+
+# Train the model at build time so it is baked into the image.
+# This means the container starts with a real Random Forest model
+# instead of falling back to rule-based analysis.
+RUN python training/generate_training_data.py && \
+    python training/train_model.py
 
 # Expose port
 EXPOSE 5000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:5000/health || exit 1
 
 # Run application
