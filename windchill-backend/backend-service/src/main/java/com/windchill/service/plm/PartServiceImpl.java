@@ -51,7 +51,6 @@ public class PartServiceImpl implements IPartService {
         part.setIsLatest(true);
 
         Part saved = partRepository.save(part);
-        // First save: set masterId to self id
         if (saved.getMasterId() == null) {
             saved.setMasterId(saved.getId());
             saved = partRepository.save(saved);
@@ -88,25 +87,22 @@ public class PartServiceImpl implements IPartService {
             log.warn("searchPartsByNumber called with empty query");
             return List.of();
         }
-        
+
         log.info("Searching parts by number: {}", query);
-        
-        // Find all parts matching the query
+
         List<Part> allMatches = partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query);
-        
-        // Filter by context access - only return parts user has access to
+
         List<Part> accessible = allMatches.stream()
             .filter(part -> {
                 try {
                     acl.requireContextMember(part.getContextId());
                     return true;
                 } catch (Exception e) {
-                    // User doesn't have access to this context
                     return false;
                 }
             })
             .collect(Collectors.toList());
-        
+
         log.info("Found {} accessible parts matching '{}'", accessible.size(), query);
         return accessible;
     }
@@ -137,14 +133,13 @@ public class PartServiceImpl implements IPartService {
         Part part = getPart(id);
         LifecycleStateEnum from = part.getLifecycleState();
 
-        // For INWORK -> UNDERREVIEW, start a Promotion Request workflow (ALL approvers)
-        if (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDERREVIEW) {
-            promotionWorkflowService.startPromotionRequest(part.getId(), LifecycleStateEnum.UNDERREVIEW);
-            // reload latest state
+        // For INWORK -> UNDER_REVIEW, start a Promotion Request workflow
+        if (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDER_REVIEW) {
+            promotionWorkflowService.startPromotionRequest(part.getId(), LifecycleStateEnum.UNDER_REVIEW);
             return getPart(part.getId());
         }
 
-        if (target == LifecycleStateEnum.UNDERREVIEW) {
+        if (target == LifecycleStateEnum.UNDER_REVIEW) {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
         } else if (target == LifecycleStateEnum.RELEASED) {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.APPROVER);
@@ -159,9 +154,9 @@ public class PartServiceImpl implements IPartService {
         }
 
         boolean allowed =
-                (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDERREVIEW)
-                        || (from == LifecycleStateEnum.UNDERREVIEW && target == LifecycleStateEnum.RELEASED)
-                        || (from == LifecycleStateEnum.RELEASED && target == LifecycleStateEnum.OBSOLETE);
+                (from == LifecycleStateEnum.INWORK      && target == LifecycleStateEnum.UNDER_REVIEW)
+             || (from == LifecycleStateEnum.UNDER_REVIEW && target == LifecycleStateEnum.RELEASED)
+             || (from == LifecycleStateEnum.RELEASED    && target == LifecycleStateEnum.OBSOLETE);
 
         if (!allowed) {
             throw new BusinessException("Invalid lifecycle transition: " + from + " -> " + target);
@@ -182,7 +177,6 @@ public class PartServiceImpl implements IPartService {
             throw new BusinessException("Only RELEASED parts can be revised");
         }
 
-        // Mark current as not latest
         released.setIsLatest(false);
         partRepository.save(released);
 
@@ -206,7 +200,7 @@ public class PartServiceImpl implements IPartService {
     @Override
     @Transactional(readOnly = true)
     public List<Part> whereUsed(Long partId) {
-        Part child = getPart(partId); // enforces context-member ACL
+        Part child = getPart(partId);
 
         List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(partId);
         if (parentIds == null || parentIds.isEmpty()) {
@@ -215,7 +209,6 @@ public class PartServiceImpl implements IPartService {
 
         List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentIds);
 
-        // Defensive filter: ensure same context
         List<Part> filtered = new ArrayList<>();
         for (Part p : parents) {
             if (p.getContextId() != null && p.getContextId().equals(child.getContextId())) {
@@ -230,18 +223,14 @@ public class PartServiceImpl implements IPartService {
         Part part = getPart(id);
         acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
 
-        // Check if part is used in any BOMs as a child (prevent orphaned references)
         List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(id);
         if (parentIds != null && !parentIds.isEmpty()) {
             throw new BusinessException("Cannot delete part. It is used in " + parentIds.size() + " BOM(s). Remove from BOMs first.");
         }
 
-        // Delete associated BOM lines where this part is the parent
         bomLineRepository.deleteByParentPartId(id);
-
-        // Delete the part
         partRepository.deleteById(id);
-        
+
         auditService.log(PlmEntityTypeEnum.PART, id, "DELETE", "Part deleted: " + part.getPartNumber());
         log.info("Part deleted: id={} partNumber={}", id, part.getPartNumber());
     }
@@ -249,7 +238,6 @@ public class PartServiceImpl implements IPartService {
     private String incrementRevision(String current) {
         if (current == null || current.isBlank()) return "A";
         String c = current.trim().toUpperCase();
-        // Simple A..Z then AA..AZ etc
         int i = c.length() - 1;
         char[] chars = c.toCharArray();
         while (i >= 0) {

@@ -44,18 +44,17 @@ public class PromotionWorkflowService {
     private final WorkItemCommentRepository commentRepository;
 
     /**
-     * Starts a promotion request workflow for INWORK -> UNDERREVIEW.
+     * Starts a promotion request workflow for INWORK -> UNDER_REVIEW.
      * Creates one WorkItem per APPROVER in the part's context (excluding requester).
      */
     public PromotionRequest startPromotionRequest(Long partId, LifecycleStateEnum target) {
-        if (target != LifecycleStateEnum.UNDERREVIEW) {
-            throw new BusinessException("Workflow start only supported for target=UNDERREVIEW");
+        if (target != LifecycleStateEnum.UNDER_REVIEW) {
+            throw new BusinessException("Workflow start only supported for target=UNDER_REVIEW");
         }
 
         Part part = partRepository.findById(partId)
                 .orElseThrow(() -> new BusinessException("Part not found"));
 
-        // requester must be able to initiate review
         acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
         Long requesterUserId = acl.requireUserId();
 
@@ -63,7 +62,6 @@ public class PromotionWorkflowService {
             throw new BusinessException("Only INWORK parts can be submitted for review");
         }
 
-        // Ensure there isn't already an active promotion request for this part
         promotionRequestRepository
                 .findFirstByPartIdAndStatusInOrderByCreatedAtDesc(
                         partId,
@@ -85,7 +83,6 @@ public class PromotionWorkflowService {
             throw new BusinessException("No APPROVER assigned in this context. Cannot start Promotion Request.");
         }
 
-        // Create PromotionRequest
         PromotionRequest pr = new PromotionRequest();
         pr.setContextId(part.getContextId());
         pr.setPartId(part.getId());
@@ -95,8 +92,8 @@ public class PromotionWorkflowService {
         pr.setStatus(PromotionRequestStatusEnum.PENDING_APPROVAL);
         pr = promotionRequestRepository.save(pr);
 
-        // Put part into UNDERREVIEW immediately (matches Windchill feel)
-        part.setLifecycleState(LifecycleStateEnum.UNDERREVIEW);
+        // Put part into UNDER_REVIEW immediately (matches Windchill feel)
+        part.setLifecycleState(LifecycleStateEnum.UNDER_REVIEW);
         partRepository.save(part);
 
         LocalDateTime dueAt = LocalDateTime.now().plusDays(2);
@@ -133,7 +130,6 @@ public class PromotionWorkflowService {
             throw new BusinessException("Work item is not pending");
         }
 
-        // Windchill-like: still must be an APPROVER in the context at action time
         acl.requireContextRole(wi.getContextId(), RoleEnum.APPROVER);
 
         wi.setStatus(WorkItemStatusEnum.APPROVED);
@@ -170,7 +166,6 @@ public class PromotionWorkflowService {
             throw new BusinessException("Work item is not pending");
         }
 
-        // Windchill-like: still must be an APPROVER in the context at action time
         acl.requireContextRole(wi.getContextId(), RoleEnum.APPROVER);
 
         wi.setStatus(WorkItemStatusEnum.REJECTED);
@@ -194,7 +189,6 @@ public class PromotionWorkflowService {
         PromotionRequest pr = promotionRequestRepository.findFirstByPartIdOrderByCreatedAtDesc(partId).orElse(null);
         if (pr == null) return null;
 
-        // Only context members (or global admin) can view promotion details
         acl.requireContextMember(pr.getContextId());
 
         List<WorkItem> items = workItemRepository.findByPromotionRequestIdAndIsDeletedFalse(pr.getId());
@@ -222,13 +216,11 @@ public class PromotionWorkflowService {
         if (!allApproved) return;
 
         try {
-            // All approved: set PR approved, promote part to RELEASED
             pr.setStatus(PromotionRequestStatusEnum.APPROVED);
             pr.setCompletedAt(LocalDateTime.now());
             pr.setCompletedByUserId(actorUserId);
             promotionRequestRepository.saveAndFlush(pr);
         } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
-            // Another approver completed/rejected concurrently; treat as idempotent.
             log.info("Promotion request {} completion already handled concurrently", promotionRequestId);
             return;
         }
@@ -236,8 +228,7 @@ public class PromotionWorkflowService {
         Part part = partRepository.findById(pr.getPartId())
                 .orElseThrow(() -> new BusinessException("Part not found"));
 
-        // Only allow if currently under review
-        if (part.getLifecycleState() == LifecycleStateEnum.UNDERREVIEW) {
+        if (part.getLifecycleState() == LifecycleStateEnum.UNDER_REVIEW) {
             part.setLifecycleState(LifecycleStateEnum.RELEASED);
             partRepository.save(part);
         }
@@ -259,12 +250,10 @@ public class PromotionWorkflowService {
             pr.setCompletedByUserId(actorUserId);
             promotionRequestRepository.saveAndFlush(pr);
         } catch (ObjectOptimisticLockingFailureException | OptimisticLockException e) {
-            // Another approver completed concurrently; treat as idempotent.
             log.info("Promotion request {} rejection already handled concurrently", promotionRequestId);
             return;
         }
 
-        // Cancel remaining pending work items
         List<WorkItem> items = workItemRepository.findByPromotionRequestIdAndIsDeletedFalse(promotionRequestId);
         for (WorkItem wi : items) {
             if (wi.getStatus() == WorkItemStatusEnum.PENDING) {
