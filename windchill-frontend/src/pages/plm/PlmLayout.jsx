@@ -1,74 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import Header from '../../components/organisms/Header/Header';
-import ContextSwitcher from '../../components/plm/ContextSwitcher';
-import ContextTeamPanel from '../../components/plm/ContextTeamPanel';
-import FolderTree from '../../components/plm/FolderTree';
-import AIChatBot from '../../components/ai/AIChatBot';
+import '../../windchill-theme.css';
 import './PlmLayout.css';
+import AIChatBot from '../../components/ai/AIChatBot';
+
+const NAV_ITEMS = [
+  { label: 'Product Library',  path: '/plm/parts',         icon: '⛲' },
+  { label: 'Changes',          path: '/plm/changes',        icon: '📝' },
+  { label: 'Change Tasks',     path: '/plm/changes/tasks',  icon: '🔧' },
+  { label: 'Documents',        path: '/plm/documents',      icon: '📄' },
+  { label: 'Products',         path: '/plm/products',       icon: '📦' },
+  { label: 'Projects',         path: '/plm/projects',       icon: '🗂' },
+  { label: 'Library',          path: '/plm/library',        icon: '📚' },
+  { label: 'Worklist',         path: '/plm/worklist',       icon: '✅' },
+  { label: 'Reports',          path: '/plm/audit-log',      icon: '📊' },
+];
+
+const SIDEBAR_ITEMS = [
+  { label: 'Parts',            path: '/plm/parts',          icon: '⛲', section: null },
+  { label: 'BOM Structure',    path: null,                  icon: '📋', action: 'bom', section: null },
+  { label: 'Where Used',       path: null,                  icon: '⇧', action: 'whereused', section: null },
+  { label: 'Search',           path: '/plm/search',         icon: '🔍', section: null },
+  { label: 'Folder Browser',   path: '/plm/folders',        icon: '🗄', section: null },
+  { label: '---', section: 'CHANGES' },
+  { label: 'Change Requests',  path: '/plm/changes',        icon: '📝', section: 'CHANGES' },
+  { label: 'Change Tasks',     path: '/plm/changes/tasks',  icon: '🔧', section: 'CHANGES' },
+  { label: '---', section: 'WORKSPACE' },
+  { label: 'Worklist',         path: '/plm/worklist',       icon: '✅', section: 'WORKSPACE' },
+  { label: 'Notifications',    path: '/plm/notifications',  icon: '🔔', section: 'WORKSPACE' },
+  { label: 'Team',             path: '/plm/team',           icon: '👥', section: 'WORKSPACE' },
+  { label: '---', section: 'ADMIN' },
+  { label: 'Audit Log',        path: '/plm/audit-log',      icon: '📋', section: 'ADMIN' },
+];
 
 const PlmLayout = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [selectedPart,    setSelectedPart]    = useState(null);
+  const location  = useLocation();
+  const navigate  = useNavigate();
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const isDashboard     = location.pathname.startsWith('/dashboard');
-  const isWorklist      = location.pathname.startsWith('/plm/worklist');
-  const isChangesGroup  = location.pathname.startsWith('/plm/changes');
-  const isChangeTasks   = location.pathname.startsWith('/plm/changes/tasks');
-  const isChanges       = isChangesGroup && !isChangeTasks;
-  const isAiDemo        = location.pathname.startsWith('/plm/ai-demo');
-  const isNotifications = location.pathname.startsWith('/plm/notifications');
-  const isDocuments     = location.pathname.startsWith('/plm/documents');
-  const isProducts      = location.pathname.startsWith('/plm/products');
-  const isProjects      = location.pathname.startsWith('/plm/projects');
-  const isLibrary       = location.pathname.startsWith('/plm/library');
-  const isAuditLog      = location.pathname.startsWith('/plm/audit-log');
-
-  const isWorkspace = location.pathname.startsWith('/plm')
-    && !isWorklist && !isChangesGroup && !isAiDemo
-    && !isNotifications && !isDocuments
-    && !isProducts && !isProjects && !isLibrary && !isAuditLog;
+  const isActive = (path) => path && location.pathname.startsWith(path);
 
   const getCurrentPage = () => {
-    if (isWorkspace)     return 'workspace';
-    if (isWorklist)      return 'worklist';
-    if (isChanges)       return 'changes';
-    if (isChangeTasks)   return 'change-tasks';
-    if (isAiDemo)        return 'ai-demo';
-    if (isNotifications) return 'notifications';
-    if (isDocuments)     return 'documents';
-    if (isProducts)      return 'products';
-    if (isProjects)      return 'projects';
-    if (isLibrary)       return 'library';
-    if (isAuditLog)      return 'audit-log';
-    return 'unknown';
+    const p = location.pathname;
+    if (p.startsWith('/plm/bom'))           return 'bom';
+    if (p.startsWith('/plm/where-used'))    return 'where-used';
+    if (p.startsWith('/plm/search'))        return 'search';
+    if (p.startsWith('/plm/folders'))       return 'folders';
+    if (p.startsWith('/plm/worklist'))      return 'worklist';
+    if (p.startsWith('/plm/changes/tasks')) return 'change-tasks';
+    if (p.startsWith('/plm/changes'))       return 'changes';
+    if (p.startsWith('/plm/ai-demo'))       return 'ai-demo';
+    if (p.startsWith('/plm/notifications')) return 'notifications';
+    if (p.startsWith('/plm/documents'))     return 'documents';
+    if (p.startsWith('/plm/products'))      return 'products';
+    if (p.startsWith('/plm/projects'))      return 'projects';
+    if (p.startsWith('/plm/library'))       return 'library';
+    if (p.startsWith('/plm/audit-log'))     return 'audit-log';
+    return 'workspace';
   };
 
   const handleChatAction = (action, params) => {
     switch (action) {
       case 'RUN_IMPACT_ANALYSIS': handleImpactAnalysis(params); break;
-      case 'SEARCH_PART':         handlePartSearch(params);     break;
-      case 'NAVIGATE_TO_ECN':     navigate('/plm/changes');     break;
-      case 'NAVIGATE_TO_PARTS':   navigate('/plm/parts');       break;
+      case 'SEARCH_PART':         navigate(`/plm/search?q=${params.part_number}`); break;
+      case 'NAVIGATE_TO_ECN':     navigate('/plm/changes');  break;
+      case 'NAVIGATE_TO_PARTS':   navigate('/plm/parts');    break;
       default: break;
     }
   };
 
   const handleImpactAnalysis = (params) => {
-    const { part_number, change_type } = params;
+    const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
     if (!isAiDemo) {
-      sessionStorage.setItem('pendingAiAction', JSON.stringify({ action: 'RUN_IMPACT_ANALYSIS', params: { part_number, change_type } }));
+      sessionStorage.setItem('pendingAiAction', JSON.stringify({ action: 'RUN_IMPACT_ANALYSIS', params }));
       navigate('/plm/ai-demo');
     } else {
-      setAiActionTrigger({ part_number, change_type, timestamp: Date.now() });
+      setAiActionTrigger({ ...params, timestamp: Date.now() });
     }
   };
 
-  const handlePartSearch = (params) => navigate(`/plm/parts?search=${params.part_number}`);
-
   useEffect(() => {
+    const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
     if (isAiDemo) {
       const pending = sessionStorage.getItem('pendingAiAction');
       if (pending) {
@@ -81,43 +95,134 @@ const PlmLayout = () => {
         } catch { sessionStorage.removeItem('pendingAiAction'); }
       }
     }
-  }, [isAiDemo]);
+  }, [location.pathname]);
+
+  const handleGlobalSearch = (e) => {
+    if (e.key === 'Enter' && globalSearch.trim()) {
+      navigate(`/plm/search?q=${encodeURIComponent(globalSearch.trim())}`);
+      setGlobalSearch('');
+    }
+  };
+
+  const handleSidebarAction = (action) => {
+    // BOM / Where-Used require a selected part — navigate to search if none in context
+    if (action === 'bom' || action === 'whereused') {
+      navigate('/plm/parts');
+    }
+  };
+
+  let renderedSection = null;
 
   return (
-    <div className="plm-shell">
-      <Header title="Workspace" />
-
-      <div className="plm-topnav">
-        <div className="plm-topnav-inner">
-          <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">🏠 Dashboard</Link>
-          <Link className={isWorkspace     ? 'plm-link active' : 'plm-link'} to="/plm">⚙️ Workspace</Link>
-          <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">✅ Worklist</Link>
-          <Link className={`plm-link plm-link--soon${isChanges ? ' active' : ''}`} to="/plm/changes">📋 Changes</Link>
-          <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">🔧 Change Tasks</Link>
-          <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
-          <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
-          <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
-          <Link className={isLibrary       ? 'plm-link active' : 'plm-link'} to="/plm/library">📚 Library</Link>
-          <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
-          <Link className={isAuditLog      ? 'plm-link active' : 'plm-link'} to="/plm/audit-log">📋 Audit Log</Link>
-          <Link className={`plm-link plm-link--ai${isAiDemo ? ' active' : ''}`} to="/plm/ai-demo">⚡ AI Demo</Link>
+    <div className="wc-shell">
+      {/* ── TOP NAVIGATOR ── */}
+      <nav className="wc-topnav">
+        <div className="wc-topnav__logo">
+          <span style={{ color: '#e87722', fontWeight: 900 }}>PTC</span>
+          <span>Windchill</span>
         </div>
-      </div>
 
-      <div className="plm-body">
-        <aside className="plm-left">
-          <ContextSwitcher />
-          <ContextTeamPanel />
-          <FolderTree />
+        <div className="wc-topnav__links">
+          <Link
+            to="/dashboard"
+            className={`wc-topnav__link${location.pathname.startsWith('/dashboard') ? ' active' : ''}`}
+          >
+            Home
+          </Link>
+          {NAV_ITEMS.map(item => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`wc-topnav__link${isActive(item.path) ? ' active' : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="wc-topnav__actions">
+          <input
+            className="wc-topnav__search"
+            placeholder="Search PLM…"
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            onKeyDown={handleGlobalSearch}
+          />
+          <button className="wc-topnav__action-btn" onClick={() => navigate('/plm/notifications')}>
+            🔔
+          </button>
+          <button className="wc-topnav__action-btn" onClick={() => navigate('/plm/search')}>
+            🔍 Search
+          </button>
+          <button className="wc-topnav__action-btn" onClick={() => navigate('/plm/ai-demo')}>
+            ⚡ AI
+          </button>
+          <button className="wc-topnav__action-btn" title="Preferences">
+            ⚙️
+          </button>
+        </div>
+      </nav>
+
+      {/* ── BODY ── */}
+      <div className="wc-body">
+        {/* ── SIDEBAR ── */}
+        <aside className={`wc-sidebar${sidebarCollapsed ? ' wc-sidebar--collapsed' : ''}`}>
+          <button
+            className="wc-sidebar__collapse-btn"
+            onClick={() => setSidebarCollapsed(c => !c)}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '»' : '«'}
+          </button>
+
+          {SIDEBAR_ITEMS.map((item, i) => {
+            if (item.label === '---') {
+              const showSection = item.section;
+              if (sidebarCollapsed) return <hr key={i} className="wc-sidebar__divider" />;
+              const show = showSection !== renderedSection;
+              renderedSection = showSection;
+              return (
+                <React.Fragment key={i}>
+                  <hr className="wc-sidebar__divider" />
+                  {show && <div className="wc-sidebar__section-header">{showSection}</div>}
+                </React.Fragment>
+              );
+            }
+            if (item.action) {
+              return (
+                <button
+                  key={i}
+                  className="wc-sidebar__item wc-sidebar__item--btn"
+                  onClick={() => handleSidebarAction(item.action)}
+                  title={item.label}
+                >
+                  <span className="icon">{item.icon}</span>
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={i}
+                to={item.path}
+                className={`wc-sidebar__item${isActive(item.path) ? ' active' : ''}`}
+                title={item.label}
+              >
+                <span className="icon">{item.icon}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
         </aside>
-        <main className="plm-main">
+
+        {/* ── MAIN CONTENT ── */}
+        <main className="wc-content">
           <Outlet context={{ aiActionTrigger }} />
         </main>
       </div>
 
       <AIChatBot
         onAction={handleChatAction}
-        selectedPart={selectedPart}
         currentPage={getCurrentPage()}
       />
     </div>

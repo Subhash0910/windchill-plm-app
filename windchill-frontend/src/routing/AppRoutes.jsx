@@ -18,6 +18,10 @@ import ProjectsPage from '../pages/plm/ProjectsPage';
 import LibraryPage from '../pages/plm/LibraryPage';
 import AuditLogPage from '../pages/plm/AuditLogPage';
 import TeamManagementPage from '../pages/plm/TeamManagementPage';
+import BomStructurePage from '../pages/plm/BomStructurePage';
+import WhereUsedPage from '../pages/plm/WhereUsedPage';
+import SearchPage from '../pages/plm/SearchPage';
+import FolderBrowserPage from '../pages/plm/FolderBrowserPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
 import AIDemo from '../pages/AIDemo';
 import NotFoundPage from '../pages/NotFoundPage';
@@ -33,20 +37,24 @@ const AppRoutes = () => (
 
         <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
           <Route index element={<Navigate to="parts" replace />} />
-          <Route path="parts"           element={<PartsPage />} />
-          <Route path="parts/:id"       element={<PartDetailPage />} />
-          <Route path="worklist"        element={<WorklistPage />} />
-          <Route path="changes"         element={<ChangesHomePage />} />
-          <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
-          <Route path="changes/tasks"   element={<ChangeTasksPage />} />
-          <Route path="documents"       element={<DocumentsPage />} />
-          <Route path="products"        element={<ProductsPage />} />
-          <Route path="projects"        element={<ProjectsPage />} />
-          <Route path="library"         element={<LibraryPage />} />
-          <Route path="notifications"   element={<NotificationsPage />} />
-          <Route path="audit-log"       element={<AuditLogPage />} />
-          <Route path="team"            element={<TeamManagementPage />} />
-          <Route path="ai-demo"         element={<AIDemo />} />
+          <Route path="parts"               element={<PartsPage />} />
+          <Route path="parts/:id"           element={<PartDetailPage />} />
+          <Route path="bom/:id"             element={<BomStructurePage />} />
+          <Route path="where-used/:id"      element={<WhereUsedPage />} />
+          <Route path="search"              element={<SearchPage />} />
+          <Route path="folders"             element={<FolderBrowserPage />} />
+          <Route path="worklist"            element={<WorklistPage />} />
+          <Route path="changes"             element={<ChangesHomePage />} />
+          <Route path="changes/ecr/:id"     element={<EcrDetailPage />} />
+          <Route path="changes/tasks"       element={<ChangeTasksPage />} />
+          <Route path="documents"           element={<DocumentsPage />} />
+          <Route path="products"            element={<ProductsPage />} />
+          <Route path="projects"            element={<ProjectsPage />} />
+          <Route path="library"             element={<LibraryPage />} />
+          <Route path="notifications"       element={<NotificationsPage />} />
+          <Route path="audit-log"           element={<AuditLogPage />} />
+          <Route path="team"                element={<TeamManagementPage />} />
+          <Route path="ai-demo"             element={<AIDemo />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
