@@ -1,0 +1,22 @@
+.bom-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--wc-bg);
+}
+.bom-row { transition: background 0.1s; }
+.bom-row--depth-1 td:first-child { background: rgba(26,39,68,0.02); }
+.bom-row--depth-2 td:first-child { background: rgba(26,39,68,0.04); }
+.bom-row--depth-3 td:first-child { background: rgba(26,39,68,0.06); }
+.bom-row--depth-4 td:first-child { background: rgba(26,39,68,0.08); }
+.bom-row--depth-5 td:first-child { background: rgba(26,39,68,0.10); }
+.bom-root td { background: #f0f4ff !important; font-weight: 600; }
+.bom-root-badge { font-size: 10px; color: #6b7280; font-weight: 400; margin-left: 4px; }
+.bom-error {
+  padding: 16px;
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 4px;
+  margin: 12px;
+}
