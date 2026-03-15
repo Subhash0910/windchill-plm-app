@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, isTokenExpired, clearAuth } from '../utils/localStorage';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
@@ -8,7 +9,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -17,7 +18,7 @@ api.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
+      clearAuth();
       window.location.href = '/login';
     }
     return Promise.reject(err);
@@ -79,7 +80,7 @@ export const createFolder        = (contextId, data) => api.post(`/v1/plm/contex
 export const deleteFolder        = (contextId, folderId) => api.delete(`/v1/plm/contexts/${contextId}/folders/${folderId}`);
 
 // ── CHANGES / ECR ──────────────────────────────────────
-export const getChangeRequests   = (params)     => api.get('/v1/plm/promotions', { params });
+export const getChangeRequests    = (params)    => api.get('/v1/plm/promotions', { params });
 export const getChangeRequestById = (id)        => api.get(`/v1/plm/promotions/parts/${id}/latest`);
 export const createChangeRequest  = (data)      => api.post('/v1/plm/promotions', data);
 export const updateChangeRequest  = (id, data)  => api.put(`/v1/plm/promotions/${id}`, data);
@@ -127,7 +128,7 @@ export const runImpactAnalysis   = (data)       => api.post('/v1/ai/impact-analy
 export const chatWithAI          = (data)       => api.post('/v1/ai/chat', data);
 export const getAISuggestions    = (partId)     => api.get(`/v1/ai/suggestions/${partId}`);
 
-// ── PROMOTIONS (direct) ─────────────────────────────────
+// ── PROMOTIONS ───────────────────────────────────────────
 export const getPromotionForPart = (partId)     => api.get(`/v1/plm/promotions/parts/${partId}/latest`);
 
 // ── LEGACY ALIASES ─────────────────────────────────────────
@@ -156,45 +157,28 @@ export const searchDocuments     = (q)          => getDocuments({ q }).then(r =>
 export const searchAll           = (q, params)  => search({ q, ...params }).then(r => r?.data?.data ?? r?.data ?? r);
 
 const plmApi = {
-  // Parts
   getParts, getPartById, createPart, updatePart, deletePart,
   promotePart, revisePart, checkoutPart, checkinPart, undoCheckoutPart,
-  // BOM
   getBomStructure, getWhereUsed, addBomLine, updateBomLine, deleteBomLine,
-  // Documents
   getDocuments, getDocumentById, createDocument, updateDocument, deleteDocument,
   promoteDocument, checkoutDocument, checkinDocument,
-  // Products
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
-  // Projects
   getProjects, getProjectById, createProject, updateProject, deleteProject,
-  // Contexts
   getContexts, getContextById, createContext, getLibraries,
-  // Folders
   getFolders, createFolder, deleteFolder,
-  // Changes / ECR
   getChangeRequests, getChangeRequestById, createChangeRequest,
   updateChangeRequest, promoteChangeRequest, getChangeTasks,
   getChangeTaskById, updateChangeTask,
-  // Work Items
   getWorkItems, approveWorkItem, rejectWorkItem,
   completeWorkItem, delegateWorkItem, getWorkItemById, updateWorkItem,
-  // Notifications
   getNotifications, getUnreadNotifications, getUnreadCount,
   markNotificationRead, markAllRead,
-  // Users / Teams
   getUsers, getTeams, getTeamById, createTeam,
-  // Audit
   getAuditLog, getEntityAudit,
-  // Search
   search, searchByType,
-  // Dashboard
   getDashboardStats, getRecentActivity,
-  // AI
   runImpactAnalysis, chatWithAI, getAISuggestions,
-  // Promotions
   getPromotionForPart,
-  // Legacy aliases
   listParts, listContexts, listLibraries, listFolders, listDocuments,
   listProducts, listProjects, listUsers, listTeams, listNotifications,
   listMyWorkItems, listWorkItems, listEcrs, listChangeTasks,

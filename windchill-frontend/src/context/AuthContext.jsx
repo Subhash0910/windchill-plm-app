@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { getToken, setToken, getUser, setUser, clearAuth } from '../utils/localStorage';
+import { getToken, setToken, getUser, setUser, clearAuth, isTokenExpired } from '../utils/localStorage';
 import api from '../utils/api';
 import { API_ENDPOINTS } from '../config/api.config';
 
@@ -10,12 +10,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize from storage (sessionStorage by default)
+  // Initialize from sessionStorage — clear if token is expired
   useEffect(() => {
     const token = getToken();
     const storedUser = getUser();
     if (token && storedUser) {
-      setUserState(storedUser);
+      if (isTokenExpired(token)) {
+        // Token is expired — wipe it and force login
+        clearAuth();
+      } else {
+        setUserState(storedUser);
+      }
     }
     setLoading(false);
   }, []);
@@ -50,8 +55,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const isAuthenticated = useMemo(() => {
-    // Prefer state (stable), fallback to storage for hard refresh cases
-    return !!(user || getToken());
+    if (!user) return false;
+    const token = getToken();
+    return !!(token && !isTokenExpired(token));
   }, [user]);
 
   const value = {
