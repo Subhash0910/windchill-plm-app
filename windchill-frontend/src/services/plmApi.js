@@ -120,6 +120,11 @@ export const runImpactAnalysis  = (data)  => api.post('/ai/impact-analysis', dat
 export const chatWithAI         = (data)  => api.post('/ai/chat', data);
 export const getAISuggestions   = (partId) => api.get(`/ai/suggestions/${partId}`);
 
+// ── LEGACY METHOD ALIASES (for older components) ───────────────────────
+export const listParts         = (contextId) => getParts({ contextId });
+export const listMyWorkItems   = ()          => getWorkItems({ assignedToMe: true });
+export const listEcrs          = (params)    => getChangeRequests(params || {});
+
 const plmApi = {
   // Parts
   getParts, getPartById, createPart, updatePart, deletePart,
@@ -152,6 +157,9 @@ const plmApi = {
   getDashboardStats, getRecentActivity,
   // AI
   runImpactAnalysis, chatWithAI, getAISuggestions,
+  // Legacy aliases
+  listParts, listMyWorkItems, listEcrs,
 };
 
+export { plmApi };
 export default plmApi;
