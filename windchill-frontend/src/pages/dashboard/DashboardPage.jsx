@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Header from '../../components/organisms/Header/Header';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
-import { plmApi } from '../../services/plmApi';
+import { getParts, getWorkItems, getChangeRequests } from '../../services/plmApi';
 import './DashboardPage.css';
 
 const S_COLOR = {
@@ -50,12 +50,12 @@ const DashboardPage = () => {
     if (!selectedContextId) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([
-      plmApi.listParts(selectedContextId),
-      plmApi.listMyWorkItems(),
-      plmApi.listEcrs(null),
+      getParts({ contextId: selectedContextId }),
+      getWorkItems({ assignedToMe: true }),
+      getChangeRequests({}),
     ]).then(([pR, wR, eR]) => {
-      const p = pR.status === 'fulfilled' ? (Array.isArray(pR.value) ? pR.value : []) : [];
-      const w = wR.status === 'fulfilled' ? (Array.isArray(wR.value) ? wR.value : []) : [];
+      const p = pR.status === 'fulfilled' ? (Array.isArray(pR.value?.data) ? pR.value.data : []) : [];
+      const w = wR.status === 'fulfilled' ? (Array.isArray(wR.value?.data) ? wR.value.data : []) : [];
       const rawE = eR.status === 'fulfilled' ? (eR.value?.data ?? eR.value) : [];
       const e = Array.isArray(rawE) ? rawE : [];
       setParts(p);
@@ -79,10 +79,10 @@ const DashboardPage = () => {
   };
 
   const quickActions = [
-    { icon: '⚙️',  label: 'Parts',          sub: `${parts.length} total`,       to: '/plm/parts',    color: 'blue'   },
-    { icon: '📋',  label: 'Worklist',        sub: `${workItems.length} pending`,  to: '/plm/worklist', color: 'amber'  },
-    { icon: '📝',  label: 'Changes',         sub: `${ecrs.length} ECRs`,          to: '/plm/changes',  color: 'purple' },
-    { icon: '⚡',        label: 'Impact Analysis', sub: 'AI-powered',                  to: '/plm/ai-demo',  color: 'green'  },
+    { icon: '⚙️',  label: 'Parts',           sub: `${parts.length} total`,       to: '/plm/parts',    color: 'blue'   },
+    { icon: '📋',  label: 'Worklist',         sub: `${workItems.length} pending`,  to: '/plm/worklist', color: 'amber'  },
+    { icon: '📝',  label: 'Changes',          sub: `${ecrs.length} ECRs`,          to: '/plm/changes',  color: 'purple' },
+    { icon: '⚡',  label: 'Impact Analysis',  sub: 'AI-powered',                   to: '/plm/ai-demo',  color: 'green'  },
   ];
 
   return (
