@@ -6,6 +6,9 @@ const STORAGE_KEYS = {
   FOLDER_PATH: 'plm_selected_folder_path',
 };
 
+// Default to context ID 1 (Automotive ECU Platform — seeded by V105)
+const DEFAULT_CONTEXT_ID = 1;
+
 export const PlmWorkspaceContext = createContext(null);
 
 export const PlmWorkspaceProvider = ({ children }) => {
@@ -18,7 +21,8 @@ export const PlmWorkspaceProvider = ({ children }) => {
     const folderId = localStorage.getItem(STORAGE_KEYS.FOLDER_ID);
     const folderPath = localStorage.getItem(STORAGE_KEYS.FOLDER_PATH);
 
-    if (ctxId) setSelectedContextId(Number(ctxId));
+    // If no context saved in localStorage yet, fall back to the default seeded context
+    setSelectedContextId(ctxId ? Number(ctxId) : DEFAULT_CONTEXT_ID);
     if (folderId) setSelectedFolderId(Number(folderId));
     if (folderPath) setSelectedFolderPath(folderPath);
   }, []);

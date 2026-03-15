@@ -67,6 +67,12 @@ export const createProject     = (data)   => api.post('/projects', data);
 export const updateProject     = (id, data) => api.put(`/projects/${id}`, data);
 export const deleteProject     = (id)     => api.delete(`/projects/${id}`);
 
+// ── PLM CONTEXTS ───────────────────────────────────────────────────────
+export const getContexts       = (params) => api.get('/v1/plm/contexts', { params });
+export const getContextById    = (id)     => api.get(`/v1/plm/contexts/${id}`);
+export const createContext     = (data)   => api.post('/v1/plm/contexts', data);
+export const getLibraries      = ()       => api.get('/v1/plm/contexts', { params: { type: 'LIBRARY' } });
+
 // ── CHANGES ────────────────────────────────────────────────────────────
 export const getChangeRequests  = (params) => api.get('/changes/ecr', { params });
 export const getChangeRequestById = (id)  => api.get(`/changes/ecr/${id}`);
@@ -120,7 +126,7 @@ export const runImpactAnalysis  = (data)  => api.post('/ai/impact-analysis', dat
 export const chatWithAI         = (data)  => api.post('/ai/chat', data);
 export const getAISuggestions   = (partId) => api.get(`/ai/suggestions/${partId}`);
 
-// ── COMPLETE LEGACY ALIASES (covers every old method name used across all components) ──
+// ── LEGACY ALIASES ─────────────────────────────────────────────────────
 export const listParts           = (contextId) => getParts({ contextId }).then(r => r?.data ?? r);
 export const listMyWorkItems     = ()          => getWorkItems({ assignedToMe: true }).then(r => r?.data ?? r);
 export const listEcrs            = (params)    => getChangeRequests(params || {}).then(r => r?.data ?? r);
@@ -133,6 +139,8 @@ export const listNotifications   = (params)    => getNotifications(params || {})
 export const listWorkItems       = (params)    => getWorkItems(params || {}).then(r => r?.data ?? r);
 export const listTeams           = ()          => getTeams().then(r => r?.data ?? r);
 export const listUsers           = (params)    => getUsers(params || {}).then(r => r?.data ?? r);
+export const listContexts        = ()          => getContexts().then(r => r?.data?.data ?? r?.data ?? r);
+export const listLibraries       = ()          => getLibraries().then(r => r?.data?.data ?? r?.data ?? r);
 export const searchParts         = (q, contextId) => getParts({ q, contextId }).then(r => r?.data ?? r);
 export const searchDocuments     = (q, contextId) => getDocuments({ q, contextId }).then(r => r?.data ?? r);
 export const searchAll           = (q, params)    => search({ q, ...params }).then(r => r?.data ?? r);
@@ -156,6 +164,8 @@ const plmApi = {
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
   // Projects
   getProjects, getProjectById, createProject, updateProject, deleteProject,
+  // PLM Contexts
+  getContexts, getContextById, createContext, getLibraries,
   // Changes
   getChangeRequests, getChangeRequestById, createChangeRequest, updateChangeRequest,
   promoteChangeRequest, getChangeTasks, getChangeTaskById, updateChangeTask,
@@ -175,10 +185,11 @@ const plmApi = {
   getDashboardStats, getRecentActivity,
   // AI
   runImpactAnalysis, chatWithAI, getAISuggestions,
-  // ALL Legacy aliases
+  // Legacy aliases
   listParts, listMyWorkItems, listEcrs, listFolders, listDocuments,
   listProducts, listProjects, listChangeTasks, listNotifications,
   listWorkItems, listTeams, listUsers,
+  listContexts, listLibraries,
   searchParts, searchDocuments, searchAll,
   getPartBom, getPartWhereUsed, getFolderTree,
   getEcrById, updateEcr, promoteEcr,
