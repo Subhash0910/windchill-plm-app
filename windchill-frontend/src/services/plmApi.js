@@ -24,48 +24,43 @@ api.interceptors.response.use(
   }
 );
 
-// ── PARTS ──────────────────────────────────────────────────────────────
-export const getParts          = (params) => api.get('/parts', { params });
-export const getPartById       = (id)     => api.get(`/parts/${id}`);
-export const createPart        = (data)   => api.post('/parts', data);
-export const updatePart        = (id, data) => api.put(`/parts/${id}`, data);
-export const deletePart        = (id)     => api.delete(`/parts/${id}`);
-export const checkoutPart      = (id)     => api.post(`/parts/${id}/checkout`);
-export const checkinPart       = (id, data) => api.post(`/parts/${id}/checkin`, data);
-export const undoCheckoutPart  = (id)     => api.post(`/parts/${id}/undo-checkout`);
-export const promotePart       = (id, data) => api.post(`/parts/${id}/promote`, data);
-export const revisePart        = (id)     => api.post(`/parts/${id}/revise`);
+// ── PARTS ────────────────────────────────────────────────────────────
+export const getParts          = (params) => api.get('/v1/plm/parts', { params });
+export const getPartById       = (id)     => api.get(`/v1/plm/parts/${id}`);
+export const createPart        = (data)   => api.post('/v1/plm/parts', data);
+export const updatePart        = (id, data) => api.put(`/v1/plm/parts/${id}`, data);
+export const deletePart        = (id)     => api.delete(`/v1/plm/parts/${id}`);
+export const promotePart       = (id, data) => api.post(`/v1/plm/parts/${id}/promote`, data);
+export const revisePart        = (id)     => api.post(`/v1/plm/parts/${id}/revise`);
 
 // ── BOM ────────────────────────────────────────────────────────────────
-export const getBomStructure   = (partId) => api.get(`/parts/${partId}/bom`);
-export const getWhereUsed      = (partId) => api.get(`/parts/${partId}/where-used`);
-export const addBomLine        = (partId, data) => api.post(`/parts/${partId}/bom`, data);
-export const updateBomLine     = (partId, bomLineId, data) => api.put(`/parts/${partId}/bom/${bomLineId}`, data);
-export const deleteBomLine     = (partId, bomLineId) => api.delete(`/parts/${partId}/bom/${bomLineId}`);
+export const getBomStructure   = (partId) => api.get(`/v1/plm/parts/${partId}/bom`);
+export const getWhereUsed      = (partId) => api.get(`/v1/plm/parts/${partId}/where-used`);
+export const addBomLine        = (partId, data) => api.post(`/v1/plm/parts/${partId}/bom`, data);
+export const updateBomLine     = (partId, bomLineId, data) => api.put(`/v1/plm/parts/${partId}/bom/${bomLineId}`, data);
+export const deleteBomLine     = (partId, bomLineId) => api.delete(`/v1/plm/parts/${partId}/bom/${bomLineId}`);
 
 // ── DOCUMENTS ──────────────────────────────────────────────────────────
-export const getDocuments      = (params) => api.get('/documents', { params });
-export const getDocumentById   = (id)     => api.get(`/documents/${id}`);
-export const createDocument    = (data)   => api.post('/documents', data);
-export const updateDocument    = (id, data) => api.put(`/documents/${id}`, data);
-export const deleteDocument    = (id)     => api.delete(`/documents/${id}`);
-export const checkoutDocument  = (id)     => api.post(`/documents/${id}/checkout`);
-export const checkinDocument   = (id, data) => api.post(`/documents/${id}/checkin`, data);
-export const promoteDocument   = (id, data) => api.post(`/documents/${id}/promote`, data);
+export const getDocuments      = (params) => api.get('/v1/documents', { params });
+export const getDocumentById   = (id)     => api.get(`/v1/documents/${id}`);
+export const createDocument    = (data)   => api.post('/v1/documents', data);
+export const updateDocument    = (id, data) => api.put(`/v1/documents/${id}`, data);
+export const deleteDocument    = (id)     => api.delete(`/v1/documents/${id}`);
+export const promoteDocument   = (id, data) => api.post(`/v1/documents/${id}/promote`, data);
 
 // ── PRODUCTS ───────────────────────────────────────────────────────────
-export const getProducts       = (params) => api.get('/products', { params });
-export const getProductById    = (id)     => api.get(`/products/${id}`);
-export const createProduct     = (data)   => api.post('/products', data);
-export const updateProduct     = (id, data) => api.put(`/products/${id}`, data);
-export const deleteProduct     = (id)     => api.delete(`/products/${id}`);
+export const getProducts       = (params) => api.get('/v1/products', { params });
+export const getProductById    = (id)     => api.get(`/v1/products/${id}`);
+export const createProduct     = (data)   => api.post('/v1/products', data);
+export const updateProduct     = (id, data) => api.put(`/v1/products/${id}`, data);
+export const deleteProduct     = (id)     => api.delete(`/v1/products/${id}`);
 
 // ── PROJECTS ───────────────────────────────────────────────────────────
-export const getProjects       = (params) => api.get('/projects', { params });
-export const getProjectById    = (id)     => api.get(`/projects/${id}`);
-export const createProject     = (data)   => api.post('/projects', data);
-export const updateProject     = (id, data) => api.put(`/projects/${id}`, data);
-export const deleteProject     = (id)     => api.delete(`/projects/${id}`);
+export const getProjects       = (params) => api.get('/v1/projects', { params });
+export const getProjectById    = (id)     => api.get(`/v1/projects/${id}`);
+export const createProject     = (data)   => api.post('/v1/projects', data);
+export const updateProject     = (id, data) => api.put(`/v1/projects/${id}`, data);
+export const deleteProject     = (id)     => api.delete(`/v1/projects/${id}`);
 
 // ── PLM CONTEXTS ───────────────────────────────────────────────────────
 export const getContexts       = (params) => api.get('/v1/plm/contexts', { params });
@@ -73,126 +68,75 @@ export const getContextById    = (id)     => api.get(`/v1/plm/contexts/${id}`);
 export const createContext     = (data)   => api.post('/v1/plm/contexts', data);
 export const getLibraries      = ()       => api.get('/v1/plm/contexts', { params: { type: 'LIBRARY' } });
 
-// ── CHANGES ────────────────────────────────────────────────────────────
-export const getChangeRequests  = (params) => api.get('/changes/ecr', { params });
-export const getChangeRequestById = (id)  => api.get(`/changes/ecr/${id}`);
-export const createChangeRequest  = (data) => api.post('/changes/ecr', data);
-export const updateChangeRequest  = (id, data) => api.put(`/changes/ecr/${id}`, data);
-export const promoteChangeRequest = (id, data) => api.post(`/changes/ecr/${id}/promote`, data);
-export const getChangeTasks     = (params) => api.get('/changes/tasks', { params });
-export const getChangeTaskById  = (id)    => api.get(`/changes/tasks/${id}`);
-export const updateChangeTask   = (id, data) => api.put(`/changes/tasks/${id}`, data);
-
-// ── WORK ITEMS (WORKLIST) ──────────────────────────────────────────────
-export const getWorkItems       = (params) => api.get('/work-items', { params });
-export const getWorkItemById    = (id)     => api.get(`/work-items/${id}`);
-export const updateWorkItem     = (id, data) => api.put(`/work-items/${id}`, data);
-export const completeWorkItem   = (id)     => api.post(`/work-items/${id}/complete`);
-export const delegateWorkItem   = (id, data) => api.post(`/work-items/${id}/delegate`, data);
-
 // ── FOLDERS ────────────────────────────────────────────────────────────
-export const getFolders         = (params) => api.get('/folders', { params });
-export const getFolderById      = (id)    => api.get(`/folders/${id}`);
-export const getFolderContents  = (id)    => api.get(`/folders/${id}/contents`);
-export const createFolder       = (data)  => api.post('/folders', data);
-export const updateFolder       = (id, data) => api.put(`/folders/${id}`, data);
-export const deleteFolder       = (id)    => api.delete(`/folders/${id}`);
-export const moveToFolder       = (folderId, data) => api.post(`/folders/${folderId}/add`, data);
+export const getFolders        = (contextId) => api.get(`/v1/plm/contexts/${contextId}/folders`);
+export const createFolder      = (contextId, data) => api.post(`/v1/plm/contexts/${contextId}/folders`, data);
+export const deleteFolder      = (contextId, folderId) => api.delete(`/v1/plm/contexts/${contextId}/folders/${folderId}`);
 
-// ── SEARCH ─────────────────────────────────────────────────────────────
-export const search             = (params) => api.get('/search', { params });
-export const searchByType       = (type, params) => api.get(`/search/${type.toLowerCase()}`, { params });
+// ── WORK ITEMS ─────────────────────────────────────────────────────────
+export const getWorkItems      = ()         => api.get('/v1/plm/workitems/my');
+export const approveWorkItem   = (id, data) => api.post(`/v1/plm/workitems/${id}/approve`, data);
+export const rejectWorkItem    = (id, data) => api.post(`/v1/plm/workitems/${id}/reject`, data);
 
 // ── NOTIFICATIONS ──────────────────────────────────────────────────────
-export const getNotifications   = (params) => api.get('/notifications', { params });
-export const markNotificationRead = (id)  => api.put(`/notifications/${id}/read`);
-export const markAllRead        = ()       => api.put('/notifications/read-all');
+export const getNotifications      = ()    => api.get('/v1/notifications');
+export const getUnreadNotifications = ()   => api.get('/v1/notifications/unread');
+export const getUnreadCount         = ()   => api.get('/v1/notifications/count');
+export const markNotificationRead   = (id) => api.put(`/v1/notifications/${id}/read`);
+export const markAllRead            = ()   => api.put('/v1/notifications/read-all');
 
-// ── AUDIT LOG ──────────────────────────────────────────────────────────
-export const getAuditLog        = (params) => api.get('/audit-log', { params });
+// ── USERS ──────────────────────────────────────────────────────────────
+export const getUsers          = (params) => api.get('/v1/users', { params });
 
-// ── TEAMS & USERS ──────────────────────────────────────────────────────
-export const getTeams           = ()      => api.get('/teams');
-export const getTeamById        = (id)    => api.get(`/teams/${id}`);
-export const createTeam         = (data)  => api.post('/teams', data);
-export const getUsers           = (params) => api.get('/users', { params });
+// ── AUDIT ─────────────────────────────────────────────────────────────
+export const getAuditLog       = (params) => api.get('/v1/audit-log', { params });
+
+// ── SEARCH ─────────────────────────────────────────────────────────────
+export const search            = (params) => api.get('/v1/search', { params });
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────
-export const getDashboardStats  = ()      => api.get('/dashboard/stats');
-export const getRecentActivity  = ()      => api.get('/dashboard/activity');
+export const getDashboardStats = ()       => api.get('/v1/dashboard/stats');
+export const getRecentActivity = ()       => api.get('/v1/dashboard/activity');
 
 // ── AI ─────────────────────────────────────────────────────────────────
-export const runImpactAnalysis  = (data)  => api.post('/ai/impact-analysis', data);
-export const chatWithAI         = (data)  => api.post('/ai/chat', data);
-export const getAISuggestions   = (partId) => api.get(`/ai/suggestions/${partId}`);
+export const runImpactAnalysis = (data)   => api.post('/v1/ai/impact-analysis', data);
+export const chatWithAI        = (data)   => api.post('/v1/ai/chat', data);
+export const getAISuggestions  = (partId) => api.get(`/v1/ai/suggestions/${partId}`);
 
 // ── LEGACY ALIASES ─────────────────────────────────────────────────────
-export const listParts           = (contextId) => getParts({ contextId }).then(r => r?.data ?? r);
-export const listMyWorkItems     = ()          => getWorkItems({ assignedToMe: true }).then(r => r?.data ?? r);
-export const listEcrs            = (params)    => getChangeRequests(params || {}).then(r => r?.data ?? r);
-export const listFolders         = (contextId) => getFolders({ contextId }).then(r => r?.data ?? r);
-export const listDocuments       = (params)    => getDocuments(params || {}).then(r => r?.data ?? r);
-export const listProducts        = (params)    => getProducts(params || {}).then(r => r?.data ?? r);
-export const listProjects        = (params)    => getProjects(params || {}).then(r => r?.data ?? r);
-export const listChangeTasks     = (params)    => getChangeTasks(params || {}).then(r => r?.data ?? r);
-export const listNotifications   = (params)    => getNotifications(params || {}).then(r => r?.data ?? r);
-export const listWorkItems       = (params)    => getWorkItems(params || {}).then(r => r?.data ?? r);
-export const listTeams           = ()          => getTeams().then(r => r?.data ?? r);
-export const listUsers           = (params)    => getUsers(params || {}).then(r => r?.data ?? r);
-export const listContexts        = ()          => getContexts().then(r => r?.data?.data ?? r?.data ?? r);
-export const listLibraries       = ()          => getLibraries().then(r => r?.data?.data ?? r?.data ?? r);
-export const searchParts         = (q, contextId) => getParts({ q, contextId }).then(r => r?.data ?? r);
-export const searchDocuments     = (q, contextId) => getDocuments({ q, contextId }).then(r => r?.data ?? r);
-export const searchAll           = (q, params)    => search({ q, ...params }).then(r => r?.data ?? r);
-export const getPartBom          = (partId)   => getBomStructure(partId).then(r => r?.data ?? r);
-export const getPartWhereUsed    = (partId)   => getWhereUsed(partId).then(r => r?.data ?? r);
-export const getFolderTree       = (params)   => getFolders(params || {}).then(r => r?.data ?? r);
-export const getEcrById          = (id)       => getChangeRequestById(id).then(r => r?.data ?? r);
-export const updateEcr           = (id, data) => updateChangeRequest(id, data).then(r => r?.data ?? r);
-export const promoteEcr          = (id, data) => promoteChangeRequest(id, data).then(r => r?.data ?? r);
+export const listParts         = (contextId) => getParts({ contextId }).then(r => r?.data?.data ?? r?.data ?? r);
+export const listContexts      = ()          => getContexts().then(r => r?.data?.data ?? r?.data ?? r);
+export const listLibraries     = ()          => getLibraries().then(r => r?.data?.data ?? r?.data ?? r);
+export const listFolders       = (contextId) => getFolders(contextId).then(r => r?.data?.data ?? r?.data ?? r);
+export const listDocuments     = (params)    => getDocuments(params || {}).then(r => r?.data?.data ?? r?.data ?? r);
+export const listProducts      = (params)    => getProducts(params || {}).then(r => r?.data?.data ?? r?.data ?? r);
+export const listProjects      = (params)    => getProjects(params || {}).then(r => r?.data?.data ?? r?.data ?? r);
+export const listUsers         = (params)    => getUsers(params || {}).then(r => r?.data?.data ?? r?.data ?? r);
+export const listNotifications = ()          => getNotifications().then(r => r?.data?.data ?? r?.data ?? r);
+export const listMyWorkItems   = ()          => getWorkItems().then(r => r?.data?.data ?? r?.data ?? r);
+export const listWorkItems     = ()          => getWorkItems().then(r => r?.data?.data ?? r?.data ?? r);
+export const getPartBom        = (partId)    => getBomStructure(partId).then(r => r?.data?.data ?? r?.data ?? r);
+export const getPartWhereUsed  = (partId)    => getWhereUsed(partId).then(r => r?.data?.data ?? r?.data ?? r);
+export const searchParts       = (q, contextId) => getParts({ q, contextId }).then(r => r?.data?.data ?? r?.data ?? r);
+export const searchDocuments   = (q)         => getDocuments({ q }).then(r => r?.data?.data ?? r?.data ?? r);
+export const searchAll         = (q, params) => search({ q, ...params }).then(r => r?.data?.data ?? r?.data ?? r);
 
 const plmApi = {
-  // Core Parts
-  getParts, getPartById, createPart, updatePart, deletePart,
-  checkoutPart, checkinPart, undoCheckoutPart, promotePart, revisePart,
-  // BOM
+  getParts, getPartById, createPart, updatePart, deletePart, promotePart, revisePart,
   getBomStructure, getWhereUsed, addBomLine, updateBomLine, deleteBomLine,
-  // Documents
-  getDocuments, getDocumentById, createDocument, updateDocument, deleteDocument,
-  checkoutDocument, checkinDocument, promoteDocument,
-  // Products
+  getDocuments, getDocumentById, createDocument, updateDocument, deleteDocument, promoteDocument,
   getProducts, getProductById, createProduct, updateProduct, deleteProduct,
-  // Projects
   getProjects, getProjectById, createProject, updateProject, deleteProject,
-  // PLM Contexts
   getContexts, getContextById, createContext, getLibraries,
-  // Changes
-  getChangeRequests, getChangeRequestById, createChangeRequest, updateChangeRequest,
-  promoteChangeRequest, getChangeTasks, getChangeTaskById, updateChangeTask,
-  // Work Items
-  getWorkItems, getWorkItemById, updateWorkItem, completeWorkItem, delegateWorkItem,
-  // Folders
-  getFolders, getFolderById, getFolderContents, createFolder, updateFolder, deleteFolder, moveToFolder,
-  // Search
-  search, searchByType,
-  // Notifications
-  getNotifications, markNotificationRead, markAllRead,
-  // Audit
-  getAuditLog,
-  // Teams & Users
-  getTeams, getTeamById, createTeam, getUsers,
-  // Dashboard
-  getDashboardStats, getRecentActivity,
-  // AI
+  getFolders, createFolder, deleteFolder,
+  getWorkItems, approveWorkItem, rejectWorkItem,
+  getNotifications, getUnreadNotifications, getUnreadCount, markNotificationRead, markAllRead,
+  getUsers, getAuditLog, search, getDashboardStats, getRecentActivity,
   runImpactAnalysis, chatWithAI, getAISuggestions,
-  // Legacy aliases
-  listParts, listMyWorkItems, listEcrs, listFolders, listDocuments,
-  listProducts, listProjects, listChangeTasks, listNotifications,
-  listWorkItems, listTeams, listUsers,
-  listContexts, listLibraries,
-  searchParts, searchDocuments, searchAll,
-  getPartBom, getPartWhereUsed, getFolderTree,
-  getEcrById, updateEcr, promoteEcr,
+  listParts, listContexts, listLibraries, listFolders, listDocuments,
+  listProducts, listProjects, listUsers, listNotifications,
+  listMyWorkItems, listWorkItems,
+  getPartBom, getPartWhereUsed, searchParts, searchDocuments, searchAll,
 };
 
 export { plmApi };
