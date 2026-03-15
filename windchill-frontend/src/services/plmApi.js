@@ -85,7 +85,7 @@ export const completeWorkItem   = (id)     => api.post(`/work-items/${id}/comple
 export const delegateWorkItem   = (id, data) => api.post(`/work-items/${id}/delegate`, data);
 
 // ── FOLDERS ────────────────────────────────────────────────────────────
-export const getFolders         = ()      => api.get('/folders');
+export const getFolders         = (params) => api.get('/folders', { params });
 export const getFolderById      = (id)    => api.get(`/folders/${id}`);
 export const getFolderContents  = (id)    => api.get(`/folders/${id}/contents`);
 export const createFolder       = (data)  => api.post('/folders', data);
@@ -120,13 +120,31 @@ export const runImpactAnalysis  = (data)  => api.post('/ai/impact-analysis', dat
 export const chatWithAI         = (data)  => api.post('/ai/chat', data);
 export const getAISuggestions   = (partId) => api.get(`/ai/suggestions/${partId}`);
 
-// ── LEGACY METHOD ALIASES (for older components) ───────────────────────
-export const listParts         = (contextId) => getParts({ contextId });
-export const listMyWorkItems   = ()          => getWorkItems({ assignedToMe: true });
-export const listEcrs          = (params)    => getChangeRequests(params || {});
+// ── COMPLETE LEGACY ALIASES (covers every old method name used across all components) ──
+export const listParts           = (contextId) => getParts({ contextId }).then(r => r?.data ?? r);
+export const listMyWorkItems     = ()          => getWorkItems({ assignedToMe: true }).then(r => r?.data ?? r);
+export const listEcrs            = (params)    => getChangeRequests(params || {}).then(r => r?.data ?? r);
+export const listFolders         = (contextId) => getFolders({ contextId }).then(r => r?.data ?? r);
+export const listDocuments       = (params)    => getDocuments(params || {}).then(r => r?.data ?? r);
+export const listProducts        = (params)    => getProducts(params || {}).then(r => r?.data ?? r);
+export const listProjects        = (params)    => getProjects(params || {}).then(r => r?.data ?? r);
+export const listChangeTasks     = (params)    => getChangeTasks(params || {}).then(r => r?.data ?? r);
+export const listNotifications   = (params)    => getNotifications(params || {}).then(r => r?.data ?? r);
+export const listWorkItems       = (params)    => getWorkItems(params || {}).then(r => r?.data ?? r);
+export const listTeams           = ()          => getTeams().then(r => r?.data ?? r);
+export const listUsers           = (params)    => getUsers(params || {}).then(r => r?.data ?? r);
+export const searchParts         = (q, contextId) => getParts({ q, contextId }).then(r => r?.data ?? r);
+export const searchDocuments     = (q, contextId) => getDocuments({ q, contextId }).then(r => r?.data ?? r);
+export const searchAll           = (q, params)    => search({ q, ...params }).then(r => r?.data ?? r);
+export const getPartBom          = (partId)   => getBomStructure(partId).then(r => r?.data ?? r);
+export const getPartWhereUsed    = (partId)   => getWhereUsed(partId).then(r => r?.data ?? r);
+export const getFolderTree       = (params)   => getFolders(params || {}).then(r => r?.data ?? r);
+export const getEcrById          = (id)       => getChangeRequestById(id).then(r => r?.data ?? r);
+export const updateEcr           = (id, data) => updateChangeRequest(id, data).then(r => r?.data ?? r);
+export const promoteEcr          = (id, data) => promoteChangeRequest(id, data).then(r => r?.data ?? r);
 
 const plmApi = {
-  // Parts
+  // Core Parts
   getParts, getPartById, createPart, updatePart, deletePart,
   checkoutPart, checkinPart, undoCheckoutPart, promotePart, revisePart,
   // BOM
@@ -157,8 +175,13 @@ const plmApi = {
   getDashboardStats, getRecentActivity,
   // AI
   runImpactAnalysis, chatWithAI, getAISuggestions,
-  // Legacy aliases
-  listParts, listMyWorkItems, listEcrs,
+  // ALL Legacy aliases
+  listParts, listMyWorkItems, listEcrs, listFolders, listDocuments,
+  listProducts, listProjects, listChangeTasks, listNotifications,
+  listWorkItems, listTeams, listUsers,
+  searchParts, searchDocuments, searchAll,
+  getPartBom, getPartWhereUsed, getFolderTree,
+  getEcrById, updateEcr, promoteEcr,
 };
 
 export { plmApi };
