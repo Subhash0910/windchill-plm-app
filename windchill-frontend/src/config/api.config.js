@@ -1,9 +1,10 @@
-// VITE_API_URL should be set to the bare backend host, e.g.:
-//   http://localhost:8080          (local dev)
-//   https://windchill-backend.onrender.com  (Render deploy)
-// /api/v1 is always appended here so endpoint strings are correct in all envs.
-const _host = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-const API_BASE_URL = _host.replace(/\/$/, '') + '/api/v1';
+// VITE_API_URL must be the bare origin only (no trailing slash, no /api suffix):
+//   ''                                          (production via nginx proxy)
+//   'http://localhost:8080'                     (local dev direct)
+//   'https://windchill-backend.onrender.com'    (Render deploy)
+// /api/v1 is always appended here.
+const _host = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+const API_BASE_URL = _host + '/api/v1';
 
 export const API_ENDPOINTS = {
   AUTH: {

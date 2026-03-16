@@ -33,7 +33,7 @@ VALUES
 ALTER TABLE users AUTO_INCREMENT = 1000;
 
 -- ----------------------------------------------------------------------------
--- 2. PROJECTS  (insert before products/documents because they FK to projects)
+-- 2. PROJECTS
 -- ----------------------------------------------------------------------------
 INSERT IGNORE INTO projects
     (id, project_code, project_name, description, status,
@@ -126,7 +126,7 @@ VALUES
 ALTER TABLE plm_contexts AUTO_INCREMENT = 1000;
 
 -- ----------------------------------------------------------------------------
--- 6. FOLDERS  (path is NOT NULL; parent_id not parent_folder_id)
+-- 6. FOLDERS
 -- ----------------------------------------------------------------------------
 INSERT IGNORE INTO folders
     (id, context_id, parent_id, name, path,
@@ -141,14 +141,13 @@ VALUES
 ALTER TABLE folders AUTO_INCREMENT = 1000;
 
 -- ----------------------------------------------------------------------------
--- 7. PARTS
+-- 7. PARTS  — lifecycle_state uses UNDER_REVIEW (matches LifecycleStateEnum)
 -- ----------------------------------------------------------------------------
 INSERT IGNORE INTO parts
     (id, master_id, context_id, folder_id, part_number, name, description,
      lifecycle_state, revision, iteration, is_latest,
      created_at, updated_at, created_by, version)
 VALUES
-    -- Context 1 — Mechanical folder
     ( 1, 1,1,1,'ECU-001-A','Engine Control Unit Housing',
       'Aluminum housing for main ECU with integrated thermal management fins',
       'RELEASED','A',1,1, NOW(),NOW(),'admin',0),
@@ -160,8 +159,7 @@ VALUES
       'INWORK','A',1,1,  NOW(),NOW(),'john.doe',0),
     ( 4, 4,1,1,'ECU-004-A','Mounting Bracket Set',
       'Stainless-steel M8 mounting bracket set, 4-bolt pattern, vibration-damped',
-      'INREVIEW','A',1,1, NOW(),NOW(),'john.doe',0),
-    -- Context 1 — Electronic Systems folder
+      'UNDER_REVIEW','A',1,1, NOW(),NOW(),'john.doe',0),
     ( 5, 5,1,2,'ELX-001-A','CAN Bus Controller',
       'Automotive-grade CAN FD controller, ISO 11898-2, 5 Mbps capable',
       'RELEASED','A',1,1, NOW(),NOW(),'john.doe',0),
@@ -170,50 +168,44 @@ VALUES
       'INWORK','A',1,1,  NOW(),NOW(),'john.doe',0),
     ( 7, 7,1,2,'ELX-003-B','Sensor Fusion Unit',
       'Multi-sensor data-fusion processor Rev B — improved latency and accuracy',
-      'INREVIEW','B',2,1, NOW(),NOW(),'john.doe',0),
-    -- Context 1 — Software Modules folder
+      'UNDER_REVIEW','B',2,1, NOW(),NOW(),'john.doe',0),
     ( 8, 8,1,3,'SW-001-A','AUTOSAR BSW Stack',
       'Base Software stack compliant with AUTOSAR Classic 4.4',
       'RELEASED','A',1,1, NOW(),NOW(),'admin',0),
     ( 9, 9,1,3,'SW-002-A','OTA Update Manager',
       'Over-the-air firmware update manager, AES-256 encrypted delta patches',
       'INWORK','A',1,1,  NOW(),NOW(),'admin',0),
-    -- Context 2 — Avionics Hardware folder
     (10,10,2,4,'AVI-001-A','Flight Management Computer',
       'DO-178C DAL-A certified FMC, triple-redundant hot-standby architecture',
       'RELEASED','A',1,1, NOW(),NOW(),'admin',0),
     (11,11,2,4,'AVI-002-A','Inertial Navigation Unit',
       'Ring-laser gyroscope INU, MIL-STD-810G qualified, 0.001 deg/h drift',
       'RELEASED','A',1,1, NOW(),NOW(),'admin',0),
-    -- Context 2 — Navigation Systems folder
     (12,12,2,5,'NAV-001-A','GPS Receiver Module',
       'Multi-constellation GPS/GLONASS/Galileo receiver, ARINC 429 output',
-      'INREVIEW','A',1,1, NOW(),NOW(),'sarah.smith',0);
+      'UNDER_REVIEW','A',1,1, NOW(),NOW(),'sarah.smith',0);
 
 ALTER TABLE parts AUTO_INCREMENT = 1000;
 
 -- ----------------------------------------------------------------------------
--- 8. BOM LINES  (table = bom_lines; column = find_number NOT reference_designator)
+-- 8. BOM LINES
 -- ----------------------------------------------------------------------------
 INSERT IGNORE INTO bom_lines
     (id, parent_part_id, child_part_id, quantity, unit, find_number,
      created_at, updated_at, created_by, version)
 VALUES
-    -- ECU housing assembly
     (1, 1, 2, 1,   'EA', 'PDM-1',  NOW(), NOW(), 'admin', 0),
     (2, 1, 3, 2,   'EA', 'FAN-1',  NOW(), NOW(), 'admin', 0),
     (3, 1, 4, 4,   'EA', 'BKT-1',  NOW(), NOW(), 'admin', 0),
-    -- CAN Bus controller board
     (4, 5, 6, 1,   'EA', 'LDR-1',  NOW(), NOW(), 'admin', 0),
     (5, 5, 7, 1,   'EA', 'SFU-1',  NOW(), NOW(), 'admin', 0),
-    -- Flight Management Computer (triple-redundant INU)
     (6,10,11, 3,   'EA', 'INU-1',  NOW(), NOW(), 'admin', 0),
     (7,10,12, 1,   'EA', 'GPS-1',  NOW(), NOW(), 'admin', 0);
 
 ALTER TABLE bom_lines AUTO_INCREMENT = 1000;
 
 -- ----------------------------------------------------------------------------
--- 9. AUDIT LOGS  (table = audit_logs; columns: entity_type, entity_id, action, actor, details)
+-- 9. AUDIT LOGS
 -- ----------------------------------------------------------------------------
 INSERT IGNORE INTO audit_logs
     (id, entity_type, entity_id, action, actor, details,
@@ -221,9 +213,9 @@ INSERT IGNORE INTO audit_logs
 VALUES
     (1,'PART',  1,'CREATE',  'admin',     'Created ECU-001-A Engine Control Unit Housing', NOW(),NOW(),0),
     (2,'PART',  2,'CREATE',  'john.doe',  'Created ECU-002-A Power Distribution Module',   NOW(),NOW(),0),
-    (3,'PART',  1,'PROMOTE', 'admin',     'Promoted ECU-001-A: INWORK → RELEASED',         NOW(),NOW(),0),
-    (4,'PART',  2,'PROMOTE', 'john.doe',  'Promoted ECU-002-A: INWORK → RELEASED',         NOW(),NOW(),0),
-    (5,'PART', 10,'PROMOTE', 'admin',     'Promoted AVI-001-A: INWORK → RELEASED',         NOW(),NOW(),0),
+    (3,'PART',  1,'PROMOTE', 'admin',     'Promoted ECU-001-A: INWORK -> RELEASED',        NOW(),NOW(),0),
+    (4,'PART',  2,'PROMOTE', 'john.doe',  'Promoted ECU-002-A: INWORK -> RELEASED',        NOW(),NOW(),0),
+    (5,'PART', 10,'PROMOTE', 'admin',     'Promoted AVI-001-A: INWORK -> RELEASED',        NOW(),NOW(),0),
     (6,'PROJECT',1,'CREATE', 'admin',     'Created project PROJ-ECU-003',                  NOW(),NOW(),0),
     (7,'DOCUMENT',3,'CREATE','john.doe',  'Created CAN FD Protocol Specification',         NOW(),NOW(),0),
     (8,'USER',  1,'LOGIN',   'admin',     'Administrator logged in',                       NOW(),NOW(),0);
