@@ -5,6 +5,7 @@ import LifecycleActions from '../../components/plm/LifecycleActions';
 import BomEditor from '../../components/plm/BomEditor';
 import AuditPanel from '../../components/plm/AuditPanel';
 import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
+import InfoPage, { InfoBadge } from '../../components/plm/InfoPage';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import { AuthContext } from '../../context/AuthContext';
@@ -30,24 +31,25 @@ const PartDetailPage = () => {
   const meUsername = auth?.user?.username;
   const meUserId   = auth?.user?.userId;
 
-  const [part,        setPart]        = useState(null);
-  const [partsInCtx,  setPartsInCtx]  = useState([]);
-  const [promotion,   setPromotion]   = useState(null);
+  /* ── state ─────────────────────────────────────────────────────────────── */
+  const [part,             setPart]             = useState(null);
+  const [partsInCtx,       setPartsInCtx]       = useState([]);
+  const [promotion,        setPromotion]        = useState(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [promotionError,   setPromotionError]   = useState(null);
   const [whereUsed,        setWhereUsed]        = useState([]);
   const [whereUsedLoading, setWhereUsedLoading] = useState(false);
   const [whereUsedError,   setWhereUsedError]   = useState(null);
   const [whereUsedLoaded,  setWhereUsedLoaded]  = useState(false);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [saving,   setSaving]   = useState(false);
-  const [coLoading, setCoLoading] = useState(false);
-  const [activeTab,    setActiveTab]    = useState(TAB.STRUCTURE);
-  const [relatedView,  setRelatedView]  = useState(RELATED_VIEW.VERSIONS);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [coLoading,  setCoLoading]  = useState(false);
+  const [activeTab,  setActiveTab]  = useState(TAB.STRUCTURE);
+  const [relatedView, setRelatedView] = useState(RELATED_VIEW.VERSIONS);
   const [edit, setEdit] = useState({ name: '', description: '' });
 
-  /* ── loaders ──────────────────────────────────────────────────────────── */
+  /* ── loaders ────────────────────────────────────────────────────────────── */
   const loadPromotion = async (partId) => {
     if (!partId) { setPromotion(null); return; }
     try {
@@ -102,14 +104,12 @@ const PartDetailPage = () => {
     return () => window.removeEventListener('focus', onFocus);
   }, [id]); // eslint-disable-line
   useEffect(() => {
-    if (!part) return;
-    if (activeTab !== TAB.RELATED) return;
-    if (relatedView !== RELATED_VIEW.WHERE_USED) return;
+    if (!part || activeTab !== TAB.RELATED || relatedView !== RELATED_VIEW.WHERE_USED) return;
     if (whereUsedLoaded || whereUsedLoading) return;
     loadWhereUsed(part.id);
   }, [activeTab, relatedView, part?.id, whereUsedLoaded]); // eslint-disable-line
 
-  /* ── standard actions ─────────────────────────────────────────────────── */
+  /* ── standard actions ───────────────────────────────────────────────────── */
   const save = async () => {
     if (!part) return;
     try {
@@ -125,8 +125,7 @@ const PartDetailPage = () => {
     try {
       setSaving(true); setError(null);
       const updated = await plmApi.promotePart(part.id, target);
-      setPart(updated);
-      await loadPromotion(part.id);
+      setPart(updated); await loadPromotion(part.id);
     } catch (e) { setError(e.response?.data?.message || e.message || 'Failed to promote');
     } finally { setSaving(false); }
   };
@@ -141,7 +140,7 @@ const PartDetailPage = () => {
     } finally { setSaving(false); }
   };
 
-  /* ── checkout actions (Phase 0) ───────────────────────────────────────── */
+  /* ── checkout actions ───────────────────────────────────────────────────── */
   const checkOut = async () => {
     try {
       setCoLoading(true); setError(null);
@@ -154,10 +153,7 @@ const PartDetailPage = () => {
   const checkIn = async () => {
     try {
       setCoLoading(true); setError(null);
-      const committed = await plmApi.checkInPart(part.id, {
-        name:        edit.name,
-        description: edit.description,
-      });
+      const committed = await plmApi.checkInPart(part.id, { name: edit.name, description: edit.description });
       setPart(committed);
     } catch (e) { setError(e.response?.data?.message || e.message || 'Check in failed');
     } finally { setCoLoading(false); }
@@ -191,19 +187,20 @@ const PartDetailPage = () => {
     });
   }, [partsInCtx, part]);
 
-  /* ── render guards ─────────────────────────────────────────────────────── */
+  /* ── render guards ──────────────────────────────────────────────────────── */
   if (loading)        return <div className="plm-muted">Loading part…</div>;
   if (error && !part) return <div className="plm-error">{error}</div>;
   if (!part)          return <div className="plm-muted">Part not found.</div>;
 
-  /* ── helpers ── */
+  /* ── helpers ────────────────────────────────────────────────────────────── */
   const checkedOutByMe    = part.checkedOutBy && part.checkedOutBy === meUsername;
   const checkedOutByOther = part.checkedOutBy && part.checkedOutBy !== meUsername;
   const canCheckOut       = !part.checkedOutBy
     && part.lifecycleState !== 'RELEASED'
     && part.lifecycleState !== 'OBSOLETE';
-  const versionLabel      = `${part.revision}.${part.iteration}`;
+  const versionLabel = `${part.revision}.${part.iteration}`;
 
+  /* ── sub-components ─────────────────────────────────────────────────────── */
   const TabButton = ({ tab, children }) => (
     <button
       type="button"
@@ -235,10 +232,6 @@ const PartDetailPage = () => {
     );
   };
 
-  const pr         = promotion?.request;
-  const prItems    = promotion?.workItems  || [];
-  const prComments = promotion?.comments   || [];
-
   const StatusPill = ({ value }) => {
     const v  = String(value || '').toUpperCase();
     const bg =
@@ -252,88 +245,71 @@ const PartDetailPage = () => {
     );
   };
 
+  const pr         = promotion?.request;
+  const prItems    = promotion?.workItems  || [];
+  const prComments = promotion?.comments   || [];
+
   const openWorkItemInWorklist = (workItemId) => {
     if (!workItemId) return;
     navigate(`/plm/worklist?workItemId=${encodeURIComponent(String(workItemId))}`);
   };
 
-  /* ── render ────────────────────────────────────────────────────────────── */
+  /* ── InfoPage attribute rows ────────────────────────────────────────────── */
+  const infoRows = [
+    { label: 'Part Number',   value: part.partNumber,      mono: true  },
+    { label: 'Version',       value: versionLabel,         mono: true  },
+    { label: 'State',         value: part.lifecycleState               },
+    { label: 'Latest',        value: part.isLatest ? 'Yes' : 'No'      },
+    { label: 'Checked Out By',value: part.checkedOutBy || '—'          },
+    { label: 'Context ID',    value: String(part.contextId || '—'),    mono: true },
+    { label: 'Master ID',     value: part.masterId ? String(part.masterId) : '—', mono: true },
+    { label: 'Folder',        value: part.folderName || (part.folderId ? String(part.folderId) : '—') },
+  ];
+
+  const headerActions = [
+    <Button key="refresh" variant="secondary" size="sm" onClick={load}                    disabled={loading || saving}>Refresh</Button>,
+    <Button key="back"    variant="secondary" size="sm" onClick={() => navigate('/plm/parts')}>Back</Button>,
+  ];
+
+  /* ── render ─────────────────────────────────────────────────────────────── */
   return (
     <div>
-      {/* ── Page header ── */}
-      <div className="detail-head">
-        <div>
-          <div className="page-title">Part</div>
-          <div className="page-sub">
-            <span className="mono">{part.partNumber}</span>
-            {' — '}
-            <span>{part.name}</span>
-            {' — '}
-            <span className="mono">{versionLabel}</span>
-            <span style={{ marginLeft: 8 }}>
-              <StatusPill value={part.lifecycleState} />
-            </span>
-            {part.checkedOutBy && (
-              <span style={{
-                marginLeft: 8, fontSize: 12, fontWeight: 700,
-                color: checkedOutByMe ? '#0f4d6d' : '#dc2626',
-              }}>
-                {checkedOutByMe ? '🔒 Checked out by you' : `🔒 Checked out by ${part.checkedOutBy}`}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button variant="secondary" size="sm" onClick={load}                    disabled={loading || saving}>Refresh</Button>
-          <Button variant="secondary" size="sm" onClick={() => navigate('/plm/parts')}>Back</Button>
-        </div>
-      </div>
+      {/* ── InfoPage header: type label + title + attr grid ── */}
+      <InfoPage
+        title="Part"
+        subtitle={`${part.partNumber} — ${part.name}`}
+        badge={{ label: part.lifecycleState, variant: part.lifecycleState }}
+        actions={headerActions}
+        rows={infoRows}
+      />
 
-      <div className="detail-grid">
-        {/* ── LEFT: Details + Checkout bar + Promotion ── */}
+      {/* ── Two-column workspace grid ── */}
+      <div className="detail-grid" style={{ marginTop: 16 }}>
+
+        {/* ── LEFT: Checkout bar + Edit fields + Lifecycle + Promotion ── */}
         <div className="detail-card">
-          <div className="card-title">Details</div>
+          <div className="card-title">Edit &amp; Actions</div>
 
-          {/* ── Checkout / Checkin action bar ── */}
+          {/* Checkout action bar */}
           <div className="co-bar">
             {canCheckOut && (
-              <Button
-                variant="primary" size="sm"
-                onClick={checkOut}
-                disabled={coLoading || saving}
-              >
+              <Button variant="primary" size="sm" onClick={checkOut} disabled={coLoading || saving}>
                 🔒 Check Out
               </Button>
             )}
-
             {checkedOutByMe && (
               <>
-                <Button
-                  variant="primary" size="sm"
-                  onClick={checkIn}
-                  disabled={coLoading || saving}
-                >
-                  ✅ Check In
-                </Button>
-                <Button
-                  variant="secondary" size="sm"
-                  onClick={undoCheckOut}
-                  disabled={coLoading || saving}
-                >
-                  ↩ Undo Checkout
-                </Button>
+                <Button variant="primary"    size="sm" onClick={checkIn}     disabled={coLoading || saving}>✅ Check In</Button>
+                <Button variant="secondary"  size="sm" onClick={undoCheckOut} disabled={coLoading || saving}>↩ Undo</Button>
               </>
             )}
-
             {checkedOutByOther && (
-              <span className="co-locked-msg">
-                🔒 Locked by <strong>{part.checkedOutBy}</strong>
-              </span>
+              <span className="co-locked-msg">🔒 Locked by <strong>{part.checkedOutBy}</strong></span>
             )}
-
             <span className="co-version-label">Version: <strong>{versionLabel}</strong></span>
           </div>
 
+          {/* Editable fields */}
           <div className="form-row">
             <label>Name</label>
             <input
@@ -355,7 +331,11 @@ const PartDetailPage = () => {
 
           {/* Lifecycle toolbar */}
           <div className="detail-bar">
-            <LifecycleActions state={part.lifecycleState} onPromote={promote} disabled={saving || checkedOutByOther} />
+            <LifecycleActions
+              state={part.lifecycleState}
+              onPromote={promote}
+              disabled={saving || checkedOutByOther}
+            />
             <div className="revise-area">
               <Button
                 variant="primary" size="sm"
@@ -364,15 +344,17 @@ const PartDetailPage = () => {
               >
                 Revise
               </Button>
-              <div className="hint">Revise is enabled only when RELEASED.</div>
+              <div className="hint">Revise enabled only when RELEASED.</div>
             </div>
           </div>
 
           <div className="detail-save">
-            <Button variant="secondary" size="sm" onClick={save} disabled={saving || checkedOutByOther}>Save</Button>
+            <Button variant="secondary" size="sm" onClick={save} disabled={saving || checkedOutByOther}>
+              Save
+            </Button>
           </div>
 
-          {error && <div className="plm-error">{error}</div>}
+          {error && <div className="plm-error" style={{ marginTop: 8 }}>{error}</div>}
 
           {/* ── Promotion panel ── */}
           <div style={{ marginTop: 14, borderTop: '1px solid #eef2f7', paddingTop: 12 }}>
@@ -382,7 +364,9 @@ const PartDetailPage = () => {
                 {promotionLoading
                   ? <span className="plm-muted">Loading…</span>
                   : (pr?.status ? <StatusPill value={pr.status} /> : null)}
-                <Button variant="secondary" size="sm" onClick={() => loadPromotion(part.id)} disabled={promotionLoading}>Reload</Button>
+                <Button variant="secondary" size="sm" onClick={() => loadPromotion(part.id)} disabled={promotionLoading}>
+                  Reload
+                </Button>
               </div>
             </div>
 
@@ -390,7 +374,7 @@ const PartDetailPage = () => {
 
             {!promotionLoading && !promotionError && !pr && (
               <div className="plm-muted" style={{ marginTop: 8 }}>
-                No promotion request found. Use the lifecycle buttons above to submit for review.
+                No promotion request found. Use lifecycle buttons above to submit for review.
               </div>
             )}
 
@@ -406,6 +390,7 @@ const PartDetailPage = () => {
                   </div>
                 )}
 
+                {/* Approver table */}
                 <div style={{ overflowX: 'auto', marginTop: 10 }}>
                   <table className="parts-table" style={{ width: '100%' }}>
                     <thead>
@@ -424,18 +409,21 @@ const PartDetailPage = () => {
                             <td className="mono">{w.dueAt       ? String(w.dueAt)       : '—'}</td>
                             <td className="mono">{w.completedAt ? String(w.completedAt) : '—'}</td>
                             <td style={{ textAlign: 'right' }}>
-                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>Open in Worklist</Button>
+                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>
+                                Open in Worklist
+                              </Button>
                             </td>
                           </tr>
                         );
                       })}
                       {prItems.length === 0 && (
-                        <tr><td colSpan={5} className="plm-muted" style={{ padding: 12 }}>No approver work items found.</td></tr>
+                        <tr><td colSpan={5} className="plm-muted" style={{ padding: 12 }}>No approver work items.</td></tr>
                       )}
                     </tbody>
                   </table>
                 </div>
 
+                {/* Review comments */}
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>Review Comments</div>
                   {prComments.length === 0 && <div className="plm-muted">No comments yet.</div>}
@@ -458,7 +446,7 @@ const PartDetailPage = () => {
           </div>
         </div>
 
-        {/* ── RIGHT: Tabs ── */}
+        {/* ── RIGHT: Tab workspace ── */}
         <div className="detail-card">
           <div className="card-title" style={{
             display: 'flex', justifyContent: 'space-between',
@@ -473,6 +461,7 @@ const PartDetailPage = () => {
             </div>
           </div>
 
+          {/* Structure (BOM) */}
           {activeTab === TAB.STRUCTURE && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 8 }}>BOM structure editor (parent → child lines).</div>
@@ -480,6 +469,7 @@ const PartDetailPage = () => {
             </div>
           )}
 
+          {/* History (Audit) */}
           {activeTab === TAB.HISTORY && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 8 }}>Audit trail for this exact version.</div>
@@ -487,6 +477,7 @@ const PartDetailPage = () => {
             </div>
           )}
 
+          {/* Related Objects */}
           {activeTab === TAB.RELATED && (
             <div className="related-split">
               <div className="related-nav">
@@ -494,6 +485,7 @@ const PartDetailPage = () => {
                 <RelatedNavItem view={RELATED_VIEW.WHERE_USED} label="Where Used" count={whereUsedLoaded ? (whereUsed || []).length : null} loading={whereUsedLoading} />
               </div>
               <div className="related-panel">
+
                 {relatedView === RELATED_VIEW.VERSIONS && (
                   <div>
                     <div style={{ marginBottom: 10 }}>
@@ -515,7 +507,11 @@ const PartDetailPage = () => {
                               <td>{v.isLatest ? '✅' : '—'}</td>
                               <td>{v.checkedOutBy ? <span title={v.checkedOutBy}>🔒</span> : '—'}</td>
                               <td style={{ textAlign: 'right' }}>
-                                <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${v.id}`)} disabled={String(v.id) === String(part.id)}>
+                                <Button
+                                  variant="secondary" size="sm"
+                                  onClick={() => navigate(`/plm/parts/${v.id}`)}
+                                  disabled={String(v.id) === String(part.id)}
+                                >
                                   {String(v.id) === String(part.id) ? 'Current' : 'Open'}
                                 </Button>
                               </td>
@@ -566,6 +562,7 @@ const PartDetailPage = () => {
             </div>
           )}
 
+          {/* Attachments */}
           {activeTab === TAB.ATTACHMENTS && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 12 }}>Files and documents attached to this part.</div>
