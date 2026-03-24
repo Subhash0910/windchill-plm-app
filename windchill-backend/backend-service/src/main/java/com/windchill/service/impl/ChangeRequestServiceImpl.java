@@ -7,7 +7,7 @@ import com.windchill.domain.entity.*;
 import com.windchill.repository.*;
 import com.windchill.service.IChangeRequestService;
 import com.windchill.service.INotificationService;
-import com.windchill.service.IPartService;
+import com.windchill.service.plm.IPartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
