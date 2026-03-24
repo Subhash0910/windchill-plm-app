@@ -83,7 +83,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 @media (max-width: 960px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -166,6 +166,8 @@
 .kpi-card--green  .kpi-value { color: #16a34a; }
 .kpi-card--purple { border-left-color: #8b5cf6; }
 .kpi-card--purple .kpi-value { color: #7c3aed; }
+.kpi-card--red    { border-left-color: #ef4444; }
+.kpi-card--red    .kpi-value { color: #dc2626; }
 
 /* ── Body Layout ────────────────────────────────────── */
 .dashboard-body {
@@ -190,6 +192,11 @@
 .dash-section--alert {
   border-left: 4px solid #f59e0b;
   background: #fffbeb;
+}
+
+.dash-section--ecr-alert {
+  border-left: 4px solid #8b5cf6;
+  background: #f5f3ff;
 }
 
 .section-title {
@@ -286,6 +293,59 @@
 .qa-btn--purple { background: #f5f3ff; border-color: #ddd6fe; }
 .qa-btn--green  { background: #f0fdf4; border-color: #bbf7d0; }
 
+/* ── Recent ECRs ────────────────────────────────────── */
+.ecr-recent-list { display: flex; flex-direction: column; gap: 8px; }
+
+.ecr-recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  gap: 10px;
+}
+.ecr-recent-row:hover { background: #f8fafc; border-color: #e2e8f0; }
+
+.ecr-recent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.ecr-recent-info strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f4d6d;
+  font-family: 'Courier New', Courier, monospace;
+}
+.ecr-recent-info span {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ecr-recent-pills {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ecr-recent-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ── Recent Parts ───────────────────────────────────── */
 .recent-parts-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -369,6 +429,20 @@
   transition: background 0.15s;
 }
 .btn-amber:hover { background: #d97706; }
+
+.btn-purple {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-purple:hover { background: #6d28d9; }
+
 .btn-sm { padding: 7px 14px; font-size: 12px; }
 
 .link-btn {
