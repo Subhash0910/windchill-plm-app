@@ -12,9 +12,11 @@ import com.windchill.service.plm.security.PlmAclService;
 import com.windchill.service.workflow.PromotionWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +32,10 @@ public class PartServiceImpl implements IPartService {
     private final IAuditService auditService;
     private final PlmAclService acl;
     private final PromotionWorkflowService promotionWorkflowService;
+
+    // ─────────────────────────────────────────────────────────────
+    // CRUD
+    // ─────────────────────────────────────────────────────────────
 
     @Override
     public Part createPart(Part part) {
@@ -51,7 +57,6 @@ public class PartServiceImpl implements IPartService {
         part.setIsLatest(true);
 
         Part saved = partRepository.save(part);
-        // First save: set masterId to self id
         if (saved.getMasterId() == null) {
             saved.setMasterId(saved.getId());
             saved = partRepository.save(saved);
@@ -88,27 +93,18 @@ public class PartServiceImpl implements IPartService {
             log.warn("searchPartsByNumber called with empty query");
             return List.of();
         }
-        
         log.info("Searching parts by number: {}", query);
-        
-        // Find all parts matching the query
         List<Part> allMatches = partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query);
-        
-        // Filter by context access - only return parts user has access to
-        List<Part> accessible = allMatches.stream()
-            .filter(part -> {
-                try {
-                    acl.requireContextMember(part.getContextId());
-                    return true;
-                } catch (Exception e) {
-                    // User doesn't have access to this context
-                    return false;
-                }
-            })
-            .collect(Collectors.toList());
-        
-        log.info("Found {} accessible parts matching '{}'", accessible.size(), query);
-        return accessible;
+        return allMatches.stream()
+                .filter(part -> {
+                    try {
+                        acl.requireContextMember(part.getContextId());
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -121,6 +117,10 @@ public class PartServiceImpl implements IPartService {
         }
         if (part.getLifecycleState() == LifecycleStateEnum.OBSOLETE) {
             throw new BusinessException("OBSOLETE parts are immutable.");
+        }
+        // Prevent edits to a part that is checked out by someone else
+        if (part.getCheckedOutBy() != null && !part.getCheckedOutBy().equals(currentUsername())) {
+            throw new BusinessException("Part is checked out by " + part.getCheckedOutBy() + ". Cannot edit.");
         }
 
         if (details.getName() != null) part.setName(details.getName());
@@ -137,10 +137,8 @@ public class PartServiceImpl implements IPartService {
         Part part = getPart(id);
         LifecycleStateEnum from = part.getLifecycleState();
 
-        // For INWORK -> UNDERREVIEW, start a Promotion Request workflow (ALL approvers)
         if (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDERREVIEW) {
             promotionWorkflowService.startPromotionRequest(part.getId(), LifecycleStateEnum.UNDERREVIEW);
-            // reload latest state
             return getPart(part.getId());
         }
 
@@ -182,7 +180,6 @@ public class PartServiceImpl implements IPartService {
             throw new BusinessException("Only RELEASED parts can be revised");
         }
 
-        // Mark current as not latest
         released.setIsLatest(false);
         partRepository.save(released);
 
@@ -206,16 +203,12 @@ public class PartServiceImpl implements IPartService {
     @Override
     @Transactional(readOnly = true)
     public List<Part> whereUsed(Long partId) {
-        Part child = getPart(partId); // enforces context-member ACL
-
+        Part child = getPart(partId);
         List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(partId);
         if (parentIds == null || parentIds.isEmpty()) {
             return List.of();
         }
-
         List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentIds);
-
-        // Defensive filter: ensure same context
         List<Part> filtered = new ArrayList<>();
         for (Part p : parents) {
             if (p.getContextId() != null && p.getContextId().equals(child.getContextId())) {
@@ -230,26 +223,161 @@ public class PartServiceImpl implements IPartService {
         Part part = getPart(id);
         acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
 
-        // Check if part is used in any BOMs as a child (prevent orphaned references)
         List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(id);
         if (parentIds != null && !parentIds.isEmpty()) {
             throw new BusinessException("Cannot delete part. It is used in " + parentIds.size() + " BOM(s). Remove from BOMs first.");
         }
 
-        // Delete associated BOM lines where this part is the parent
         bomLineRepository.deleteByParentPartId(id);
-
-        // Delete the part
         partRepository.deleteById(id);
-        
         auditService.log(PlmEntityTypeEnum.PART, id, "DELETE", "Part deleted: " + part.getPartNumber());
         log.info("Part deleted: id={} partNumber={}", id, part.getPartNumber());
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CHECK OUT / CHECK IN  (Windchill Phase 0)
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Check Out logic:
+     *  1. Validate: part must be INWORK, not already checked out by someone else.
+     *  2. Mark current iteration isLatest=false.
+     *  3. Clone the part into a new working iteration (iteration + 1), lock to current user.
+     *  4. Audit log.
+     */
+    @Override
+    public Part checkOut(Long partId) {
+        Part current = getPart(partId);
+        acl.requireContextRole(current.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+
+        if (current.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            throw new BusinessException("Cannot check out a RELEASED part. Use Revise to create a new revision.");
+        }
+        if (current.getLifecycleState() == LifecycleStateEnum.OBSOLETE) {
+            throw new BusinessException("Cannot check out an OBSOLETE part.");
+        }
+        if (current.getCheckedOutBy() != null) {
+            if (current.getCheckedOutBy().equals(currentUsername())) {
+                throw new BusinessException("Part " + versionLabel(current) + " is already checked out by you.");
+            }
+            throw new BusinessException("Part " + versionLabel(current) + " is already checked out by " + current.getCheckedOutBy() + ".");
+        }
+
+        // Mark current as no longer latest
+        current.setIsLatest(false);
+        partRepository.save(current);
+
+        // Create the new working iteration
+        Part working = new Part();
+        working.setMasterId(current.getMasterId());
+        working.setContextId(current.getContextId());
+        working.setFolderId(current.getFolderId());
+        working.setPartNumber(current.getPartNumber());
+        working.setName(current.getName());
+        working.setDescription(current.getDescription());
+        working.setLifecycleState(LifecycleStateEnum.INWORK);
+        working.setRevision(current.getRevision());
+        working.setIteration(current.getIteration() + 1);
+        working.setIsLatest(true);
+        working.setCheckedOutBy(currentUsername());
+
+        Part saved = partRepository.save(working);
+        auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKOUT",
+                "Checked out by " + currentUsername() + " → " + versionLabel(saved));
+        log.info("Part checked out: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
+        return saved;
+    }
+
+    /**
+     * Check In logic:
+     *  1. Validate: part must be checked out by the calling user.
+     *  2. Apply any edits (name, description) passed in.
+     *  3. Clear the checkedOutBy lock — iteration stays, this is now the committed working copy.
+     *  4. Audit log.
+     */
+    @Override
+    public Part checkIn(Long partId, String name, String description) {
+        Part working = getPart(partId);
+        acl.requireContextRole(working.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+
+        if (working.getCheckedOutBy() == null) {
+            throw new BusinessException("Part " + versionLabel(working) + " is not checked out.");
+        }
+        if (!working.getCheckedOutBy().equals(currentUsername())) {
+            throw new BusinessException("Part " + versionLabel(working) + " is checked out by " + working.getCheckedOutBy() + ". Only they can check it in.");
+        }
+
+        if (name != null && !name.isBlank()) working.setName(name);
+        if (description != null && !description.isBlank()) working.setDescription(description);
+        working.setCheckedOutBy(null);
+        working.setIsLatest(true);
+
+        Part saved = partRepository.save(working);
+        auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKIN",
+                "Checked in by " + currentUsername() + " → " + versionLabel(saved));
+        log.info("Part checked in: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
+        return saved;
+    }
+
+    /**
+     * Undo Check Out logic:
+     *  1. Validate: part must be checked out by caller (or caller is ADMIN/MANAGER).
+     *  2. Delete the working iteration row.
+     *  3. Restore isLatest=true on the previous iteration.
+     */
+    @Override
+    public Part undoCheckOut(Long partId) {
+        Part working = getPart(partId);
+        acl.requireContextRole(working.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
+
+        if (working.getCheckedOutBy() == null) {
+            throw new BusinessException("Part " + versionLabel(working) + " is not checked out.");
+        }
+        boolean isOwner = working.getCheckedOutBy().equals(currentUsername());
+        boolean isPrivileged = acl.hasContextRole(working.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+        if (!isOwner && !isPrivileged) {
+            throw new BusinessException("Only the checkout owner or an ADMIN/MANAGER can undo this checkout.");
+        }
+
+        // Find the previous iteration (same master, same revision, iteration - 1)
+        int previousIter = working.getIteration() - 1;
+        if (previousIter < 1) {
+            throw new BusinessException("No previous iteration to restore.");
+        }
+
+        partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
+                .ifPresent(prev -> {
+                    prev.setIsLatest(true);
+                    partRepository.save(prev);
+                });
+
+        String label = versionLabel(working);
+        partRepository.deleteById(working.getId());
+        auditService.log(PlmEntityTypeEnum.PART, partId, "UNDO_CHECKOUT",
+                "Checkout undone for " + label + " by " + currentUsername());
+        log.info("Undo checkout: {} {} by {}", working.getPartNumber(), label, currentUsername());
+
+        // Return the restored previous iteration
+        return partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
+                .orElseThrow(() -> new ResourceNotFoundException("Part", "previousIteration", previousIter));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────
+
+    /** Returns Windchill-standard version label e.g. "A.1", "B.3" */
+    public static String versionLabel(Part p) {
+        return p.getRevision() + "." + p.getIteration();
+    }
+
+    private String currentUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     private String incrementRevision(String current) {
         if (current == null || current.isBlank()) return "A";
         String c = current.trim().toUpperCase();
-        // Simple A..Z then AA..AZ etc
         int i = c.length() - 1;
         char[] chars = c.toCharArray();
         while (i >= 0) {
