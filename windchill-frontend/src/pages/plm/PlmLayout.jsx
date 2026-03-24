@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../components/organisms/Header/Header';
 import ContextSwitcher from '../../components/plm/ContextSwitcher';
-import ContextTeamPanel from '../../components/plm/ContextTeamPanel';
+import Navigator from '../../components/plm/Navigator';
 import FolderTree from '../../components/plm/FolderTree';
 import AIChatBot from '../../components/ai/AIChatBot';
 import './PlmLayout.css';
@@ -10,7 +10,6 @@ import './PlmLayout.css';
 const PlmLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedPart,    setSelectedPart]    = useState(null);
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
 
   const isDashboard     = location.pathname.startsWith('/dashboard');
@@ -85,8 +84,10 @@ const PlmLayout = () => {
 
   return (
     <div className="plm-shell">
+      {/* ── Navy top bar ── */}
       <Header title="Workspace" />
 
+      {/* ── Secondary tab nav ── */}
       <div className="plm-topnav">
         <div className="plm-topnav-inner">
           <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">🏠 Dashboard</Link>
@@ -104,10 +105,11 @@ const PlmLayout = () => {
         </div>
       </div>
 
+      {/* ── Body: Navigator + main content ── */}
       <div className="plm-body">
         <aside className="plm-left">
           <ContextSwitcher />
-          <ContextTeamPanel />
+          <Navigator />
           <FolderTree />
         </aside>
         <main className="plm-main">
@@ -117,7 +119,6 @@ const PlmLayout = () => {
 
       <AIChatBot
         onAction={handleChatAction}
-        selectedPart={selectedPart}
         currentPage={getCurrentPage()}
       />
     </div>

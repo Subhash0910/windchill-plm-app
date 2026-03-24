@@ -37,6 +37,12 @@ export const plmApi = {
   revisePart:   async (id)       => { const r = await api.post(`/api/v1/plm/parts/${id}/revise`); return r.data.data; },
   getWhereUsed: async (id)       => { const r = await api.get(`/api/v1/plm/parts/${id}/where-used`); return r.data.data; },
 
+  // ── Parts — Checkout / Checkin (Phase 0) ───────────────────────────────
+  checkOutPart:    async (id)            => { const r = await api.post(`/api/v1/plm/parts/${id}/checkout`);         return r.data.data; },
+  checkInPart:     async (id, body = {}) => { const r = await api.post(`/api/v1/plm/parts/${id}/checkin`, body);    return r.data.data; },
+  undoCheckOut:    async (id)            => { const r = await api.post(`/api/v1/plm/parts/${id}/undo-checkout`);    return r.data.data; },
+  getVersionLabel: async (id)            => { const r = await api.get(`/api/v1/plm/parts/${id}/version-label`);    return r.data.data; },
+
   // ── Dashboard ─────────────────────────────────────────────────────────────
   getDashboardStats: async (contextId) => { const r = await api.get('/api/v1/plm/dashboard/stats', { params: { contextId } }); return r.data.data; },
 
@@ -67,7 +73,7 @@ export const plmApi = {
   addBomLine:    async (pid, p)  => { const r = await api.post(`/api/v1/plm/parts/${pid}/bom`, p); return r.data.data; },
   deleteBomLine: async (id)      => { const r = await api.delete(`/api/v1/plm/bom-lines/${id}`); return r.data.data; },
 
-  // ── Audit (per-entity + global feed) ──────────────────────────────────────
+  // ── Audit ──────────────────────────────────────────────────────────────
   getAudit: async (entityType, entityId) => {
     const r = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });
     return r.data.data;
@@ -77,46 +83,43 @@ export const plmApi = {
     return r.data?.data ?? [];
   },
 
-  // ── Changes (ECR / ECN) — Backend in v2, safe stubs prevent 404 crashes ──
-  // listEcrs returns [] so Dashboard Promise.allSettled silently gets empty array
-  // createEcr throws a friendly message shown in ChangesHomePage (which is now Coming Soon)
-  createEcr:     async ()  => { throw new Error('ECR module coming in v2 — use the Worklist page for part approvals today'); },
-  submitEcr:     async ()  => { throw new Error('ECR module coming in v2'); },
-  listEcrs:      async ()  => [],
-  getEcrDetails: async ()  => null,
-  getEcrInsights:async ()  => null,
-  analyzeEcr:    async ()  => null,
+  // ── Changes (ECR / ECN) — stubs, v2 ──────────────────────────────────
+  createEcr:      async () => { throw new Error('ECR module coming in v2 — use Worklist for part approvals today'); },
+  submitEcr:      async () => { throw new Error('ECR module coming in v2'); },
+  listEcrs:       async () => [],
+  getEcrDetails:  async () => null,
+  getEcrInsights: async () => null,
+  analyzeEcr:     async () => null,
 
-  // ── Change Tasks — wired to WorkItems (fully live backend) ───────────────
-  // WorkItemController @ /api/v1/plm/workitems handles all three endpoints
+  // ── Change Tasks ─────────────────────────────────────────────────────
   getMyChangeTasks:  async ()             => { const r = await api.get('/api/v1/plm/workitems/my'); return r.data.data ?? []; },
   approveChangeTask: async (id, comment)  => { const r = await api.post(`/api/v1/plm/workitems/${id}/approve`, comment ? { comment } : null); return r.data.data; },
   rejectChangeTask:  async (id, comment)  => { const r = await api.post(`/api/v1/plm/workitems/${id}/reject`, { comment: comment || '' }); return r.data.data; },
 
   // ── Documents ───────────────────────────────────────────────────────────
-  getAllDocuments:       async ()      => { const r = await api.get('/api/v1/documents'); return r.data?.data ?? []; },
-  getDocumentById:      async (id)    => { const r = await api.get(`/api/v1/documents/${id}`); return r.data?.data; },
-  searchDocuments:      async (kw)    => { const r = await api.get('/api/v1/documents/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
-  createDocument:       async (p)     => { const r = await api.post('/api/v1/documents', p); return r.data?.data; },
-  updateDocument:       async (id, p) => { const r = await api.put(`/api/v1/documents/${id}`, p); return r.data?.data; },
-  deleteDocument:       async (id)    => { const r = await api.delete(`/api/v1/documents/${id}`); return r.data?.data; },
-  getDocumentsByProject:async (pid)   => { const r = await api.get(`/api/v1/documents/project/${pid}`); return r.data?.data ?? []; },
+  getAllDocuments:        async ()      => { const r = await api.get('/api/v1/documents'); return r.data?.data ?? []; },
+  getDocumentById:       async (id)    => { const r = await api.get(`/api/v1/documents/${id}`); return r.data?.data; },
+  searchDocuments:       async (kw)    => { const r = await api.get('/api/v1/documents/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
+  createDocument:        async (p)     => { const r = await api.post('/api/v1/documents', p); return r.data?.data; },
+  updateDocument:        async (id, p) => { const r = await api.put(`/api/v1/documents/${id}`, p); return r.data?.data; },
+  deleteDocument:        async (id)    => { const r = await api.delete(`/api/v1/documents/${id}`); return r.data?.data; },
+  getDocumentsByProject: async (pid)   => { const r = await api.get(`/api/v1/documents/project/${pid}`); return r.data?.data ?? []; },
 
   // ── Products ────────────────────────────────────────────────────────────
-  getAllProducts:       async ()      => { const r = await api.get('/api/v1/products'); return r.data?.data ?? []; },
-  getProductById:      async (id)    => { const r = await api.get(`/api/v1/products/${id}`); return r.data?.data; },
-  searchProducts:      async (kw)    => { const r = await api.get('/api/v1/products/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
-  createProduct:       async (p)     => { const r = await api.post('/api/v1/products', p); return r.data?.data; },
-  updateProduct:       async (id, p) => { const r = await api.put(`/api/v1/products/${id}`, p); return r.data?.data; },
-  deleteProduct:       async (id)    => { const r = await api.delete(`/api/v1/products/${id}`); return r.data?.data; },
-  getProductsByProject:async (pid)   => { const r = await api.get(`/api/v1/products/project/${pid}`); return r.data?.data ?? []; },
+  getAllProducts:        async ()      => { const r = await api.get('/api/v1/products'); return r.data?.data ?? []; },
+  getProductById:       async (id)    => { const r = await api.get(`/api/v1/products/${id}`); return r.data?.data; },
+  searchProducts:       async (kw)    => { const r = await api.get('/api/v1/products/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
+  createProduct:        async (p)     => { const r = await api.post('/api/v1/products', p); return r.data?.data; },
+  updateProduct:        async (id, p) => { const r = await api.put(`/api/v1/products/${id}`, p); return r.data?.data; },
+  deleteProduct:        async (id)    => { const r = await api.delete(`/api/v1/products/${id}`); return r.data?.data; },
+  getProductsByProject: async (pid)   => { const r = await api.get(`/api/v1/products/project/${pid}`); return r.data?.data ?? []; },
 
   // ── Projects ────────────────────────────────────────────────────────────
-  getAllProjects:      async ()              => { const r = await api.get('/api/v1/projects'); return r.data?.data ?? []; },
-  getProjectById:     async (id)            => { const r = await api.get(`/api/v1/projects/${id}`); return r.data?.data; },
-  searchProjects:     async (kw)            => { const r = await api.get('/api/v1/projects/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
-  createProject:      async (p)             => { const r = await api.post('/api/v1/projects', p); return r.data?.data; },
-  updateProject:      async (id, p)         => { const r = await api.put(`/api/v1/projects/${id}`, p); return r.data?.data; },
-  updateProjectProgress: async (id, progress) => { const r = await api.put(`/api/v1/projects/${id}/progress`, null, { params: { progress } }); return r.data?.data; },
-  deleteProject:      async (id)            => { const r = await api.delete(`/api/v1/projects/${id}`); return r.data?.data; },
+  getAllProjects:         async ()                => { const r = await api.get('/api/v1/projects'); return r.data?.data ?? []; },
+  getProjectById:        async (id)              => { const r = await api.get(`/api/v1/projects/${id}`); return r.data?.data; },
+  searchProjects:        async (kw)              => { const r = await api.get('/api/v1/projects/search', { params: { keyword: kw } }); return r.data?.data ?? []; },
+  createProject:         async (p)               => { const r = await api.post('/api/v1/projects', p); return r.data?.data; },
+  updateProject:         async (id, p)           => { const r = await api.put(`/api/v1/projects/${id}`, p); return r.data?.data; },
+  updateProjectProgress: async (id, progress)    => { const r = await api.put(`/api/v1/projects/${id}/progress`, null, { params: { progress } }); return r.data?.data; },
+  deleteProject:         async (id)              => { const r = await api.delete(`/api/v1/projects/${id}`); return r.data?.data; },
 };
