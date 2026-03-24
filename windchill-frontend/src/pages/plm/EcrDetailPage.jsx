@@ -1,706 +1,422 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
+import InfoPage from '../../components/plm/InfoPage';
+import AuditPanel from '../../components/plm/AuditPanel';
 import { plmApi } from '../../services/plmApi';
-import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
+import { AuthContext } from '../../context/AuthContext';
 import './EcrDetailPage.css';
 
-const TAB = {
-  DETAILS: 'DETAILS',
-  TASKS: 'TASKS',
-  INSIGHTS: 'INSIGHTS',
+const PRIORITY_META = {
+  CRITICAL: { label: 'Critical', cls: 'priority-critical' },
+  HIGH:     { label: 'High',     cls: 'priority-high'     },
+  NORMAL:   { label: 'Normal',   cls: 'priority-normal'   },
+  LOW:      { label: 'Low',      cls: 'priority-low'      },
 };
 
-const ROLE_MODE = {
-  APPROVERS: 'APPROVERS',
-  ALL: 'ALL',
+const STATUS_META = {
+  DRAFT:     { label: 'Draft',      cls: 'ecr-status-draft'     },
+  SUBMITTED: { label: 'Submitted',  cls: 'ecr-status-submitted' },
+  IN_REVIEW: { label: 'In Review',  cls: 'ecr-status-inreview'  },
+  APPROVED:  { label: 'Approved',   cls: 'ecr-status-approved'  },
+  REJECTED:  { label: 'Rejected',   cls: 'ecr-status-rejected'  },
+  CLOSED:    { label: 'Closed',     cls: 'ecr-status-closed'    },
 };
 
-const APPROVER_ROLES = new Set(['ADMIN', 'MANAGER', 'APPROVER']);
-
-const safeJson = (raw) => {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+const StatusPill = ({ value }) => {
+  const m = STATUS_META[value] || { label: value, cls: 'ecr-status-draft' };
+  return <span className={`ecr-status-pill ${m.cls}`}>{m.label}</span>;
 };
 
-const Pill = ({ value, type }) => {
-  const v = String(value || '').toUpperCase();
-  const base = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '2px 10px',
-    borderRadius: 999,
-    fontWeight: 900,
-    fontSize: 12,
-    border: '1px solid transparent',
-  };
-
-  if (type === 'risk') {
-    const bg = v.includes('HIGH') ? '#fee2e2' : v.includes('MED') ? '#ffedd5' : '#dcfce7';
-    const bd = v.includes('HIGH') ? '#fecaca' : v.includes('MED') ? '#fed7aa' : '#bbf7d0';
-    const tx = v.includes('HIGH') ? '#991b1b' : v.includes('MED') ? '#9a3412' : '#166534';
-    return <span style={{ ...base, background: bg, borderColor: bd, color: tx }}>{v || '-'}</span>;
-  }
-
-  // default: status
-  return <span style={{ ...base, background: '#e6f3fb', borderColor: '#b6d8ea', color: '#0f4d6d' }}>{v || '-'}</span>;
+const PriorityPill = ({ value }) => {
+  const m = PRIORITY_META[value] || { label: value, cls: 'priority-normal' };
+  return <span className={`priority-pill ${m.cls}`}>{m.label}</span>;
 };
 
-const isReleased = (rootState) => String(rootState || '').toUpperCase() === 'RELEASED';
+const TABS = { DETAILS: 'DETAILS', ORDER_ITEMS: 'ORDER_ITEMS', NOTICE: 'NOTICE', AUDIT: 'AUDIT' };
 
 const EcrDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { selectedContextId } = useContext(PlmWorkspaceContext);
+  const { user } = useContext(AuthContext);
+  const me = user?.username;
 
-  const [activeTab, setActiveTab] = useState(TAB.INSIGHTS);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const [details, setDetails] = useState(null);
-  const [insights, setInsights] = useState(null);
-
-  const [recomputeLoading, setRecomputeLoading] = useState(false);
-
-  // Reviewer picker (Windchill-ish)
-  const [memberLoading, setMemberLoading] = useState(false);
-  const [members, setMembers] = useState([]);
-  const [roleMode, setRoleMode] = useState(ROLE_MODE.APPROVERS);
-  const [reviewers, setReviewers] = useState([]); // usernames
-  const [reviewerQuery, setReviewerQuery] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [reviewersCsv, setReviewersCsv] = useState('');
-
-  const dropdownRef = useRef(null);
-
-  const ecr = details?.ecr;
-  const tasks = details?.tasks || [];
-  const ecn = details?.ecn;
-
-  const impact = insights?.impact;
-  const report = impact?.report;
-  const factors = useMemo(() => safeJson(report?.factorsJson), [report?.factorsJson]);
-
-  const isDraft = useMemo(() => String(ecr?.status || '').toUpperCase() === 'DRAFT', [ecr?.status]);
+  const [ecr,          setEcr]          = useState(null);
+  const [orderItems,   setOrderItems]   = useState([]);
+  const [notice,       setNotice]       = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [actionLoading,setActionLoading]= useState(false);
+  const [comment,      setComment]      = useState('');
+  const [showComment,  setShowComment]  = useState(false);
+  const [pendingAction,setPendingAction]= useState(null); // 'approve'|'reject'
+  const [activeTab,    setActiveTab]    = useState(TABS.DETAILS);
+  const [releasingEcn, setReleasingEcn] = useState(false);
 
   const load = async () => {
-    setLoading(true);
-    setError('');
     try {
-      const [d, i] = await Promise.all([
-        plmApi.getEcrDetails(id),
-        plmApi.getEcrInsights(id),
-      ]);
-      setDetails(d || null);
-      setInsights(i || null);
+      setLoading(true); setError(null);
+      const data = await plmApi.getEcr(id);
+      setEcr(data);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load ECR');
-      setDetails(null);
-      setInsights(null);
-    } finally {
-      setLoading(false);
-    }
+      setError(e.response?.data?.message || e.message || 'Failed to load ECR');
+    } finally { setLoading(false); }
   };
 
-  const loadMembers = async () => {
-    if (!selectedContextId) {
-      setMembers([]);
+  const loadOrderItems = async () => {
+    try {
+      const items = await plmApi.getEcrOrderItems(id);
+      setOrderItems(items || []);
+    } catch { setOrderItems([]); }
+  };
+
+  const loadNotice = async () => {
+    try {
+      const n = await plmApi.getEcrNotice(id);
+      setNotice(n || null);
+    } catch { setNotice(null); }
+  };
+
+  useEffect(() => { load(); }, [id]); // eslint-disable-line
+  useEffect(() => {
+    if (!ecr) return;
+    if (activeTab === TABS.ORDER_ITEMS) loadOrderItems();
+    if (activeTab === TABS.NOTICE)      loadNotice();
+  }, [activeTab, ecr?.id]); // eslint-disable-line
+
+  const doAction = async (action, withComment = false) => {
+    if (withComment && !showComment) {
+      setPendingAction(action);
+      setComment('');
+      setShowComment(true);
       return;
     }
-    setMemberLoading(true);
     try {
-      const data = await plmApi.listContextMembers(selectedContextId);
-      setMembers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setMembers([]);
-    } finally {
-      setMemberLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  useEffect(() => {
-    if (!isDraft) return;
-    loadMembers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedContextId, isDraft]);
-
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(e.target)) {
-        // click outside
-        setReviewerQuery('');
+      setActionLoading(true); setError(null);
+      let updated;
+      if      (action === 'submit')       updated = await plmApi.submitEcr(id);
+      else if (action === 'start-review') updated = await plmApi.startEcrReview(id);
+      else if (action === 'approve')      updated = await plmApi.approveEcr(id, comment);
+      else if (action === 'reject')       updated = await plmApi.rejectEcr(id, comment);
+      else if (action === 'close')        updated = await plmApi.closeEcr(id);
+      else if (action === 'reopen')       updated = await plmApi.reopenEcr(id);
+      setEcr(updated);
+      setShowComment(false);
+      setComment('');
+      setPendingAction(null);
+      if (action === 'approve') {
+        await loadOrderItems();
+        await loadNotice();
+        setActiveTab(TABS.NOTICE);
       }
-    };
-    document.addEventListener('click', onDocClick);
-    return () => document.removeEventListener('click', onDocClick);
-  }, []);
-
-  const recompute = async () => {
-    setRecomputeLoading(true);
-    setError('');
-    try {
-      await plmApi.analyzeEcr(id);
-      const i = await plmApi.getEcrInsights(id);
-      setInsights(i || null);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Recompute failed');
-    } finally {
-      setRecomputeLoading(false);
-    }
+      setError(e.response?.data?.message || e.message || 'Action failed');
+    } finally { setActionLoading(false); }
   };
 
-  const normalizedReviewers = useMemo(() => {
-    const seen = new Set();
-    const out = [];
-    (reviewers || []).forEach((r) => {
-      const t = String(r || '').trim();
-      if (!t) return;
-      const k = t.toLowerCase();
-      if (seen.has(k)) return;
-      seen.add(k);
-      out.push(t);
-    });
-    return out;
-  }, [reviewers]);
-
-  const memberByUsername = useMemo(() => {
-    const map = new Map();
-    (members || []).forEach((m) => {
-      const u = String(m.username || '').trim();
-      if (!u) return;
-      map.set(u.toLowerCase(), m);
-    });
-    return map;
-  }, [members]);
-
-  const reviewerPreview = useMemo(() => {
-    return normalizedReviewers.map((u) => {
-      const m = memberByUsername.get(String(u).toLowerCase());
-      return {
-        username: u,
-        inTeam: !!m,
-        role: m?.role,
-        fullName: m?.fullName,
-        email: m?.email,
-      };
-    });
-  }, [normalizedReviewers, memberByUsername]);
-
-  const parseCsv = (csv) => {
-    const raw = String(csv || '')
-      .split(/[,\n\r]+/g)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const seen = new Set();
-    const out = [];
-    raw.forEach((r) => {
-      const k = r.toLowerCase();
-      if (seen.has(k)) return;
-      seen.add(k);
-      out.push(r);
-    });
-    return out;
-  };
-
-  const addReviewer = (username) => {
-    const t = String(username || '').trim();
-    if (!t) return;
-    setReviewers((prev) => [...(prev || []), t]);
-    setReviewerQuery('');
-  };
-
-  const removeReviewer = (username) => {
-    const k = String(username || '').toLowerCase();
-    setReviewers((prev) => (prev || []).filter((r) => String(r || '').toLowerCase() !== k));
-  };
-
-  const filteredMembers = useMemo(() => {
-    const q = String(reviewerQuery || '').trim().toLowerCase();
-    if (!q) return [];
-
-    const already = new Set(normalizedReviewers.map((r) => r.toLowerCase()));
-
-    return (members || [])
-      .filter((m) => {
-        const role = String(m.role || '').toUpperCase();
-        if (roleMode === ROLE_MODE.APPROVERS && !APPROVER_ROLES.has(role)) return false;
-
-        const u = String(m.username || '').toLowerCase();
-        const e = String(m.email || '').toLowerCase();
-        const f = String(m.fullName || '').toLowerCase();
-        const hit = u.includes(q) || e.includes(q) || f.includes(q);
-        if (!hit) return false;
-        if (already.has(u)) return false;
-        return true;
-      })
-      .slice(0, 8);
-  }, [members, reviewerQuery, normalizedReviewers, roleMode]);
-
-  const canAddFreeText = useMemo(() => {
-    const t = String(reviewerQuery || '').trim();
-    if (!t) return false;
-    const already = new Set(normalizedReviewers.map((r) => r.toLowerCase()));
-    return !already.has(t.toLowerCase());
-  }, [reviewerQuery, normalizedReviewers]);
-
-  const submit = async () => {
-    const adv = showAdvanced ? parseCsv(reviewersCsv) : [];
-    const finalReviewers = [...normalizedReviewers, ...adv];
-
-    if (!finalReviewers.length) {
-      setError('Add at least one reviewer (use the picker or CSV).');
-      return;
-    }
-
-    setSubmitLoading(true);
-    setError('');
+  const releaseNotice = async () => {
+    if (!notice) return;
     try {
-      await plmApi.submitEcr(id, { reviewers: finalReviewers });
-      await load();
-      setActiveTab(TAB.TASKS);
+      setReleasingEcn(true); setError(null);
+      const released = await plmApi.releaseEcn(notice.id);
+      setNotice(released);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Submit failed');
-    } finally {
-      setSubmitLoading(false);
-    }
+      setError(e.response?.data?.message || e.message || 'Failed to release ECN');
+    } finally { setReleasingEcn(false); }
   };
 
-  const TabBtn = ({ tab, children }) => (
+  if (loading)        return <div className="plm-muted">Loading ECR…</div>;
+  if (error && !ecr)  return <div className="plm-error">{error}</div>;
+  if (!ecr)           return <div className="plm-muted">ECR not found.</div>;
+
+  const status  = ecr.status;
+  const isOwner = ecr.createdBy === me;
+
+  // ── InfoPage attribute rows ──
+  const infoRows = [
+    { label: 'ECR Number',   value: ecr.changeNumber,                              mono: true },
+    { label: 'Priority',     value: ecr.priority                                               },
+    { label: 'Status',       value: ecr.status                                                 },
+    { label: 'Created By',   value: ecr.createdBy,                                 mono: true },
+    { label: 'Created',      value: ecr.createdAt ? new Date(ecr.createdAt).toLocaleString() : '—' },
+    { label: 'Submitted By', value: ecr.submittedBy  || '—',                       mono: true },
+    { label: 'Reviewed By',  value: ecr.reviewedBy   || '—',                       mono: true },
+    { label: 'Context ID',   value: String(ecr.contextId || '—'),                  mono: true },
+    { label: 'ECN Linked',   value: ecr.changeNoticeId ? `ECN #${ecr.changeNoticeId}` : '—' },
+  ];
+
+  const headerActions = [
+    <Button key="refresh" variant="secondary" size="sm" onClick={load} disabled={loading || actionLoading}>Refresh</Button>,
+    <Button key="back"    variant="secondary" size="sm" onClick={() => navigate('/plm/changes')}>Back</Button>,
+  ];
+
+  const TabBtn = ({ tab, label }) => (
     <button
       type="button"
-      className={activeTab === tab ? 'ecr-tab ecr-tab-active' : 'ecr-tab'}
       onClick={() => setActiveTab(tab)}
+      style={{
+        padding: '6px 10px', borderRadius: 8,
+        border: '1px solid #e5e7eb',
+        background: activeTab === tab ? '#0f4d6d' : '#fff',
+        color:      activeTab === tab ? '#fff'    : '#111827',
+        cursor: 'pointer', fontWeight: 600, fontSize: 13,
+      }}
     >
-      {children}
+      {label}
     </button>
   );
 
-  if (loading) return <div className="plm-muted">Loading ECR…</div>;
-  if (error && !ecr) return <div className="plm-error">{error}</div>;
-  if (!ecr) return <div className="plm-muted">ECR not found.</div>;
-
-  const title = ecr.title || 'Untitled change';
-
-  // Score explanation (aligned with backend):
-  const impactedParents = Number(factors?.impactedParentsCount ?? 0);
-  const releasedParents = Number(factors?.releasedParentsCount ?? 0);
-  const maxDepth = Number(factors?.maxDepth ?? 0);
-  const rootState = factors?.rootLifecycleState;
-  const rootPenalty = isReleased(rootState) ? 20 : 0;
-  const structural = impactedParents * 4 + maxDepth * 8;
-  const releasedPenalty = releasedParents * 15;
-  const approxTotal = Math.min(100, Math.max(0, structural + releasedPenalty + rootPenalty));
-
-  const showDropdown = !!reviewerQuery.trim() && (filteredMembers.length > 0 || canAddFreeText);
-  const unknownReviewersCount = reviewerPreview.filter((r) => !r.inTeam).length;
-
   return (
-    <div className="ecr-page">
-      <div className="ecr-head">
-        <div>
-          <div className="ecr-kicker">Engineering Change Request</div>
-          <div className="ecr-title-row">
-            <div className="ecr-title">{ecr.number || `ECR-${String(ecr.id).padStart(6, '0')}`}</div>
-            <Pill value={ecr.status} />
+    <div>
+      {/* ── InfoPage header ── */}
+      <InfoPage
+        title="Engineering Change Request"
+        subtitle={`${ecr.changeNumber} — ${ecr.title}`}
+        badge={{ label: ecr.status, variant: ecr.status }}
+        actions={headerActions}
+        rows={infoRows}
+      />
+
+      {error && <div className="plm-error" style={{ margin: '8px 0' }}>{error}</div>}
+
+      {/* ── Two-column grid ── */}
+      <div className="ecr-detail-grid">
+
+        {/* ── LEFT: Lifecycle action bar + description ── */}
+        <div className="ecr-detail-card">
+          <div className="card-title">Lifecycle &amp; Actions</div>
+
+          {/* Action bar */}
+          <div className="ecr-action-bar">
+            {status === 'DRAFT' && isOwner && (
+              <Button variant="primary" size="sm" onClick={() => doAction('submit')} disabled={actionLoading}>
+                📤 Submit for Review
+              </Button>
+            )}
+            {status === 'SUBMITTED' && (
+              <Button variant="primary" size="sm" onClick={() => doAction('start-review')} disabled={actionLoading}>
+                🔍 Start Review
+              </Button>
+            )}
+            {(status === 'IN_REVIEW' || status === 'SUBMITTED') && (
+              <>
+                <Button variant="primary" size="sm" onClick={() => doAction('approve', true)} disabled={actionLoading}>
+                  ✅ Approve
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => doAction('reject', true)} disabled={actionLoading}>
+                  ❌ Reject
+                </Button>
+              </>
+            )}
+            {(status === 'APPROVED' || status === 'REJECTED') && (
+              <Button variant="secondary" size="sm" onClick={() => doAction('close')} disabled={actionLoading}>
+                🔒 Close
+              </Button>
+            )}
+            {status === 'REJECTED' && isOwner && (
+              <Button variant="primary" size="sm" onClick={() => doAction('reopen')} disabled={actionLoading}>
+                ↩ Reopen
+              </Button>
+            )}
+            <span className="ecr-action-status">
+              <StatusPill value={status} />
+            </span>
           </div>
-          <div className="ecr-sub">{title}</div>
-        </div>
 
-        <div className="ecr-actions">
-          <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes')}>Back</Button>
-          <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>My change tasks</Button>
-          <Button variant="secondary" size="sm" onClick={load} disabled={loading}>Refresh</Button>
-          <Button variant="primary" size="sm" onClick={recompute} disabled={recomputeLoading}>
-            {recomputeLoading ? 'Recomputing…' : 'Recompute impact'}
-          </Button>
-        </div>
-      </div>
-
-      {error ? <div className="plm-error">{error}</div> : null}
-
-      <div className="ecr-tabs">
-        <TabBtn tab={TAB.DETAILS}>Details</TabBtn>
-        <TabBtn tab={TAB.TASKS}>Tasks</TabBtn>
-        <TabBtn tab={TAB.INSIGHTS}>Insights</TabBtn>
-      </div>
-
-      {activeTab === TAB.DETAILS && (
-        <div className="ecr-grid">
-          <div className="ecr-card">
-            <div className="ecr-card-title">Summary</div>
-            <div className="ecr-kv">
-              <div className="ecr-k">Created by</div>
-              <div className="ecr-v mono">{ecr.createdBy || '-'}</div>
-              <div className="ecr-k">Context</div>
-              <div className="ecr-v mono">{ecr.contextType || '-'} {ecr.contextId ? `(${ecr.contextId})` : ''}</div>
-              <div className="ecr-k">Updated</div>
-              <div className="ecr-v mono">{ecr.updatedAt ? String(ecr.updatedAt) : '-'}</div>
-            </div>
-          </div>
-
-          <div className="ecr-card">
-            <div className="ecr-card-title">Description</div>
-            <div className="ecr-text">{ecr.description || <span className="plm-muted">No description.</span>}</div>
-          </div>
-
-          {isDraft ? (
-            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
-              <div className="ecr-card-title">Submit for review</div>
-              <div className="plm-muted" style={{ marginBottom: 10 }}>
-                Pick reviewers from the context team (search by name/username/email), then submit.
+          {/* Comment input for approve/reject */}
+          {showComment && (
+            <div className="ecr-comment-box">
+              <label>{pendingAction === 'approve' ? '✅ Approval comment (optional)' : '❌ Rejection reason (required for traceability)'}</label>
+              <textarea
+                className="plm-textarea"
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                rows={3}
+                placeholder={pendingAction === 'approve' ? 'Notes on approval…' : 'Explain why this ECR is being rejected…'}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <Button
+                  variant={pendingAction === 'approve' ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => doAction(pendingAction)}
+                  disabled={actionLoading || (pendingAction === 'reject' && !comment.trim())}
+                >
+                  {actionLoading ? 'Processing…' : (pendingAction === 'approve' ? 'Confirm Approve' : 'Confirm Reject')}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => { setShowComment(false); setPendingAction(null); setComment(''); }}>
+                  Cancel
+                </Button>
               </div>
+            </div>
+          )}
 
-              <div className="rvp" ref={dropdownRef}>
-                <div className="rvp-top">
-                  <div className="rvp-label">Reviewers</div>
-                  <div className="rvp-filter">
-                    <button
-                      type="button"
-                      className={roleMode === ROLE_MODE.APPROVERS ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
-                      onClick={() => setRoleMode(ROLE_MODE.APPROVERS)}
-                      title="Recommended: pick only roles that typically approve changes"
-                    >
-                      Approvers only
-                    </button>
-                    <button
-                      type="button"
-                      className={roleMode === ROLE_MODE.ALL ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
-                      onClick={() => setRoleMode(ROLE_MODE.ALL)}
-                    >
-                      All team
-                    </button>
-                  </div>
+          {/* Resolution info */}
+          {ecr.resolutionComment && (
+            <div className="ecr-resolution">
+              <div className="ecr-resolution-label">
+                {status === 'APPROVED' ? '✅ Approval note' : status === 'REJECTED' ? '❌ Rejection reason' : 'Resolution'}
+              </div>
+              <div className="ecr-resolution-text">{ecr.resolutionComment}</div>
+              {ecr.reviewedAt && (
+                <div className="plm-muted" style={{ marginTop: 4, fontSize: 11 }}>
+                  by <span className="mono">{ecr.reviewedBy}</span> · {new Date(ecr.reviewedAt).toLocaleString()}
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="rvp-chips">
-                  {normalizedReviewers.map((r) => (
-                    <button key={r} type="button" className="rvp-chip" onClick={() => removeReviewer(r)} title="Remove">
-                      <span className="mono">{r}</span>
-                      <span className="rvp-x">×</span>
-                    </button>
-                  ))}
-                  {normalizedReviewers.length === 0 ? (
-                    <span className="plm-muted">No reviewers selected.</span>
-                  ) : null}
-                </div>
+          {/* Description + Reason */}
+          <div style={{ marginTop: 14 }}>
+            <div className="ecr-section-label">Description</div>
+            <div className="ecr-text-block">{ecr.description || <span className="plm-muted">No description.</span>}</div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div className="ecr-section-label">Reason / Justification</div>
+            <div className="ecr-text-block">{ecr.reason || <span className="plm-muted">No reason provided.</span>}</div>
+          </div>
 
-                <div className="rvp-inputRow">
-                  <input
-                    className="plm-input"
-                    value={reviewerQuery}
-                    onChange={(e) => setReviewerQuery(e.target.value)}
-                    placeholder={memberLoading ? 'Loading team…' : (selectedContextId ? 'Search reviewer…' : 'Select a context to search members…')}
-                    disabled={!selectedContextId || memberLoading}
-                  />
-                  <Button variant="secondary" size="sm" onClick={loadMembers} disabled={!selectedContextId || memberLoading}>
-                    {memberLoading ? 'Loading…' : 'Reload'}
-                  </Button>
-                </div>
-
-                {showDropdown ? (
-                  <div className="rvp-dd">
-                    {filteredMembers.map((m) => (
-                      <button
-                        key={m.userId || m.username}
-                        type="button"
-                        className="rvp-item"
-                        onClick={() => addReviewer(m.username)}
-                      >
-                        <div className="rvp-main">
-                          <div className="rvp-u mono">{m.username}</div>
-                          <div className="rvp-sub">{m.fullName || m.email || ''}</div>
-                        </div>
-                        <div className="rvp-tag">{m.role || 'VIEWER'}</div>
-                      </button>
-                    ))}
-
-                    {canAddFreeText ? (
-                      <button
-                        type="button"
-                        className="rvp-item rvp-item-add"
-                        onClick={() => addReviewer(reviewerQuery.trim())}
-                      >
-                        <div className="rvp-main">
-                          <div className="rvp-u mono">Add “{reviewerQuery.trim()}”</div>
-                          <div className="rvp-sub">Not found in team list (still allowed)</div>
-                        </div>
-                        <div className="rvp-tag">Manual</div>
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div className="rvp-preview">
-                  <div className="rvp-preview-head">
-                    <div className="rvp-preview-title">Selected ({normalizedReviewers.length})</div>
-                    {unknownReviewersCount > 0 ? (
-                      <div className="rvp-warn">{unknownReviewersCount} not in team</div>
-                    ) : null}
-                  </div>
-
-                  {normalizedReviewers.length === 0 ? (
-                    <div className="plm-muted">Add reviewers to see a preview.</div>
-                  ) : (
-                    <div className="rvp-preview-list">
-                      {reviewerPreview.map((r) => (
-                        <div key={r.username} className={r.inTeam ? 'rvp-prev-row' : 'rvp-prev-row rvp-prev-row-warn'}>
-                          <div className="rvp-prev-main">
-                            <div className="mono" style={{ fontWeight: 950 }}>{r.username}</div>
-                            <div className="rvp-prev-sub">{r.fullName || r.email || (r.inTeam ? '' : 'Not found in current team')}</div>
-                          </div>
-                          <div className="rvp-tag">{r.role || (r.inTeam ? 'VIEWER' : 'Manual')}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rvp-advRow">
-                  <button type="button" className="rvp-link" onClick={() => setShowAdvanced((v) => !v)}>
-                    {showAdvanced ? 'Hide advanced CSV' : 'Advanced: paste CSV'}
+          {/* Impacted Parts list */}
+          <div style={{ marginTop: 14, borderTop: '1px solid #eef0f7', paddingTop: 10 }}>
+            <div className="ecr-section-label">Impacted Parts ({(ecr.impactedPartIds || []).length})</div>
+            {(ecr.impactedPartIds || []).length === 0 ? (
+              <div className="plm-muted">No parts specified.</div>
+            ) : (
+              <div className="ecr-part-id-list">
+                {(ecr.impactedPartIds || []).map(pid => (
+                  <button
+                    key={pid}
+                    type="button"
+                    className="ecr-part-id-chip"
+                    onClick={() => navigate(`/plm/parts/${pid}`)}
+                    title={`Open Part #${pid}`}
+                  >
+                    Part #{pid}
                   </button>
-                </div>
-
-                {showAdvanced ? (
-                  <div className="rvp-adv">
-                    <textarea
-                      className="plm-input"
-                      rows={3}
-                      value={reviewersCsv}
-                      onChange={(e) => setReviewersCsv(e.target.value)}
-                      placeholder="Example: senior1, senior2"
-                    />
-                  </div>
-                ) : null}
-
-                <div className="ecr-submit-actions" style={{ marginTop: 10 }}>
-                  <Button variant="primary" size="sm" onClick={submit} disabled={submitLoading}>
-                    {submitLoading ? 'Submitting…' : 'Submit ECR'}
-                  </Button>
-                </div>
-
-                <div className="plm-muted" style={{ marginTop: 8 }}>
-                  Tip: reviewers must match real login usernames. Matching is case-insensitive.
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {ecn ? (
-            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
-              <div className="ecr-card-title">Resulting ECN</div>
-              <div className="ecr-kv">
-                <div className="ecr-k">ECN</div>
-                <div className="ecr-v mono">{ecn.number || `ECN-${String(ecn.id).padStart(6, '0')}`}</div>
-                <div className="ecr-k">Status</div>
-                <div className="ecr-v"><Pill value={ecn.status} /></div>
-                <div className="ecr-k">Created by</div>
-                <div className="ecr-v mono">{ecn.createdBy || '-'}</div>
-              </div>
-              <div className="plm-muted" style={{ marginTop: 8 }}>Implementation task will appear in “My change tasks”.</div>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {activeTab === TAB.TASKS && (
-        <div className="ecr-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-            <div>
-              <div className="ecr-card-title">Review tasks</div>
-              <div className="plm-muted" style={{ marginBottom: 10 }}>Reviewer tasks created on submit (and auto-routing if risk is high).</div>
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>Open my tasks</Button>
-          </div>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table className="ecr-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Type</th>
-                  <th>Assignee</th>
-                  <th>Decision</th>
-                  <th>Created</th>
-                  <th>Decided</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((t) => (
-                  <tr key={t.id}>
-                    <td className="mono">{t.id}</td>
-                    <td>{t.type}</td>
-                    <td className="mono">{t.assignee}</td>
-                    <td>{t.decision}</td>
-                    <td className="mono">{t.createdAt ? String(t.createdAt) : '-'}</td>
-                    <td className="mono">{t.decidedAt ? String(t.decidedAt) : '-'}</td>
-                  </tr>
                 ))}
-                {tasks.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>No tasks found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {activeTab === TAB.INSIGHTS && (
-        <div className="ecr-insights">
-          <div className="ecr-grid">
-            <div className="ecr-card">
-              <div className="ecr-card-title">Impact</div>
-              {!report ? (
-                <div className="plm-muted">No impact report available yet. Click “Recompute impact” or submit the ECR.</div>
-              ) : (
-                <>
-                  <div className="ecr-impact-top">
-                    <div>
-                      <div className="plm-muted">Risk</div>
-                      <div style={{ marginTop: 4 }}><Pill value={report.riskLevel} type="risk" /></div>
-                    </div>
-                    <div>
-                      <div className="plm-muted">Score</div>
-                      <div className="ecr-score">{report.score}</div>
-                    </div>
-                  </div>
-
-                  <div className="ecr-mini">
-                    <div className="ecr-mini-k">Impacted parents</div>
-                    <div className="ecr-mini-v mono">{factors?.impactedParentsCount ?? '-'}</div>
-                    <div className="ecr-mini-k">Released parents</div>
-                    <div className="ecr-mini-v mono">{factors?.releasedParentsCount ?? '-'}</div>
-                    <div className="ecr-mini-k">Max depth</div>
-                    <div className="ecr-mini-v mono">{factors?.maxDepth ?? '-'}</div>
-                    <div className="ecr-mini-k">Root state</div>
-                    <div className="ecr-mini-v mono">{factors?.rootLifecycleState ?? '-'}</div>
-                  </div>
-
-                  <div className="ecr-explain">
-                    <div className="ecr-explain-title">How the score is calculated</div>
-                    <div className="plm-muted" style={{ marginBottom: 8 }}>Simple heuristic (0–100) to estimate blast radius + release risk.</div>
-                    <div className="ecr-explain-row">
-                      <div className="plm-muted">Structural impact</div>
-                      <div className="mono">{impactedParents}×4 + {maxDepth}×8 = {structural}</div>
-                      <div className="plm-muted">Released parents penalty</div>
-                      <div className="mono">{releasedParents}×15 = {releasedPenalty}</div>
-                      <div className="plm-muted">Root released penalty</div>
-                      <div className="mono">{isReleased(rootState) ? '+20 (root is RELEASED)' : '+0'}</div>
-                      <div className="plm-muted">Approx total</div>
-                      <div className="mono">{structural} + {releasedPenalty} + {rootPenalty} = {approxTotal} (clamped to 0..100)</div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 10 }}>
-                    <div className="plm-muted" style={{ marginBottom: 6 }}>Impacted objects (where-used parents)</div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="ecr-table">
-                        <thead>
-                          <tr>
-                            <th>Object</th>
-                            <th>Relation</th>
-                            <th>Depth</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(impact?.items || []).slice(0, 25).map((it) => (
-                            <tr key={it.id || `${it.objectType}-${it.objectId}-${it.depth}`}
-                            >
-                              <td className="mono">{it.objectType}:{it.objectId}</td>
-                              <td>{it.relation}</td>
-                              <td className="mono">{it.depth}</td>
-                            </tr>
-                          ))}
-                          {(impact?.items || []).length === 0 && (
-                            <tr>
-                              <td colSpan={3} className="plm-muted" style={{ padding: 12 }}>No impacted items.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                    {(impact?.items || []).length > 25 ? (
-                      <div className="plm-muted" style={{ marginTop: 8 }}>Showing first 25 items.</div>
-                    ) : null}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="ecr-card">
-              <div className="ecr-card-title">Routing decision</div>
-              {!insights?.route ? (
-                <div className="plm-muted">No route decision recorded for this report.</div>
-              ) : (
-                <>
-                  <div className="ecr-kv">
-                    <div className="ecr-k">Risk</div>
-                    <div className="ecr-v"><Pill value={insights.route.riskLevel} type="risk" /></div>
-                    <div className="ecr-k">Added reviewers</div>
-                    <div className="ecr-v mono">{insights.route.addedReviewersCsv || '-'}</div>
-                    <div className="ecr-k">Rules</div>
-                    <div className="ecr-v mono">{insights.route.appliedRulesJson || '-'}</div>
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    <div className="plm-muted" style={{ marginBottom: 6 }}>Explanation</div>
-                    <div className="ecr-text">{insights.route.explanation || '-'}</div>
-                  </div>
-                </>
-              )}
+        {/* ── RIGHT: Tabs ── */}
+        <div className="ecr-detail-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+            <div className="card-title" style={{ marginBottom: 0 }}>Details</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <TabBtn tab={TABS.DETAILS}     label="Info" />
+              <TabBtn tab={TABS.ORDER_ITEMS} label="Change Order" />
+              <TabBtn tab={TABS.NOTICE}      label="ECN" />
+              <TabBtn tab={TABS.AUDIT}       label="Audit" />
             </div>
           </div>
 
-          <div className="ecr-card">
-            <div className="ecr-card-title">Similar changes</div>
-            <div className="plm-muted" style={{ marginBottom: 10 }}>Based on overlap between impacted parent sets (graph similarity).</div>
+          {/* INFO tab */}
+          {activeTab === TABS.DETAILS && (
+            <div className="ecr-info-grid">
+              <div className="ecr-info-row"><span className="ecr-info-label">Number</span>    <span className="mono">{ecr.changeNumber}</span></div>
+              <div className="ecr-info-row"><span className="ecr-info-label">Status</span>    <StatusPill value={ecr.status} /></div>
+              <div className="ecr-info-row"><span className="ecr-info-label">Priority</span>  <PriorityPill value={ecr.priority} /></div>
+              <div className="ecr-info-row"><span className="ecr-info-label">Created By</span><span className="mono">{ecr.createdBy}</span></div>
+              <div className="ecr-info-row"><span className="ecr-info-label">Created</span>   <span>{ecr.createdAt ? new Date(ecr.createdAt).toLocaleString() : '—'}</span></div>
+              {ecr.submittedBy && <div className="ecr-info-row"><span className="ecr-info-label">Submitted By</span><span className="mono">{ecr.submittedBy}</span></div>}
+              {ecr.submittedAt && <div className="ecr-info-row"><span className="ecr-info-label">Submitted At</span><span>{new Date(ecr.submittedAt).toLocaleString()}</span></div>}
+              {ecr.reviewedBy  && <div className="ecr-info-row"><span className="ecr-info-label">Reviewed By</span> <span className="mono">{ecr.reviewedBy}</span></div>}
+              {ecr.reviewedAt  && <div className="ecr-info-row"><span className="ecr-info-label">Reviewed At</span> <span>{new Date(ecr.reviewedAt).toLocaleString()}</span></div>}
+              {ecr.closedBy    && <div className="ecr-info-row"><span className="ecr-info-label">Closed By</span>   <span className="mono">{ecr.closedBy}</span></div>}
+              {ecr.closedAt    && <div className="ecr-info-row"><span className="ecr-info-label">Closed At</span>   <span>{new Date(ecr.closedAt).toLocaleString()}</span></div>}
+              {ecr.changeNoticeId && <div className="ecr-info-row"><span className="ecr-info-label">ECN</span>  <span className="mono">#{ecr.changeNoticeId}</span></div>}
+            </div>
+          )}
 
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ecr-table">
-                <thead>
-                  <tr>
-                    <th>Similar ECR</th>
-                    <th>Score</th>
-                    <th>Reason</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(insights?.similar || []).map((s) => (
-                    <tr key={s.id || `${s.reportId}-${s.similarEcrId}`}
-                    >
-                      <td className="mono">{s.similarEcrId}</td>
-                      <td className="mono">{s.score}</td>
-                      <td>{s.reason}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/changes/ecr/${s.similarEcrId}`)}>Open</Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {(insights?.similar || []).length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="plm-muted" style={{ padding: 12 }}>No similar changes found yet.</td>
-                    </tr>
+          {/* CHANGE ORDER tab */}
+          {activeTab === TABS.ORDER_ITEMS && (
+            <div>
+              <div className="plm-muted" style={{ marginBottom: 10 }}>Parts revised when this ECR was approved.</div>
+              {orderItems.length === 0 ? (
+                <div className="plm-muted">No change order items yet. Approve the ECR to auto-generate them.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="ecr-order-table">
+                    <thead>
+                      <tr>
+                        <th>Original Part</th>
+                        <th>Orig. Rev</th>
+                        <th>New Part</th>
+                        <th>New Rev</th>
+                        <th>Note</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orderItems.map(item => (
+                        <tr key={item.id}>
+                          <td className="mono">{item.originalPartNumber || `#${item.originalPartId}`}</td>
+                          <td>{item.originalRevision || '—'}</td>
+                          <td className="mono">{item.newPartId ? `#${item.newPartId}` : '—'}</td>
+                          <td>{item.newRevision || '—'}</td>
+                          <td>{item.actionNote || '—'}</td>
+                          <td>
+                            {item.newPartId && (
+                              <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${item.newPartId}`)}>Open New</Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ECN tab */}
+          {activeTab === TABS.NOTICE && (
+            <div>
+              {!notice ? (
+                <div className="plm-muted">No Change Notice linked yet. Approve the ECR to auto-generate an ECN.</div>
+              ) : (
+                <div className="ecr-notice-panel">
+                  <div className="ecr-notice-header">
+                    <div>
+                      <div className="ecr-notice-number">{notice.noticeNumber}</div>
+                      <div className="ecr-notice-title">{notice.title}</div>
+                    </div>
+                    <span className={`ecr-status-pill ecr-status-${(notice.status || '').toLowerCase()}`}>{notice.status}</span>
+                  </div>
+
+                  <div className="ecr-notice-body">{notice.summary}</div>
+
+                  <div className="ecr-info-grid" style={{ marginTop: 12 }}>
+                    <div className="ecr-info-row"><span className="ecr-info-label">Created By</span>  <span className="mono">{notice.createdBy}</span></div>
+                    <div className="ecr-info-row"><span className="ecr-info-label">Created At</span>  <span>{notice.createdAt ? new Date(notice.createdAt).toLocaleString() : '—'}</span></div>
+                    {notice.releasedBy && <div className="ecr-info-row"><span className="ecr-info-label">Released By</span><span className="mono">{notice.releasedBy}</span></div>}
+                    {notice.releasedAt && <div className="ecr-info-row"><span className="ecr-info-label">Released At</span><span>{new Date(notice.releasedAt).toLocaleString()}</span></div>}
+                  </div>
+
+                  {notice.status === 'OPEN' && (
+                    <div style={{ marginTop: 14 }}>
+                      <Button variant="primary" size="sm" onClick={releaseNotice} disabled={releasingEcn}>
+                        📢 {releasingEcn ? 'Releasing…' : 'Release ECN'}
+                      </Button>
+                      <div className="plm-muted" style={{ marginTop: 6, fontSize: 12 }}>
+                        Releasing distributes this notice to all stakeholders.
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* AUDIT tab */}
+          {activeTab === TABS.AUDIT && (
+            <div>
+              <div className="plm-muted" style={{ marginBottom: 10 }}>Full audit trail for this ECR.</div>
+              <AuditPanel entityType="CHANGE_REQUEST" entityId={ecr.id} />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

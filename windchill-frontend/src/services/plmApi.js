@@ -83,15 +83,33 @@ export const plmApi = {
     return r.data?.data ?? [];
   },
 
-  // ── Changes (ECR / ECN) — stubs, v2 ──────────────────────────────────
-  createEcr:      async () => { throw new Error('ECR module coming in v2 — use Worklist for part approvals today'); },
-  submitEcr:      async () => { throw new Error('ECR module coming in v2'); },
-  listEcrs:       async () => [],
-  getEcrDetails:  async () => null,
-  getEcrInsights: async () => null,
-  analyzeEcr:     async () => null,
+  // ── Changes (ECR / ECO / ECN) — Phase 2 ─────────────────────────────────
+  listEcrs:          async (contextId, status) => {
+    const params = {};
+    if (contextId) params.contextId = contextId;
+    if (status)    params.status    = status;
+    const r = await api.get('/api/v1/plm/changes', { params });
+    return r.data?.data ?? [];
+  },
+  getEcr:            async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}`); return r.data?.data; },
+  createEcr:         async (body)          => { const r = await api.post('/api/v1/plm/changes', body); return r.data?.data; },
+  submitEcr:         async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/submit`); return r.data?.data; },
+  startEcrReview:    async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/start-review`); return r.data?.data; },
+  approveEcr:        async (id, comment)   => { const r = await api.post(`/api/v1/plm/changes/${id}/approve`, { comment: comment || '' }); return r.data?.data; },
+  rejectEcr:         async (id, comment)   => { const r = await api.post(`/api/v1/plm/changes/${id}/reject`,  { comment: comment || '' }); return r.data?.data; },
+  closeEcr:          async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/close`); return r.data?.data; },
+  reopenEcr:         async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/reopen`); return r.data?.data; },
+  getEcrOrderItems:  async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}/order-items`); return r.data?.data ?? []; },
+  getEcrNotice:      async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}/notice`); return r.data?.data; },
+  listEcns:          async (contextId)     => {
+    const params = {};
+    if (contextId) params.contextId = contextId;
+    const r = await api.get('/api/v1/plm/changes/notices', { params });
+    return r.data?.data ?? [];
+  },
+  releaseEcn:        async (noticeId)      => { const r = await api.post(`/api/v1/plm/changes/notices/${noticeId}/release`); return r.data?.data; },
 
-  // ── Change Tasks ─────────────────────────────────────────────────────
+  // ── Change Tasks (kept for back-compat with Worklist) ────────────────────
   getMyChangeTasks:  async ()             => { const r = await api.get('/api/v1/plm/workitems/my'); return r.data.data ?? []; },
   approveChangeTask: async (id, comment)  => { const r = await api.post(`/api/v1/plm/workitems/${id}/approve`, comment ? { comment } : null); return r.data.data; },
   rejectChangeTask:  async (id, comment)  => { const r = await api.post(`/api/v1/plm/workitems/${id}/reject`, { comment: comment || '' }); return r.data.data; },
