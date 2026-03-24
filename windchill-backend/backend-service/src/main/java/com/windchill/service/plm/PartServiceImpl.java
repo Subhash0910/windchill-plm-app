@@ -118,7 +118,6 @@ public class PartServiceImpl implements IPartService {
         if (part.getLifecycleState() == LifecycleStateEnum.OBSOLETE) {
             throw new BusinessException("OBSOLETE parts are immutable.");
         }
-        // Prevent edits to a part that is checked out by someone else
         if (part.getCheckedOutBy() != null && !part.getCheckedOutBy().equals(currentUsername())) {
             throw new BusinessException("Part is checked out by " + part.getCheckedOutBy() + ". Cannot edit.");
         }
@@ -238,13 +237,6 @@ public class PartServiceImpl implements IPartService {
     // CHECK OUT / CHECK IN  (Windchill Phase 0)
     // ─────────────────────────────────────────────────────────────
 
-    /**
-     * Check Out logic:
-     *  1. Validate: part must be INWORK, not already checked out by someone else.
-     *  2. Mark current iteration isLatest=false.
-     *  3. Clone the part into a new working iteration (iteration + 1), lock to current user.
-     *  4. Audit log.
-     */
     @Override
     public Part checkOut(Long partId) {
         Part current = getPart(partId);
@@ -263,11 +255,9 @@ public class PartServiceImpl implements IPartService {
             throw new BusinessException("Part " + versionLabel(current) + " is already checked out by " + current.getCheckedOutBy() + ".");
         }
 
-        // Mark current as no longer latest
         current.setIsLatest(false);
         partRepository.save(current);
 
-        // Create the new working iteration
         Part working = new Part();
         working.setMasterId(current.getMasterId());
         working.setContextId(current.getContextId());
@@ -283,18 +273,11 @@ public class PartServiceImpl implements IPartService {
 
         Part saved = partRepository.save(working);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKOUT",
-                "Checked out by " + currentUsername() + " → " + versionLabel(saved));
+                "Checked out by " + currentUsername() + " -> " + versionLabel(saved));
         log.info("Part checked out: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
         return saved;
     }
 
-    /**
-     * Check In logic:
-     *  1. Validate: part must be checked out by the calling user.
-     *  2. Apply any edits (name, description) passed in.
-     *  3. Clear the checkedOutBy lock — iteration stays, this is now the committed working copy.
-     *  4. Audit log.
-     */
     @Override
     public Part checkIn(Long partId, String name, String description) {
         Part working = getPart(partId);
@@ -314,17 +297,11 @@ public class PartServiceImpl implements IPartService {
 
         Part saved = partRepository.save(working);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKIN",
-                "Checked in by " + currentUsername() + " → " + versionLabel(saved));
+                "Checked in by " + currentUsername() + " -> " + versionLabel(saved));
         log.info("Part checked in: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
         return saved;
     }
 
-    /**
-     * Undo Check Out logic:
-     *  1. Validate: part must be checked out by caller (or caller is ADMIN/MANAGER).
-     *  2. Delete the working iteration row.
-     *  3. Restore isLatest=true on the previous iteration.
-     */
     @Override
     public Part undoCheckOut(Long partId) {
         Part working = getPart(partId);
@@ -334,12 +311,17 @@ public class PartServiceImpl implements IPartService {
             throw new BusinessException("Part " + versionLabel(working) + " is not checked out.");
         }
         boolean isOwner = working.getCheckedOutBy().equals(currentUsername());
-        boolean isPrivileged = acl.hasContextRole(working.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+        boolean isPrivileged;
+        try {
+            acl.requireContextRole(working.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
+            isPrivileged = true;
+        } catch (Exception e) {
+            isPrivileged = false;
+        }
         if (!isOwner && !isPrivileged) {
             throw new BusinessException("Only the checkout owner or an ADMIN/MANAGER can undo this checkout.");
         }
 
-        // Find the previous iteration (same master, same revision, iteration - 1)
         int previousIter = working.getIteration() - 1;
         if (previousIter < 1) {
             throw new BusinessException("No previous iteration to restore.");
@@ -357,7 +339,6 @@ public class PartServiceImpl implements IPartService {
                 "Checkout undone for " + label + " by " + currentUsername());
         log.info("Undo checkout: {} {} by {}", working.getPartNumber(), label, currentUsername());
 
-        // Return the restored previous iteration
         return partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
                 .orElseThrow(() -> new ResourceNotFoundException("Part", "previousIteration", previousIter));
     }
@@ -366,7 +347,6 @@ public class PartServiceImpl implements IPartService {
     // Helpers
     // ─────────────────────────────────────────────────────────────
 
-    /** Returns Windchill-standard version label e.g. "A.1", "B.3" */
     public static String versionLabel(Part p) {
         return p.getRevision() + "." + p.getIteration();
     }

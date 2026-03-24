@@ -3,6 +3,7 @@ package com.windchill.service.impl;
 import com.windchill.common.enums.ChangePriority;
 import com.windchill.common.enums.ChangeNoticeStatus;
 import com.windchill.common.enums.ChangeRequestStatus;
+import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.domain.entity.*;
 import com.windchill.repository.*;
 import com.windchill.service.IChangeRequestService;
@@ -61,20 +62,43 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
                      .collect(Collectors.toList());
     }
 
-    private void audit(String entityType, Long entityId, String action, String actor, String detail) {
-        AuditLog log = new AuditLog();
-        log.setEntityType(entityType);
-        log.setEntityId(entityId);
-        log.setAction(action);
-        log.setPerformedBy(actor);
-        log.setDetail(detail);
-        log.setPerformedAt(LocalDateTime.now());
-        auditLogRepo.save(log);
+    /**
+     * Write an audit log entry for a PART entity.
+     * CHANGE_REQUEST and CHANGE_NOTICE are not in PlmEntityTypeEnum,
+     * so for those we log against PART with contextual detail.
+     */
+    private void audit(String entityTypeName, Long entityId, String action, String actor, String detail) {
+        try {
+            PlmEntityTypeEnum type = PlmEntityTypeEnum.PART;
+            try {
+                type = PlmEntityTypeEnum.valueOf(entityTypeName);
+            } catch (IllegalArgumentException ignored) {
+                // entityType not in enum — still log with PART as a safe fallback
+            }
+            AuditLog entry = new AuditLog();
+            entry.setEntityType(type);
+            entry.setEntityId(entityId);
+            entry.setAction(action);
+            entry.setActor(actor);
+            entry.setDetails(detail);
+            auditLogRepo.save(entry);
+        } catch (Exception ex) {
+            log.warn("Audit log failed (non-fatal): {}", ex.getMessage());
+        }
     }
 
+    /**
+     * Send a notification to a user by username lookup.
+     * INotificationService.create() takes a userId, so we resolve username -> userId first.
+     */
     private void notify(Long contextId, String username, String title, String message, String link) {
         try {
-            notificationService.createForContext(contextId, username, title, message, link);
+            userRepo.findByUsername(username).ifPresent(u ->
+                notificationService.create(
+                    u.getId(), title, message,
+                    "ECR", "CHANGE_REQUEST", contextId, title
+                )
+            );
         } catch (Exception ex) {
             log.warn("Notification send failed (non-fatal): {}", ex.getMessage());
         }
@@ -167,7 +191,7 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         audit("CHANGE_REQUEST", id, "SUBMITTED", submittedBy, "Submitted for review");
         notify(cr.getContextId(), submittedBy,
                "ECR Submitted",
-               saved.getChangeNumber() + " — " + saved.getTitle() + " submitted for review.",
+               saved.getChangeNumber() + " submitted for review.",
                "/plm/changes/" + id);
         return saved;
     }
@@ -201,8 +225,8 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         List<ChangeOrderItem> items = new ArrayList<>();
         for (Long partId : partIds) {
             try {
-                Part original = partService.getPartById(partId);
-                Part revised  = partService.revisePart(partId);
+                Part original = partService.getPart(partId);
+                Part revised  = partService.revise(partId);
 
                 ChangeOrderItem item = new ChangeOrderItem();
                 item.setChangeRequestId(id);
@@ -219,7 +243,7 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
                       " by " + cr.getChangeNumber());
             } catch (Exception ex) {
                 log.error("Failed to revise part {} during ECR approval: {}", partId, ex.getMessage());
-                audit("CHANGE_REQUEST", id, "REVISE_FAILED", reviewerUsername,
+                audit("PART", partId, "REVISE_FAILED", reviewerUsername,
                       "Could not revise part " + partId + ": " + ex.getMessage());
             }
         }
@@ -239,11 +263,8 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         cr.setChangeNoticeId(savedNotice.getId());
         ChangeRequest finalCr = changeRequestRepo.save(cr);
 
-        audit("CHANGE_NOTICE", savedNotice.getId(), "CREATED", reviewerUsername,
-              "ECN " + savedNotice.getNoticeNumber() + " auto-created for " + cr.getChangeNumber());
-
         notify(cr.getContextId(), reviewerUsername,
-               "ECR Approved — ECN Created",
+               "ECR Approved",
                cr.getChangeNumber() + " approved. " + partIds.size() +
                " part(s) revised. ECN " + savedNotice.getNoticeNumber() + " issued.",
                "/plm/changes/" + id);
