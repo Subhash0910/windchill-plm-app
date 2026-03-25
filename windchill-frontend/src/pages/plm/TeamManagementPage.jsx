@@ -20,7 +20,8 @@ const TeamManagementPage = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding,  setAdding]  = useState(false);
-  const [form,    setForm]    = useState({ userId: '', role: 'MEMBER' });
+  // form now uses `username` (string) — backend DTO field is `user`
+  const [form,    setForm]    = useState({ username: '', role: 'MEMBER' });
   const [error,   setError]   = useState('');
   const [success, setSuccess] = useState('');
 
@@ -44,12 +45,16 @@ const TeamManagementPage = () => {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.userId.toString().trim()) { setError('User ID is required'); return; }
+    if (!form.username.trim()) { setError('Username is required'); return; }
     setError('');
     setAdding(true);
     try {
-      await plmApi.addContextMember(selectedContextId, { userId: Number(form.userId), role: form.role });
-      setForm({ userId: '', role: 'MEMBER' });
+      // Backend DTO: { user: string, role: RoleEnum }
+      await plmApi.addContextMember(selectedContextId, {
+        user: form.username.trim(),
+        role: form.role,
+      });
+      setForm({ username: '', role: 'MEMBER' });
       setSuccess('Member added ✓');
       setTimeout(() => setSuccess(''), 3000);
       await load();
@@ -99,8 +104,14 @@ const TeamManagementPage = () => {
               <h2 className="tm-section-title">➕ Add Member</h2>
               <form className="tm-add-form" onSubmit={handleAdd}>
                 <div className="tm-field">
-                  <label>User ID</label>
-                  <input type="number" placeholder="e.g. 2" value={form.userId} onChange={e => setForm(f => ({ ...f, userId: e.target.value }))} min="1" />
+                  <label>Username</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. john.doe"
+                    value={form.username}
+                    onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                    autoComplete="off"
+                  />
                 </div>
                 <div className="tm-field">
                   <label>Role</label>
@@ -108,7 +119,9 @@ const TeamManagementPage = () => {
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
-                <button className="tm-btn-add" type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add Member'}</button>
+                <button className="tm-btn-add" type="submit" disabled={adding}>
+                  {adding ? 'Adding…' : 'Add Member'}
+                </button>
               </form>
               {error   && <div className="tm-msg tm-msg--error">{error}</div>}
               {success && <div className="tm-msg tm-msg--success">{success}</div>}
@@ -124,7 +137,12 @@ const TeamManagementPage = () => {
             ) : (
               <div className="tm-table-wrap">
                 <table className="tm-table">
-                  <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Role</th>{canManage && <th>Actions</th>}</tr></thead>
+                  <thead>
+                    <tr>
+                      <th>ID</th><th>Username</th><th>Name</th><th>Role</th>
+                      {canManage && <th>Actions</th>}
+                    </tr>
+                  </thead>
                   <tbody>
                     {members.map(m => {
                       const isSelf = String(m.userId) === String(user?.id);
@@ -133,18 +151,35 @@ const TeamManagementPage = () => {
                       return (
                         <tr key={m.userId} className={isSelf ? 'tm-row-self' : ''}>
                           <td className="tm-id">{m.userId}</td>
-                          <td className="tm-username">{label}{isSelf && <span className="tm-you">You</span>}</td>
+                          <td className="tm-username">
+                            {label}{isSelf && <span className="tm-you">You</span>}
+                          </td>
                           <td>{m.fullName || m.firstName || '—'}</td>
                           <td>
                             {canManage && !isSelf ? (
-                              <select className="tm-role-select" value={m.role} style={{ background: c.bg, color: c.text }} onChange={e => handleRoleChange(m.userId, e.target.value)}>
+                              <select
+                                className="tm-role-select"
+                                value={m.role}
+                                style={{ background: c.bg, color: c.text }}
+                                onChange={e => handleRoleChange(m.userId, e.target.value)}
+                              >
                                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                               </select>
                             ) : (
-                              <span className="tm-role-badge" style={{ background: c.bg, color: c.text }}>{m.role}</span>
+                              <span className="tm-role-badge" style={{ background: c.bg, color: c.text }}>
+                                {m.role}
+                              </span>
                             )}
                           </td>
-                          {canManage && <td>{!isSelf && <button className="tm-btn-remove" onClick={() => handleRemove(m.userId, label)}>Remove</button>}</td>}
+                          {canManage && (
+                            <td>
+                              {!isSelf && (
+                                <button className="tm-btn-remove" onClick={() => handleRemove(m.userId, label)}>
+                                  Remove
+                                </button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
