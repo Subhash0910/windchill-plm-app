@@ -1,233 +1,234 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import StateBadge from '../../components/plm/StateBadge';
+import { AuthContext } from '../../context/AuthContext';
+import { getEcrsByContext, createEcr, promoteEcr, deleteEcr } from '../../services/changeApi';
+import { getEcosByContext, createEco } from '../../services/changeApi';
 import styles from './ChangesHomePage.module.css';
 
-const API = import.meta.env.VITE_API_URL ?? '';
+const STATE_COLORS = {
+  // ECR states
+  DRAFT: '#6b7280', SUBMITTED: '#3b82f6', UNDER_REVIEW: '#f59e0b',
+  APPROVED: '#10b981', REJECTED: '#ef4444', CLOSED: '#9ca3af',
+  // ECO states
+  OPEN: '#3b82f6', IN_REVIEW: '#f59e0b', IMPLEMENTING: '#8b5cf6',
+  COMPLETED: '#10b981', CANCELLED: '#ef4444',
+};
 
-const TABS = ['ECRs', 'My Tasks'];
+const StateBadge = ({ state }) => (
+  <span style={{
+    background: STATE_COLORS[state] || '#6b7280',
+    color: '#fff', padding: '2px 10px', borderRadius: 12,
+    fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
+  }}>{state?.replace('_', ' ')}</span>
+);
+
+const ECR_TRANSITIONS = {
+  DRAFT: ['SUBMITTED'],
+  SUBMITTED: ['UNDER_REVIEW', 'REJECTED'],
+  UNDER_REVIEW: ['APPROVED', 'REJECTED'],
+  APPROVED: ['CLOSED'],
+  REJECTED: ['DRAFT'],
+};
+
+const ECO_TRANSITIONS = {
+  DRAFT: ['OPEN', 'CANCELLED'],
+  OPEN: ['IN_REVIEW', 'CANCELLED'],
+  IN_REVIEW: ['APPROVED', 'OPEN', 'CANCELLED'],
+  APPROVED: ['IMPLEMENTING', 'CANCELLED'],
+  IMPLEMENTING: ['COMPLETED', 'CANCELLED'],
+};
 
 export default function ChangesHomePage() {
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [tab,      setTab]      = useState('ECRs');
-  const [ecrs,     setEcrs]     = useState([]);
-  const [tasks,    setTasks]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [creating, setCreating] = useState(false);
-  const [saving,   setSaving]   = useState(false);
-  const [form,     setForm]     = useState({ title: '', description: '', priority: 'MEDIUM', affectedPartNumber: '' });
+  const [activeTab, setActiveTab] = useState('ecr');
+  const [ecrs, setEcrs]     = useState([]);
+  const [ecos, setEcos]     = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState('');
+  const [showCreateEcr, setShowCreateEcr] = useState(false);
+  const [showCreateEco, setShowCreateEco] = useState(false);
+  const [ecrForm, setEcrForm] = useState({ title: '', description: '', priority: 'MEDIUM' });
+  const [ecoForm, setEcoForm] = useState({ title: '', description: '', priority: 'MEDIUM', ecrId: '' });
 
-  const token   = localStorage.getItem('token');
-  const contextId = localStorage.getItem('activeContextId') || 1;
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const contextId = user?.contextId || 1;
 
-  const loadEcrs = useCallback(() => {
-    setLoading(true);
-    fetch(`${API}/api/v1/changes/ecr?contextId=${contextId}`, { headers })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => { setEcrs(Array.isArray(data) ? data : (data.data ?? [])); setError(null); })
-      .catch(e  => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [contextId]);
+  useEffect(() => { loadAll(); }, [contextId]);
 
-  const loadTasks = useCallback(() => {
-    fetch(`${API}/api/v1/changes/tasks/my`, { headers })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => setTasks(Array.isArray(data) ? data : (data.data ?? [])))
-      .catch(() => setTasks([]));
-  }, []);
-
-  useEffect(() => { loadEcrs(); loadTasks(); }, [loadEcrs, loadTasks]);
-
-  const handleCreate = async () => {
-    if (!form.title.trim()) return;
-    setSaving(true);
+  async function loadAll() {
+    setLoading(true); setError('');
     try {
-      const res = await fetch(`${API}/api/v1/changes/ecr`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ ...form, contextId: Number(contextId) }),
+      const [ecrRes, ecoRes] = await Promise.all([
+        getEcrsByContext(contextId),
+        getEcosByContext(contextId),
+      ]);
+      setEcrs(ecrRes.data || []);
+      setEcos(ecoRes.data || []);
+    } catch (e) {
+      setError('Failed to load change management data.');
+    } finally { setLoading(false); }
+  }
+
+  async function handleCreateEcr(e) {
+    e.preventDefault();
+    try {
+      await createEcr({ ...ecrForm, contextId });
+      setShowCreateEcr(false);
+      setEcrForm({ title: '', description: '', priority: 'MEDIUM' });
+      loadAll();
+    } catch { setError('Failed to create ECR.'); }
+  }
+
+  async function handleCreateEco(e) {
+    e.preventDefault();
+    try {
+      await createEco({
+        ...ecoForm,
+        contextId,
+        ecrId: ecoForm.ecrId ? Number(ecoForm.ecrId) : null,
       });
-      if (!res.ok) throw new Error(await res.text());
-      setCreating(false);
-      setForm({ title: '', description: '', priority: 'MEDIUM', affectedPartNumber: '' });
-      loadEcrs();
-    } catch (e) { alert(e.message); }
-    finally { setSaving(false); }
-  };
+      setShowCreateEco(false);
+      setEcoForm({ title: '', description: '', priority: 'MEDIUM', ecrId: '' });
+      loadAll();
+    } catch { setError('Failed to create ECO.'); }
+  }
 
-  const fmtDate = s => s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  async function handlePromoteEcr(id, state) {
+    try { await promoteEcr(id, state); loadAll(); }
+    catch { setError('Promote failed.'); }
+  }
 
-  const priorityClass = p => ({
-    HIGH: styles.priHigh, MEDIUM: styles.priMedium, LOW: styles.priLow,
-  })[p] ?? styles.priMedium;
-
-  const stats = [
-    { label: 'Total ECRs',  value: ecrs.length },
-    { label: 'Open',        value: ecrs.filter(e => e.status === 'OPEN' || e.status === 'DRAFT').length },
-    { label: 'In Review',   value: ecrs.filter(e => e.status === 'IN_REVIEW' || e.status === 'UNDERREVIEW').length },
-    { label: 'Approved',    value: ecrs.filter(e => e.status === 'APPROVED').length },
-    { label: 'My Tasks',    value: tasks.length },
-  ];
+  async function handlePromoteEco(id, state) {
+    try { await promoteEco(id, state); loadAll(); }
+    catch { setError('Promote failed.'); }
+  }
 
   return (
     <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.pageHeader}>
-        <div className={styles.pageTitle}>
-          <span className={styles.typeIcon}>🔄</span>
-          <div>
-            <h1>Change Management</h1>
-            <p className={styles.subtitle}>Engineering Change Requests and Notices</p>
-          </div>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Change Management</h1>
+          <p className={styles.subtitle}>Manage Engineering Change Requests (ECR) and Change Orders (ECO)</p>
+        </div>
+        <div className={styles.headerActions}>
+          {activeTab === 'ecr'
+            ? <button className={styles.btnPrimary} onClick={() => setShowCreateEcr(true)}>+ New ECR</button>
+            : <button className={styles.btnPrimary} onClick={() => setShowCreateEco(true)}>+ New ECO</button>
+          }
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div className={styles.statsBar}>
-        {stats.map(s => (
-          <div key={s.label} className={styles.statCard}>
-            <span className={styles.statValue}>{s.value}</span>
-            <span className={styles.statLabel}>{s.label}</span>
-          </div>
-        ))}
+      {error && <div className={styles.error}>{error}</div>}
+
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        <button className={`${styles.tab} ${activeTab === 'ecr' ? styles.tabActive : ''}`} onClick={() => setActiveTab('ecr')}>
+          ECR – Change Requests <span className={styles.badge}>{ecrs.length}</span>
+        </button>
+        <button className={`${styles.tab} ${activeTab === 'eco' ? styles.tabActive : ''}`} onClick={() => setActiveTab('eco')}>
+          ECO – Change Orders <span className={styles.badge}>{ecos.length}</span>
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div className={styles.toolbar}>
-        <div className={styles.tabs}>
-          {TABS.map(t => (
-            <button
-              key={t}
-              className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
-              onClick={() => setTab(t)}
-            >{t}</button>
-          ))}
-        </div>
-        <div className={styles.toolbarRight}>
-          {tab === 'ECRs' && (
-            <button className={styles.btnPrimary} onClick={() => setCreating(true)}>+ New ECR</button>
+      {loading ? <div className={styles.loading}>Loading…</div> : (
+        <div className={styles.tableWrap}>
+          {activeTab === 'ecr' && (
+            <table className={styles.table}>
+              <thead><tr>
+                <th>Number</th><th>Title</th><th>Priority</th><th>State</th><th>Created</th><th>Actions</th>
+              </tr></thead>
+              <tbody>
+                {ecrs.length === 0 && <tr><td colSpan={6} className={styles.empty}>No ECRs found.</td></tr>}
+                {ecrs.map(r => (
+                  <tr key={r.id} className={styles.row}>
+                    <td><span className={styles.link} onClick={() => navigate(`/plm/changes/ecr/${r.id}`)}>{r.ecrNumber}</span></td>
+                    <td>{r.title}</td>
+                    <td>{r.priority}</td>
+                    <td><StateBadge state={r.state} /></td>
+                    <td>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
+                    <td className={styles.actions}>
+                      {(ECR_TRANSITIONS[r.state] || []).map(s => (
+                        <button key={s} className={styles.btnSm} onClick={() => handlePromoteEcr(r.id, s)}>{s}</button>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-          <button className={styles.btnIcon} title="Refresh" onClick={() => { loadEcrs(); loadTasks(); }}>↻</button>
-        </div>
-      </div>
 
-      {/* Create ECR panel */}
-      {creating && (
-        <div className={styles.createPanel}>
-          <div className={styles.createHeader}>
-            <span>New Engineering Change Request</span>
-            <button className={styles.closeBtn} onClick={() => setCreating(false)}>✕</button>
-          </div>
-          <div className={styles.createBody}>
-            <label>Title *
-              <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="Describe the change" />
-            </label>
-            <div className={styles.row2}>
+          {activeTab === 'eco' && (
+            <table className={styles.table}>
+              <thead><tr>
+                <th>Number</th><th>Title</th><th>Priority</th><th>State</th><th>Linked ECR</th><th>Created</th><th>Actions</th>
+              </tr></thead>
+              <tbody>
+                {ecos.length === 0 && <tr><td colSpan={7} className={styles.empty}>No ECOs found.</td></tr>}
+                {ecos.map(o => (
+                  <tr key={o.id} className={styles.row}>
+                    <td><span className={styles.link} onClick={() => navigate(`/plm/changes/eco/${o.id}`)}>{o.ecoNumber}</span></td>
+                    <td>{o.title}</td>
+                    <td>{o.priority}</td>
+                    <td><StateBadge state={o.state} /></td>
+                    <td>{o.ecrId ? <span className={styles.link} onClick={() => navigate(`/plm/changes/ecr/${o.ecrId}`)}>ECR #{o.ecrId}</span> : '—'}</td>
+                    <td>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</td>
+                    <td className={styles.actions}>
+                      {(ECO_TRANSITIONS[o.state] || []).map(s => (
+                        <button key={s} className={styles.btnSm} onClick={() => handlePromoteEco(o.id, s)}>{s}</button>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Create ECR Modal */}
+      {showCreateEcr && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2>New Change Request (ECR)</h2>
+            <form onSubmit={handleCreateEcr}>
+              <label>Title<input required value={ecrForm.title} onChange={e => setEcrForm(p => ({...p, title: e.target.value}))} /></label>
+              <label>Description<textarea rows={3} value={ecrForm.description} onChange={e => setEcrForm(p => ({...p, description: e.target.value}))} /></label>
               <label>Priority
-                <select value={form.priority} onChange={e => setForm(f => ({...f, priority: e.target.value}))}>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="CRITICAL">Critical</option>
+                <select value={ecrForm.priority} onChange={e => setEcrForm(p => ({...p, priority: e.target.value}))}>
+                  <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
                 </select>
               </label>
-              <label>Affected Part #
-                <input value={form.affectedPartNumber} onChange={e => setForm(f => ({...f, affectedPartNumber: e.target.value}))} placeholder="e.g. ECU-005" />
-              </label>
-            </div>
-            <label>Description
-              <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} placeholder="Root cause, scope, justification…" />
-            </label>
-            <div className={styles.createActions}>
-              <button className={styles.btnPrimary} onClick={handleCreate} disabled={saving}>{saving ? 'Saving…' : 'Create ECR'}</button>
-              <button className={styles.btnSecondary} onClick={() => setCreating(false)}>Cancel</button>
-            </div>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setShowCreateEcr(false)}>Cancel</button>
+                <button type="submit" className={styles.btnPrimary}>Create</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Content */}
-      <div className={styles.tableWrap}>
-        {loading && <div className={styles.loading}>Loading…</div>}
-        {error   && <div className={styles.errorBanner}>Error: {error} <button onClick={loadEcrs}>Retry</button></div>}
-
-        {!loading && !error && tab === 'ECRs' && (
-          <table className={styles.wcTable}>
-            <thead>
-              <tr>
-                <th>ECR #</th>
-                <th>Title</th>
-                <th>Priority</th>
-                <th>Affected Part</th>
-                <th>Status</th>
-                <th>Submitted By</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ecrs.length === 0 && (
-                <tr><td colSpan={7} className={styles.emptyRow}>No ECRs found. Create one to get started.</td></tr>
-              )}
-              {ecrs.map(ecr => (
-                <tr
-                  key={ecr.id}
-                  className={styles.tableRow}
-                  onDoubleClick={() => navigate(`/plm/changes/ecr/${ecr.id}`)}
-                >
-                  <td>
-                    <span className={styles.ecrLink} onClick={() => navigate(`/plm/changes/ecr/${ecr.id}`)}>
-                      ECR-{String(ecr.id).padStart(4, '0')}
-                    </span>
-                  </td>
-                  <td className={styles.titleCell}>{ecr.title}</td>
-                  <td><span className={`${styles.priPill} ${priorityClass(ecr.priority)}`}>{ecr.priority}</span></td>
-                  <td className={styles.dimCell}>{ecr.affectedPartNumber ?? '—'}</td>
-                  <td><StateBadge state={ecr.status} /></td>
-                  <td className={styles.dimCell}>{ecr.submittedBy ?? ecr.createdBy ?? '—'}</td>
-                  <td className={styles.dimCell}>{fmtDate(ecr.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {!loading && !error && tab === 'My Tasks' && (
-          <table className={styles.wcTable}>
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Related ECR</th>
-                <th>Action Required</th>
-                <th>Due Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.length === 0 && (
-                <tr><td colSpan={5} className={styles.emptyRow}>No change tasks assigned to you.</td></tr>
-              )}
-              {tasks.map(t => (
-                <tr key={t.id} className={styles.tableRow}>
-                  <td className={styles.titleCell}>{t.title ?? `Task #${t.id}`}</td>
-                  <td>
-                    {t.ecrId ? (
-                      <span className={styles.ecrLink} onClick={() => navigate(`/plm/changes/ecr/${t.ecrId}`)}>ECR-{String(t.ecrId).padStart(4,'0')}</span>
-                    ) : '—'}
-                  </td>
-                  <td className={styles.dimCell}>{t.actionRequired ?? '—'}</td>
-                  <td className={styles.dimCell}>{fmtDate(t.dueDate)}</td>
-                  <td><StateBadge state={t.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <div className={styles.statusBar}>
-        {tab === 'ECRs' ? `${ecrs.length} ECR${ecrs.length !== 1 ? 's' : ''}` : `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`}
-      </div>
+      {/* Create ECO Modal */}
+      {showCreateEco && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2>New Change Order (ECO)</h2>
+            <form onSubmit={handleCreateEco}>
+              <label>Title<input required value={ecoForm.title} onChange={e => setEcoForm(p => ({...p, title: e.target.value}))} /></label>
+              <label>Description<textarea rows={3} value={ecoForm.description} onChange={e => setEcoForm(p => ({...p, description: e.target.value}))} /></label>
+              <label>Priority
+                <select value={ecoForm.priority} onChange={e => setEcoForm(p => ({...p, priority: e.target.value}))}>
+                  <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
+                </select>
+              </label>
+              <label>Linked ECR ID (optional)<input type="number" value={ecoForm.ecrId} onChange={e => setEcoForm(p => ({...p, ecrId: e.target.value}))} /></label>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setShowCreateEco(false)}>Cancel</button>
+                <button type="submit" className={styles.btnPrimary}>Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
