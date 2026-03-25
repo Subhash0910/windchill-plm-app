@@ -1,0 +1,19 @@
+.wc-state-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.wc-state-badge--sm { font-size: 10px; padding: 1px 6px; }
+.wc-state-badge--lg { font-size: 12px; padding: 3px 10px; }
+
+.badge--inwork      { background:var(--wc-state-inwork-bg);      color:var(--wc-state-inwork-text);      border-color:var(--wc-state-inwork-border); }
+.badge--underreview { background:var(--wc-state-underreview-bg); color:var(--wc-state-underreview-text); border-color:var(--wc-state-underreview-border); }
+.badge--released    { background:var(--wc-state-released-bg);    color:var(--wc-state-released-text);    border-color:var(--wc-state-released-border); }
+.badge--obsolete    { background:var(--wc-state-obsolete-bg);    color:var(--wc-state-obsolete-text);    border-color:var(--wc-state-obsolete-border); }
+.badge--default     { background:#F3F4F6; color:#374151; border-color:#D1D5DB; }

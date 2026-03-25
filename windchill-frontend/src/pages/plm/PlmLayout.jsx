@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../components/organisms/Header/Header';
 import ContextSwitcher from '../../components/plm/ContextSwitcher';
-import Navigator from '../../components/plm/Navigator';
 import FolderTree from '../../components/plm/FolderTree';
+import NavigatorPanel from '../../components/plm/NavigatorPanel';
 import AIChatBot from '../../components/ai/AIChatBot';
 import './PlmLayout.css';
 
@@ -11,61 +11,54 @@ const PlmLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
-  const isDashboard     = location.pathname.startsWith('/dashboard');
-  const isWorklist      = location.pathname.startsWith('/plm/worklist');
-  const isChangesGroup  = location.pathname.startsWith('/plm/changes');
-  const isChangeTasks   = location.pathname.startsWith('/plm/changes/tasks');
-  const isChanges       = isChangesGroup && !isChangeTasks;
-  const isAiDemo        = location.pathname.startsWith('/plm/ai-demo');
-  const isNotifications = location.pathname.startsWith('/plm/notifications');
-  const isDocuments     = location.pathname.startsWith('/plm/documents');
-  const isProducts      = location.pathname.startsWith('/plm/products');
-  const isProjects      = location.pathname.startsWith('/plm/projects');
-  const isLibrary       = location.pathname.startsWith('/plm/library');
-  const isAuditLog      = location.pathname.startsWith('/plm/audit-log');
-
+  const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
   const isWorkspace = location.pathname.startsWith('/plm')
-    && !isWorklist && !isChangesGroup && !isAiDemo
-    && !isNotifications && !isDocuments
-    && !isProducts && !isProjects && !isLibrary && !isAuditLog;
+    && !location.pathname.startsWith('/plm/worklist')
+    && !location.pathname.startsWith('/plm/changes')
+    && !location.pathname.startsWith('/plm/ai-demo')
+    && !location.pathname.startsWith('/plm/notifications')
+    && !location.pathname.startsWith('/plm/documents')
+    && !location.pathname.startsWith('/plm/products')
+    && !location.pathname.startsWith('/plm/projects')
+    && !location.pathname.startsWith('/plm/library')
+    && !location.pathname.startsWith('/plm/audit-log')
+    && !location.pathname.startsWith('/plm/team');
 
   const getCurrentPage = () => {
-    if (isWorkspace)     return 'workspace';
-    if (isWorklist)      return 'worklist';
-    if (isChanges)       return 'changes';
-    if (isChangeTasks)   return 'change-tasks';
-    if (isAiDemo)        return 'ai-demo';
-    if (isNotifications) return 'notifications';
-    if (isDocuments)     return 'documents';
-    if (isProducts)      return 'products';
-    if (isProjects)      return 'projects';
-    if (isLibrary)       return 'library';
-    if (isAuditLog)      return 'audit-log';
-    return 'unknown';
+    const p = location.pathname;
+    if (p.startsWith('/plm/worklist'))    return 'worklist';
+    if (p.startsWith('/plm/changes/tasks')) return 'change-tasks';
+    if (p.startsWith('/plm/changes'))     return 'changes';
+    if (p.startsWith('/plm/ai-demo'))     return 'ai-demo';
+    if (p.startsWith('/plm/notifications')) return 'notifications';
+    if (p.startsWith('/plm/documents'))   return 'documents';
+    if (p.startsWith('/plm/products'))    return 'products';
+    if (p.startsWith('/plm/projects'))    return 'projects';
+    if (p.startsWith('/plm/library'))     return 'library';
+    if (p.startsWith('/plm/audit-log'))   return 'audit-log';
+    return 'workspace';
   };
 
   const handleChatAction = (action, params) => {
     switch (action) {
       case 'RUN_IMPACT_ANALYSIS': handleImpactAnalysis(params); break;
-      case 'SEARCH_PART':         handlePartSearch(params);     break;
-      case 'NAVIGATE_TO_ECN':     navigate('/plm/changes');     break;
-      case 'NAVIGATE_TO_PARTS':   navigate('/plm/parts');       break;
+      case 'SEARCH_PART':         navigate(`/plm/parts?search=${params.part_number}`); break;
+      case 'NAVIGATE_TO_ECN':     navigate('/plm/changes');   break;
+      case 'NAVIGATE_TO_PARTS':   navigate('/plm/parts');     break;
       default: break;
     }
   };
 
   const handleImpactAnalysis = (params) => {
-    const { part_number, change_type } = params;
     if (!isAiDemo) {
-      sessionStorage.setItem('pendingAiAction', JSON.stringify({ action: 'RUN_IMPACT_ANALYSIS', params: { part_number, change_type } }));
+      sessionStorage.setItem('pendingAiAction', JSON.stringify({ action: 'RUN_IMPACT_ANALYSIS', params }));
       navigate('/plm/ai-demo');
     } else {
-      setAiActionTrigger({ part_number, change_type, timestamp: Date.now() });
+      setAiActionTrigger({ ...params, timestamp: Date.now() });
     }
   };
-
-  const handlePartSearch = (params) => navigate(`/plm/parts?search=${params.part_number}`);
 
   useEffect(() => {
     if (isAiDemo) {
@@ -83,44 +76,33 @@ const PlmLayout = () => {
   }, [isAiDemo]);
 
   return (
-    <div className="plm-shell">
-      {/* ── Navy top bar ── */}
-      <Header title="Workspace" />
+    <div className="wc-shell">
+      {/* ── Top bar (navy, 48px) ── */}
+      <Header title="Windchill PLM" />
 
-      {/* ── Secondary tab nav ── */}
-      <div className="plm-topnav">
-        <div className="plm-topnav-inner">
-          <Link className={isDashboard     ? 'plm-link active' : 'plm-link'} to="/dashboard">🏠 Dashboard</Link>
-          <Link className={isWorkspace     ? 'plm-link active' : 'plm-link'} to="/plm">⚙️ Workspace</Link>
-          <Link className={isWorklist      ? 'plm-link active' : 'plm-link'} to="/plm/worklist">✅ Worklist</Link>
-          <Link className={`plm-link plm-link--soon${isChanges ? ' active' : ''}`} to="/plm/changes">📋 Changes</Link>
-          <Link className={isChangeTasks   ? 'plm-link active' : 'plm-link'} to="/plm/changes/tasks">🔧 Change Tasks</Link>
-          <Link className={isDocuments     ? 'plm-link active' : 'plm-link'} to="/plm/documents">📄 Documents</Link>
-          <Link className={isProducts      ? 'plm-link active' : 'plm-link'} to="/plm/products">📦 Products</Link>
-          <Link className={isProjects      ? 'plm-link active' : 'plm-link'} to="/plm/projects">🗂️ Projects</Link>
-          <Link className={isLibrary       ? 'plm-link active' : 'plm-link'} to="/plm/library">📚 Library</Link>
-          <Link className={isNotifications ? 'plm-link active' : 'plm-link'} to="/plm/notifications">🔔 Notifications</Link>
-          <Link className={isAuditLog      ? 'plm-link active' : 'plm-link'} to="/plm/audit-log">📋 Audit Log</Link>
-          <Link className={`plm-link plm-link--ai${isAiDemo ? ' active' : ''}`} to="/plm/ai-demo">⚡ AI Demo</Link>
-        </div>
-      </div>
-
-      {/* ── Body: Navigator + main content ── */}
-      <div className="plm-body">
-        <aside className="plm-left">
+      {/* ── Main body: Navigator + Content ── */}
+      <div className="wc-shell__body">
+        {/* ── Left Navigator ── */}
+        <aside className={`wc-shell__nav ${navCollapsed ? 'collapsed' : ''}`}>
           <ContextSwitcher />
-          <Navigator />
-          <FolderTree />
+          <NavigatorPanel />
+          {!navCollapsed && isWorkspace && <FolderTree />}
+          <button
+            className="wc-shell__nav-toggle"
+            onClick={() => setNavCollapsed(c => !c)}
+            title={navCollapsed ? 'Expand Navigator' : 'Collapse Navigator'}
+          >
+            {navCollapsed ? '›' : '‹'}
+          </button>
         </aside>
-        <main className="plm-main">
+
+        {/* ── Page content ── */}
+        <main className="wc-shell__main">
           <Outlet context={{ aiActionTrigger }} />
         </main>
       </div>
 
-      <AIChatBot
-        onAction={handleChatAction}
-        currentPage={getCurrentPage()}
-      />
+      <AIChatBot onAction={handleChatAction} currentPage={getCurrentPage()} />
     </div>
   );
 };
