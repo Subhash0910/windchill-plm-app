@@ -160,7 +160,7 @@ VALUES
       'INWORK','A',1,1,  NOW(),NOW(),'john.doe',0),
     ( 4, 4,1,1,'ECU-004-A','Mounting Bracket Set',
       'Stainless-steel M8 mounting bracket set, 4-bolt pattern, vibration-damped',
-      'INREVIEW','A',1,1, NOW(),NOW(),'john.doe',0),
+      'UNDERREVIEW','A',1,1, NOW(),NOW(),'john.doe',0),
     -- Context 1 — Electronic Systems folder
     ( 5, 5,1,2,'ELX-001-A','CAN Bus Controller',
       'Automotive-grade CAN FD controller, ISO 11898-2, 5 Mbps capable',
@@ -170,7 +170,7 @@ VALUES
       'INWORK','A',1,1,  NOW(),NOW(),'john.doe',0),
     ( 7, 7,1,2,'ELX-003-B','Sensor Fusion Unit',
       'Multi-sensor data-fusion processor Rev B — improved latency and accuracy',
-      'INREVIEW','B',2,1, NOW(),NOW(),'john.doe',0),
+      'UNDERREVIEW','B',2,1, NOW(),NOW(),'john.doe',0),
     -- Context 1 — Software Modules folder
     ( 8, 8,1,3,'SW-001-A','AUTOSAR BSW Stack',
       'Base Software stack compliant with AUTOSAR Classic 4.4',
@@ -188,7 +188,7 @@ VALUES
     -- Context 2 — Navigation Systems folder
     (12,12,2,5,'NAV-001-A','GPS Receiver Module',
       'Multi-constellation GPS/GLONASS/Galileo receiver, ARINC 429 output',
-      'INREVIEW','A',1,1, NOW(),NOW(),'sarah.smith',0);
+      'UNDERREVIEW','A',1,1, NOW(),NOW(),'sarah.smith',0);
 
 ALTER TABLE parts AUTO_INCREMENT = 1000;
 
@@ -224,7 +224,7 @@ VALUES
     (3,'PART',  1,'PROMOTE', 'admin',     'Promoted ECU-001-A: INWORK → RELEASED',         NOW(),NOW(),0),
     (4,'PART',  2,'PROMOTE', 'john.doe',  'Promoted ECU-002-A: INWORK → RELEASED',         NOW(),NOW(),0),
     (5,'PART', 10,'PROMOTE', 'admin',     'Promoted AVI-001-A: INWORK → RELEASED',         NOW(),NOW(),0),
-    (6,'PROJECT',1,'CREATE', 'admin',     'Created project PROJ-ECU-003',                  NOW(),NOW(),0),
+    (6,'CONTEXT',1,'CREATE', 'admin',     'Created project PROJ-ECU-003',                  NOW(),NOW(),0),
     (7,'DOCUMENT',3,'CREATE','john.doe',  'Created CAN FD Protocol Specification',         NOW(),NOW(),0),
     (8,'USER',  1,'LOGIN',   'admin',     'Administrator logged in',                       NOW(),NOW(),0);
 
