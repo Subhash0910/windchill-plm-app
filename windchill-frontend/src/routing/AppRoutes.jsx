@@ -13,6 +13,7 @@ import EcrDetailPage from '../pages/plm/EcrDetailPage';
 import ChangeTasksPage from '../pages/plm/ChangeTasksPage';
 import NotificationsPage from '../pages/plm/NotificationsPage';
 import DocumentsPage from '../pages/plm/DocumentsPage';
+import DocumentDetailPage from '../pages/plm/DocumentDetailPage';
 import ProductsPage from '../pages/plm/ProductsPage';
 import ProjectsPage from '../pages/plm/ProjectsPage';
 import LibraryPage from '../pages/plm/LibraryPage';
@@ -33,20 +34,21 @@ const AppRoutes = () => (
 
         <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
           <Route index element={<Navigate to="parts" replace />} />
-          <Route path="parts"           element={<PartsPage />} />
-          <Route path="parts/:id"       element={<PartDetailPage />} />
-          <Route path="worklist"        element={<WorklistPage />} />
-          <Route path="changes"         element={<ChangesHomePage />} />
-          <Route path="changes/ecr/:id" element={<EcrDetailPage />} />
-          <Route path="changes/tasks"   element={<ChangeTasksPage />} />
-          <Route path="documents"       element={<DocumentsPage />} />
-          <Route path="products"        element={<ProductsPage />} />
-          <Route path="projects"        element={<ProjectsPage />} />
-          <Route path="library"         element={<LibraryPage />} />
-          <Route path="notifications"   element={<NotificationsPage />} />
-          <Route path="audit-log"       element={<AuditLogPage />} />
-          <Route path="team"            element={<TeamManagementPage />} />
-          <Route path="ai-demo"         element={<AIDemo />} />
+          <Route path="parts"             element={<PartsPage />} />
+          <Route path="parts/:id"         element={<PartDetailPage />} />
+          <Route path="worklist"          element={<WorklistPage />} />
+          <Route path="changes"           element={<ChangesHomePage />} />
+          <Route path="changes/ecr/:id"   element={<EcrDetailPage />} />
+          <Route path="changes/tasks"     element={<ChangeTasksPage />} />
+          <Route path="documents"         element={<DocumentsPage />} />
+          <Route path="documents/:id"     element={<DocumentDetailPage />} />
+          <Route path="products"          element={<ProductsPage />} />
+          <Route path="projects"          element={<ProjectsPage />} />
+          <Route path="library"           element={<LibraryPage />} />
+          <Route path="notifications"     element={<NotificationsPage />} />
+          <Route path="audit-log"         element={<AuditLogPage />} />
+          <Route path="team"              element={<TeamManagementPage />} />
+          <Route path="ai-demo"           element={<AIDemo />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

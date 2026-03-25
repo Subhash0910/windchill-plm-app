@@ -1,209 +1,180 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { plmApi } from '../../services/plmApi';
+import { useNavigate } from 'react-router-dom';
+import { documentApi } from '../../services/documentApi';
+import { usePlmContext } from '../../context/PlmContext';
+import StateBadge from '../../components/plm/StateBadge';
 import './DocumentsPage.css';
 
-const STATUS_COLORS = {
-  DRAFT:    { bg: '#fef3c7', text: '#92400e' },
-  ACTIVE:   { bg: '#dbeafe', text: '#1e40af' },
-  RELEASED: { bg: '#dcfce7', text: '#166534' },
-  INACTIVE: { bg: '#f1f5f9', text: '#475569' },
-  OBSOLETE: { bg: '#fce7f3', text: '#9d174d' },
+const DOC_TYPES = ['SPEC', 'DRAWING', 'PROCEDURE', 'REPORT'];
+
+const TYPE_ICON = {
+  SPEC:      '📌',
+  DRAWING:   '📐',
+  PROCEDURE: '📋',
+  REPORT:    '📊',
 };
 
-const DOC_TYPES = ['SPECIFICATION', 'DRAWING', 'PROCEDURE', 'REPORT', 'MANUAL', 'TEMPLATE', 'OTHER'];
-const STATUSES  = ['DRAFT', 'ACTIVE', 'RELEASED', 'INACTIVE', 'OBSOLETE'];
-
 const EMPTY_FORM = {
-  documentNumber: '',
-  title:          '',
-  description:    '',
-  documentType:   'SPECIFICATION',
-  versionNumber:  '1.0',
-  status:         'DRAFT',
-  projectId:      '',
+  docNumber:   '',
+  name:        '',
+  description: '',
+  docType:     'SPEC',
 };
 
 const DocumentsPage = () => {
+  const navigate = useNavigate();
+  const { activeContext } = usePlmContext();
+  const contextId = activeContext?.id;
+
   const [docs,      setDocs]      = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState('');
-  const [searching, setSearching] = useState(false);
+  const [typeFilter,setTypeFilter]= useState('');
   const [showForm,  setShowForm]  = useState(false);
-  const [editId,    setEditId]    = useState(null);
+  const [editDoc,   setEditDoc]   = useState(null);
   const [form,      setForm]      = useState(EMPTY_FORM);
   const [saving,    setSaving]    = useState(false);
   const [error,     setError]     = useState('');
 
   const load = useCallback(async () => {
+    if (!contextId) return;
     setLoading(true);
     try {
-      const data = await plmApi.getAllDocuments();
+      const data = await documentApi.list(contextId, typeFilter || null);
       setDocs(Array.isArray(data) ? data : []);
     } catch {
       setDocs([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [contextId, typeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
-  /* live search with 300ms debounce */
-  useEffect(() => {
-    if (!search.trim()) { load(); return; }
-    const t = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const data = await plmApi.searchDocuments(search.trim());
-        setDocs(Array.isArray(data) ? data : []);
-      } catch { setDocs([]); }
-      finally { setSearching(false); }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [search, load]);
+  // local search filter (no extra round-trip)
+  const visible = search.trim()
+    ? docs.filter(d =>
+        d.docNumber.toLowerCase().includes(search.toLowerCase()) ||
+        d.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : docs;
 
+  // ---- modal helpers ----------------------------------------------------
   const openCreate = () => {
-    setEditId(null);
-    setForm(EMPTY_FORM);
-    setError('');
-    setShowForm(true);
+    setEditDoc(null); setForm(EMPTY_FORM); setError(''); setShowForm(true);
   };
-
   const openEdit = (doc) => {
-    setEditId(doc.id);
-    setForm({
-      documentNumber: doc.documentNumber || '',
-      title:          doc.title          || '',
-      description:    doc.description    || '',
-      documentType:   doc.documentType   || 'SPECIFICATION',
-      versionNumber:  doc.versionNumber  || '1.0',
-      status:         doc.status         || 'DRAFT',
-      projectId:      doc.projectId      || '',
-    });
-    setError('');
-    setShowForm(true);
+    setEditDoc(doc);
+    setForm({ docNumber: doc.docNumber, name: doc.name, description: doc.description || '', docType: doc.docType });
+    setError(''); setShowForm(true);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.documentNumber.trim() || !form.title.trim()) {
-      setError('Document number and title are required');
-      return;
+    if (!form.docNumber.trim() || !form.name.trim()) {
+      setError('Doc number and name are required'); return;
     }
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     try {
-      const payload = { ...form, projectId: form.projectId ? Number(form.projectId) : null };
-      if (editId) {
-        await plmApi.updateDocument(editId, payload);
+      if (editDoc) {
+        await documentApi.update(editDoc.id, { name: form.name, description: form.description, docType: form.docType });
       } else {
-        await plmApi.createDocument(payload);
+        await documentApi.create({ contextId, docNumber: form.docNumber, name: form.name, description: form.description, docType: form.docType });
       }
       setShowForm(false);
-      setSearch('');
       await load();
     } catch (ex) {
-      setError(ex?.response?.data?.message || 'Save failed. Check all fields.');
-    } finally {
-      setSaving(false);
-    }
+      setError(ex?.response?.data?.message || 'Save failed');
+    } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id, docNumber) => {
-    if (!window.confirm(`Delete document ${docNumber}? This cannot be undone.`)) return;
-    try {
-      await plmApi.deleteDocument(id);
-      setDocs(prev => prev.filter(d => d.id !== id));
-    } catch {
-      alert('Failed to delete document');
-    }
-  };
-
-  const timeAgo = (dateStr) => {
-    if (!dateStr) return '—';
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const d = Math.floor(diff / 86400000);
-    if (d < 1) return 'today';
-    if (d < 7) return `${d}d ago`;
-    return new Date(dateStr).toLocaleDateString();
+  const handleDelete = async (doc) => {
+    if (!window.confirm(`Delete ${doc.docNumber}?`)) return;
+    try { await documentApi.delete(doc.id); await load(); }
+    catch { alert('Delete failed'); }
   };
 
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   return (
-    <div className="dp-page">
+    <div className="docp">
 
-      {/* Page header */}
-      <div className="dp-page-header">
+      {/* ── Page header ──────────────────────────────────────────── */}
+      <div className="docp__header">
         <div>
-          <h1 className="dp-page-title">📄 Documents</h1>
-          <p className="dp-page-sub">Document library — specs, drawings, procedures &amp; reports</p>
+          <h1 className="docp__title">Documents</h1>
+          <p className="docp__sub">Specs · Drawings · Procedures · Reports</p>
         </div>
-        <button className="dp-btn-create" onClick={openCreate}>+ New Document</button>
+        <button className="docp__btn-new" onClick={openCreate}>+ New Document</button>
       </div>
 
-      {/* Search */}
-      <div className="dp-search-wrap">
-        <span className="dp-search-icon">🔍</span>
-        <input
-          className="dp-search"
-          placeholder="Search by number, title, type…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {searching && <span className="dp-search-spin" />}
+      {/* ── Toolbar ──────────────────────────────────────────────── */}
+      <div className="docp__toolbar">
+        <div className="docp__search-wrap">
+          <span>🔍</span>
+          <input
+            className="docp__search"
+            placeholder="Search doc number or name…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="docp__type-tabs">
+          <button
+            className={`docp__tab ${typeFilter === '' ? 'active' : ''}`}
+            onClick={() => setTypeFilter('')}
+          >All</button>
+          {DOC_TYPES.map(t => (
+            <button
+              key={t}
+              className={`docp__tab ${typeFilter === t ? 'active' : ''}`}
+              onClick={() => setTypeFilter(t)}
+            >
+              {TYPE_ICON[t]} {t}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Create / Edit modal */}
+      {/* ── Create / Edit modal ────────────────────────────────────── */}
       {showForm && (
-        <div className="dp-modal-bg" onClick={() => setShowForm(false)}>
-          <div className="dp-modal" onClick={e => e.stopPropagation()}>
-            <div className="dp-modal-header">
-              <h2>{editId ? 'Edit Document' : 'New Document'}</h2>
-              <button className="dp-modal-close" onClick={() => setShowForm(false)}>&times;</button>
+        <div className="docp__modal-bg" onClick={() => setShowForm(false)}>
+          <div className="docp__modal" onClick={e => e.stopPropagation()}>
+            <div className="docp__modal-hdr">
+              <h2>{editDoc ? 'Edit Document' : 'New Document'}</h2>
+              <button onClick={() => setShowForm(false)}>&times;</button>
             </div>
-            <form className="dp-form" onSubmit={handleSave}>
-              <div className="dp-form-row">
-                <div className="dp-field">
-                  <label>Document Number *</label>
-                  <input value={form.documentNumber} onChange={f('documentNumber')} placeholder="e.g. DOC-001" />
+            <form className="docp__form" onSubmit={handleSave}>
+              <div className="docp__row">
+                <div className="docp__field">
+                  <label>Doc Number *</label>
+                  <input
+                    value={form.docNumber}
+                    onChange={f('docNumber')}
+                    disabled={!!editDoc}
+                    placeholder="e.g. SPEC-001"
+                  />
                 </div>
-                <div className="dp-field">
-                  <label>Version</label>
-                  <input value={form.versionNumber} onChange={f('versionNumber')} placeholder="1.0" />
-                </div>
-              </div>
-              <div className="dp-field dp-field--full">
-                <label>Title *</label>
-                <input value={form.title} onChange={f('title')} placeholder="Document title" />
-              </div>
-              <div className="dp-field dp-field--full">
-                <label>Description</label>
-                <textarea value={form.description} onChange={f('description')} placeholder="Optional description…" rows={3} />
-              </div>
-              <div className="dp-form-row">
-                <div className="dp-field">
+                <div className="docp__field">
                   <label>Type</label>
-                  <select value={form.documentType} onChange={f('documentType')}>
-                    {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <select value={form.docType} onChange={f('docType')}>
+                    {DOC_TYPES.map(t => <option key={t}>{t}</option>)}
                   </select>
-                </div>
-                <div className="dp-field">
-                  <label>Status</label>
-                  <select value={form.status} onChange={f('status')}>
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div className="dp-field">
-                  <label>Project ID</label>
-                  <input type="number" value={form.projectId} onChange={f('projectId')} placeholder="Optional" min="1" />
                 </div>
               </div>
-              {error && <div className="dp-form-error">{error}</div>}
-              <div className="dp-form-actions">
-                <button type="button" className="dp-btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="dp-btn-save" disabled={saving}>
-                  {saving ? 'Saving…' : editId ? 'Update' : 'Create'}
+              <div className="docp__field">
+                <label>Name *</label>
+                <input value={form.name} onChange={f('name')} placeholder="Document name" />
+              </div>
+              <div className="docp__field">
+                <label>Description</label>
+                <textarea value={form.description} onChange={f('description')} rows={3} placeholder="Optional description…" />
+              </div>
+              {error && <p className="docp__err">{error}</p>}
+              <div className="docp__form-actions">
+                <button type="button" className="docp__btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="docp__btn-save"  disabled={saving}>
+                  {saving ? 'Saving…' : editDoc ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
@@ -211,54 +182,63 @@ const DocumentsPage = () => {
         </div>
       )}
 
-      {/* Content */}
+      {/* ── Table ─────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="dp-loading"><div className="dp-spinner" /><p>Loading documents…</p></div>
-      ) : docs.length === 0 ? (
-        <div className="dp-empty">
-          <span>📄</span>
-          <h3>{search ? 'No results found' : 'No documents yet'}</h3>
-          <p>{search ? `No documents match "${search}"` : 'Create the first document using the button above'}</p>
+        <div className="docp__loading"><div className="docp__spin" /><span>Loading documents…</span></div>
+      ) : visible.length === 0 ? (
+        <div className="docp__empty">
+          <span className="docp__empty-icon">📄</span>
+          <h3>{search || typeFilter ? 'No matching documents' : 'No documents yet'}</h3>
+          <p>{search || typeFilter ? 'Try changing filters' : 'Create the first document using the button above'}</p>
         </div>
       ) : (
-        <div className="dp-table-wrap">
-          <table className="dp-table">
+        <div className="docp__table-wrap">
+          <table className="docp__table">
             <thead>
               <tr>
                 <th>Doc Number</th>
-                <th>Title</th>
+                <th>Name</th>
                 <th>Type</th>
-                <th>Ver</th>
-                <th>Status</th>
-                <th>Project</th>
+                <th>Rev</th>
+                <th>State</th>
+                <th>Checked Out</th>
                 <th>Created</th>
-                <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {docs.map(d => {
-                const c = STATUS_COLORS[d.status] || STATUS_COLORS.DRAFT;
-                return (
-                  <tr key={d.id}>
-                    <td className="dp-docnum">{d.documentNumber}</td>
-                    <td className="dp-title">{d.title || '—'}</td>
-                    <td><span className="dp-type-tag">{d.documentType || '—'}</span></td>
-                    <td className="dp-version">v{d.versionNumber || '?'}</td>
-                    <td><span className="dp-status-badge" style={{ background: c.bg, color: c.text }}>{d.status}</span></td>
-                    <td className="dp-proj">{d.projectId || '—'}</td>
-                    <td className="dp-date">{timeAgo(d.createdAt)}</td>
-                    <td>
-                      <div className="dp-actions">
-                        <button className="dp-btn-edit" onClick={() => openEdit(d)}>Edit</button>
-                        <button className="dp-btn-del"  onClick={() => handleDelete(d.id, d.documentNumber)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {visible.map(d => (
+                <tr
+                  key={d.id}
+                  className="docp__row"
+                  onClick={() => navigate(`/plm/documents/${d.id}`)}
+                >
+                  <td className="docp__docnum">
+                    <span>{TYPE_ICON[d.docType] || '📄'}</span> {d.docNumber}
+                  </td>
+                  <td>{d.name}</td>
+                  <td><span className="docp__type-pill">{d.docType}</span></td>
+                  <td className="docp__ver">{d.versionLabel}</td>
+                  <td><StateBadge state={d.lifecycleState} /></td>
+                  <td className="docp__co">
+                    {d.checkedOutBy
+                      ? <span className="docp__co-badge">🔒 {d.checkedOutBy}</span>
+                      : <span className="docp__co-free">—</span>}
+                  </td>
+                  <td className="docp__date">
+                    {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—'}
+                  </td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <div className="docp__actions">
+                      <button className="docp__act-btn" onClick={() => openEdit(d)}>Edit</button>
+                      <button className="docp__act-btn docp__act-del" onClick={() => handleDelete(d)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          <div className="dp-table-footer">{docs.length} document{docs.length !== 1 ? 's' : ''}</div>
+          <div className="docp__footer">{visible.length} document{visible.length !== 1 ? 's' : ''}</div>
         </div>
       )}
     </div>
