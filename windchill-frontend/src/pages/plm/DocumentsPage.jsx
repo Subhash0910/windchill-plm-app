@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { documentApi } from '../../services/documentApi';
-import { usePlmContext } from '../../context/PlmContext';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import StateBadge from '../../components/plm/StateBadge';
 import './DocumentsPage.css';
 
@@ -23,39 +23,37 @@ const EMPTY_FORM = {
 
 const DocumentsPage = () => {
   const navigate = useNavigate();
-  const { activeContext } = usePlmContext();
-  const contextId = activeContext?.id;
+  const { selectedContextId } = useContext(PlmWorkspaceContext);
 
-  const [docs,      setDocs]      = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState('');
-  const [typeFilter,setTypeFilter]= useState('');
-  const [showForm,  setShowForm]  = useState(false);
-  const [editDoc,   setEditDoc]   = useState(null);
-  const [form,      setForm]      = useState(EMPTY_FORM);
-  const [saving,    setSaving]    = useState(false);
-  const [error,     setError]     = useState('');
+  const [docs,       setDocs]       = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [showForm,   setShowForm]   = useState(false);
+  const [editDoc,    setEditDoc]    = useState(null);
+  const [form,       setForm]       = useState(EMPTY_FORM);
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState('');
 
   const load = useCallback(async () => {
-    if (!contextId) return;
     setLoading(true);
     try {
-      const data = await documentApi.list(contextId, typeFilter || null);
+      const data = await documentApi.list(selectedContextId || null, typeFilter || null);
       setDocs(Array.isArray(data) ? data : []);
     } catch {
       setDocs([]);
     } finally {
       setLoading(false);
     }
-  }, [contextId, typeFilter]);
+  }, [selectedContextId, typeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
-  // local search filter (no extra round-trip)
+  // Local filter — no extra round-trip
   const visible = search.trim()
     ? docs.filter(d =>
-        d.docNumber.toLowerCase().includes(search.toLowerCase()) ||
-        d.name.toLowerCase().includes(search.toLowerCase())
+        (d.docNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+        (d.name      || '').toLowerCase().includes(search.toLowerCase())
       )
     : docs;
 
@@ -65,7 +63,12 @@ const DocumentsPage = () => {
   };
   const openEdit = (doc) => {
     setEditDoc(doc);
-    setForm({ docNumber: doc.docNumber, name: doc.name, description: doc.description || '', docType: doc.docType });
+    setForm({
+      docNumber:   doc.docNumber,
+      name:        doc.name,
+      description: doc.description || '',
+      docType:     doc.docType,
+    });
     setError(''); setShowForm(true);
   };
 
@@ -77,9 +80,19 @@ const DocumentsPage = () => {
     setSaving(true); setError('');
     try {
       if (editDoc) {
-        await documentApi.update(editDoc.id, { name: form.name, description: form.description, docType: form.docType });
+        await documentApi.update(editDoc.id, {
+          name:        form.name,
+          description: form.description,
+          docType:     form.docType,
+        });
       } else {
-        await documentApi.create({ contextId, docNumber: form.docNumber, name: form.name, description: form.description, docType: form.docType });
+        await documentApi.create({
+          contextId:   selectedContextId,
+          docNumber:   form.docNumber,
+          name:        form.name,
+          description: form.description,
+          docType:     form.docType,
+        });
       }
       setShowForm(false);
       await load();
@@ -99,7 +112,7 @@ const DocumentsPage = () => {
   return (
     <div className="docp">
 
-      {/* ── Page header ──────────────────────────────────────────── */}
+      {/* ── Page header */}
       <div className="docp__header">
         <div>
           <h1 className="docp__title">Documents</h1>
@@ -108,7 +121,7 @@ const DocumentsPage = () => {
         <button className="docp__btn-new" onClick={openCreate}>+ New Document</button>
       </div>
 
-      {/* ── Toolbar ──────────────────────────────────────────────── */}
+      {/* ── Toolbar */}
       <div className="docp__toolbar">
         <div className="docp__search-wrap">
           <span>🔍</span>
@@ -136,7 +149,7 @@ const DocumentsPage = () => {
         </div>
       </div>
 
-      {/* ── Create / Edit modal ────────────────────────────────────── */}
+      {/* ── Create / Edit modal */}
       {showForm && (
         <div className="docp__modal-bg" onClick={() => setShowForm(false)}>
           <div className="docp__modal" onClick={e => e.stopPropagation()}>
@@ -168,12 +181,17 @@ const DocumentsPage = () => {
               </div>
               <div className="docp__field">
                 <label>Description</label>
-                <textarea value={form.description} onChange={f('description')} rows={3} placeholder="Optional description…" />
+                <textarea
+                  value={form.description}
+                  onChange={f('description')}
+                  rows={3}
+                  placeholder="Optional description…"
+                />
               </div>
               {error && <p className="docp__err">{error}</p>}
               <div className="docp__form-actions">
                 <button type="button" className="docp__btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="docp__btn-save"  disabled={saving}>
+                <button type="submit"  className="docp__btn-save"  disabled={saving}>
                   {saving ? 'Saving…' : editDoc ? 'Update' : 'Create'}
                 </button>
               </div>
@@ -182,7 +200,7 @@ const DocumentsPage = () => {
         </div>
       )}
 
-      {/* ── Table ─────────────────────────────────────────────────── */}
+      {/* ── Table */}
       {loading ? (
         <div className="docp__loading"><div className="docp__spin" /><span>Loading documents…</span></div>
       ) : visible.length === 0 ? (
