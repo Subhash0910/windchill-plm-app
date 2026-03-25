@@ -1,8 +1,9 @@
 package com.windchill.api.document;
 
-import com.windchill.api.common.BaseEntity;
+import com.windchill.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.Builder.Default;
 
 @Entity
 @Table(
@@ -42,25 +43,29 @@ public class WTDocument extends BaseEntity {
     private String description;
 
     /** SPEC | DRAWING | PROCEDURE | REPORT */
+    @Default
     @Column(name = "doc_type", nullable = false, length = 20)
     private String docType = "SPEC";
 
+    @Default
     @Column(name = "lifecycle_state", nullable = false, length = 20)
     private String lifecycleState = "INWORK";
 
+    @Default
     @Column(name = "revision", nullable = false, length = 10)
     private String revision = "A";
 
+    @Default
     @Column(name = "iteration", nullable = false)
     private Integer iteration = 1;
 
+    @Default
     @Column(name = "is_latest", nullable = false)
     private Boolean isLatest = true;
 
     @Column(name = "checked_out_by", length = 100)
     private String checkedOutBy;
 
-    // ---- file attachment metadata (stored separately, path only) ----
     @Column(name = "file_name", length = 512)
     private String fileName;
 
