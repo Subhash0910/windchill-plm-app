@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { getEcrsByContext, createEcr, promoteEcr, deleteEcr } from '../../services/changeApi';
-import { getEcosByContext, createEco } from '../../services/changeApi';
+import {
+  getEcrsByContext, createEcr, submitEcr, startEcrReview,
+  approveEcr, rejectEcr, closeEcr, reopenEcr, deleteEcr,
+} from '../../services/changeApi';
+import { getEcosByContext, createEco, promoteEco } from '../../services/changeApi';
 import styles from './ChangesHomePage.module.css';
 
 const STATE_COLORS = {
-  // ECR states
-  DRAFT: '#6b7280', SUBMITTED: '#3b82f6', UNDER_REVIEW: '#f59e0b',
+  // ECR states  (backend enum: ChangeRequestStatus)
+  DRAFT: '#6b7280', SUBMITTED: '#3b82f6', IN_REVIEW: '#f59e0b',
   APPROVED: '#10b981', REJECTED: '#ef4444', CLOSED: '#9ca3af',
   // ECO states
-  OPEN: '#3b82f6', IN_REVIEW: '#f59e0b', IMPLEMENTING: '#8b5cf6',
+  OPEN: '#3b82f6', IMPLEMENTING: '#8b5cf6',
   COMPLETED: '#10b981', CANCELLED: '#ef4444',
 };
 
@@ -19,23 +22,24 @@ const StateBadge = ({ state }) => (
     background: STATE_COLORS[state] || '#6b7280',
     color: '#fff', padding: '2px 10px', borderRadius: 12,
     fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-  }}>{state?.replace('_', ' ')}</span>
+  }}>{state?.replace(/_/g, ' ')}</span>
 );
 
+// ECR: DRAFT→SUBMITTED→IN_REVIEW→APPROVED/REJECTED; APPROVED→CLOSED; REJECTED→DRAFT
 const ECR_TRANSITIONS = {
-  DRAFT: ['SUBMITTED'],
-  SUBMITTED: ['UNDER_REVIEW', 'REJECTED'],
-  UNDER_REVIEW: ['APPROVED', 'REJECTED'],
-  APPROVED: ['CLOSED'],
-  REJECTED: ['DRAFT'],
+  DRAFT:     [{ label: 'Submit',       action: (id) => submitEcr(id) }],
+  SUBMITTED: [{ label: 'Start Review', action: (id) => startEcrReview(id) }],
+  IN_REVIEW: [
+    { label: 'Approve', action: (id) => approveEcr(id, {}) },
+    { label: 'Reject',  action: (id) => rejectEcr(id, { comment: '' }) },
+  ],
+  APPROVED: [{ label: 'Close', action: (id) => closeEcr(id) }],
+  REJECTED: [{ label: 'Reopen', action: (id) => reopenEcr(id) }],
 };
 
 const ECO_TRANSITIONS = {
-  DRAFT: ['OPEN', 'CANCELLED'],
-  OPEN: ['IN_REVIEW', 'CANCELLED'],
-  IN_REVIEW: ['APPROVED', 'OPEN', 'CANCELLED'],
-  APPROVED: ['IMPLEMENTING', 'CANCELLED'],
-  IMPLEMENTING: ['COMPLETED', 'CANCELLED'],
+  OPEN:         [{ label: 'Implement', state: 'IMPLEMENTING' }, { label: 'Cancel', state: 'CANCELLED' }],
+  IMPLEMENTING: [{ label: 'Complete',  state: 'COMPLETED' },    { label: 'Cancel', state: 'CANCELLED' }],
 };
 
 export default function ChangesHomePage() {
@@ -62,8 +66,10 @@ export default function ChangesHomePage() {
         getEcrsByContext(contextId),
         getEcosByContext(contextId),
       ]);
-      setEcrs(ecrRes.data || []);
-      setEcos(ecoRes.data || []);
+      // ECR: wrapped in ApiResponse { data: [...] }
+      // ECO: plain array from ChangeOrderController
+      setEcrs(ecrRes.data?.data ?? ecrRes.data ?? []);
+      setEcos(Array.isArray(ecoRes.data) ? ecoRes.data : (ecoRes.data?.data ?? []));
     } catch (e) {
       setError('Failed to load change management data.');
     } finally { setLoading(false); }
@@ -93,9 +99,9 @@ export default function ChangesHomePage() {
     } catch { setError('Failed to create ECO.'); }
   }
 
-  async function handlePromoteEcr(id, state) {
-    try { await promoteEcr(id, state); loadAll(); }
-    catch { setError('Promote failed.'); }
+  async function handleEcrAction(actionFn, id) {
+    try { await actionFn(id); loadAll(); }
+    catch { setError('Action failed.'); }
   }
 
   async function handlePromoteEco(id, state) {
@@ -135,20 +141,22 @@ export default function ChangesHomePage() {
           {activeTab === 'ecr' && (
             <table className={styles.table}>
               <thead><tr>
-                <th>Number</th><th>Title</th><th>Priority</th><th>State</th><th>Created</th><th>Actions</th>
+                <th>Number</th><th>Title</th><th>Priority</th><th>State</th><th>Parts</th><th>Created</th><th>Actions</th>
               </tr></thead>
               <tbody>
-                {ecrs.length === 0 && <tr><td colSpan={6} className={styles.empty}>No ECRs found.</td></tr>}
+                {ecrs.length === 0 && <tr><td colSpan={7} className={styles.empty}>No ECRs found.</td></tr>}
                 {ecrs.map(r => (
                   <tr key={r.id} className={styles.row}>
-                    <td><span className={styles.link} onClick={() => navigate(`/plm/changes/ecr/${r.id}`)}>{r.ecrNumber}</span></td>
+                    <td><span className={styles.link} onClick={() => navigate(`/plm/changes/ecr/${r.id}`)}>{r.changeNumber}</span></td>
                     <td>{r.title}</td>
                     <td>{r.priority}</td>
-                    <td><StateBadge state={r.state} /></td>
+                    <td><StateBadge state={r.status} /></td>
+                    <td>{r.impactedPartCount ?? 0}</td>
                     <td>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
                     <td className={styles.actions}>
-                      {(ECR_TRANSITIONS[r.state] || []).map(s => (
-                        <button key={s} className={styles.btnSm} onClick={() => handlePromoteEcr(r.id, s)}>{s}</button>
+                      {(ECR_TRANSITIONS[r.status] || []).map(t => (
+                        <button key={t.label} className={styles.btnSm}
+                          onClick={() => handleEcrAction(t.action, r.id)}>{t.label}</button>
                       ))}
                     </td>
                   </tr>
@@ -173,8 +181,9 @@ export default function ChangesHomePage() {
                     <td>{o.ecrId ? <span className={styles.link} onClick={() => navigate(`/plm/changes/ecr/${o.ecrId}`)}>ECR #{o.ecrId}</span> : '—'}</td>
                     <td>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</td>
                     <td className={styles.actions}>
-                      {(ECO_TRANSITIONS[o.state] || []).map(s => (
-                        <button key={s} className={styles.btnSm} onClick={() => handlePromoteEco(o.id, s)}>{s}</button>
+                      {(ECO_TRANSITIONS[o.state] || []).map(t => (
+                        <button key={t.label} className={styles.btnSm}
+                          onClick={() => handlePromoteEco(o.id, t.state)}>{t.label}</button>
                       ))}
                     </td>
                   </tr>
@@ -213,7 +222,7 @@ export default function ChangesHomePage() {
           <div className={styles.modal}>
             <h2>New Change Order (ECO)</h2>
             <form onSubmit={handleCreateEco}>
-              <label>Title<input required value={ecoForm.title} onChange={e => setEcoForm(p => ({...p, title: e.target.value}))} /></label>
+              <label>Title<input required value={ecoForm.title} onChange={e => setEcrForm(p => ({...p, title: e.target.value}))} /></label>
               <label>Description<textarea rows={3} value={ecoForm.description} onChange={e => setEcoForm(p => ({...p, description: e.target.value}))} /></label>
               <label>Priority
                 <select value={ecoForm.priority} onChange={e => setEcoForm(p => ({...p, priority: e.target.value}))}>
