@@ -5,10 +5,12 @@ import LifecycleActions from '../../components/plm/LifecycleActions';
 import BomEditor from '../../components/plm/BomEditor';
 import AuditPanel from '../../components/plm/AuditPanel';
 import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
+import StateBadge from '../../components/plm/StateBadge';
 import InfoPage, { InfoBadge } from '../../components/plm/InfoPage';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import { AuthContext } from '../../context/AuthContext';
+import styles from './PartDetailPage.module.css';
 import './PartDetailPage.css';
 
 const TAB = {
@@ -168,7 +170,7 @@ const PartDetailPage = () => {
     } finally { setCoLoading(false); }
   };
 
-  /* ── derived data ───────────────────────────────────────────────────────── */
+  /* ── derived ────────────────────────────────────────────────────────────── */
   const childrenOptions = useMemo(() => {
     if (!part) return [];
     return (partsInCtx || []).filter(p => p.id !== part.id);
@@ -176,9 +178,9 @@ const PartDetailPage = () => {
 
   const versions = useMemo(() => {
     if (!part) return [];
-    const effectiveMasterId = part.masterId || part.id;
+    const master = part.masterId || part.id;
     const list = (partsInCtx || []).filter(p =>
-      (p.masterId != null && p.masterId === effectiveMasterId) || p.id === effectiveMasterId
+      (p.masterId != null && p.masterId === master) || p.id === master
     );
     return list.sort((a, b) => {
       const r = String(b.revision || '').localeCompare(String(a.revision || ''));
@@ -187,7 +189,7 @@ const PartDetailPage = () => {
     });
   }, [partsInCtx, part]);
 
-  /* ── render guards ──────────────────────────────────────────────────────── */
+  /* ── guards ─────────────────────────────────────────────────────────────── */
   if (loading)        return <div className="plm-muted">Loading part…</div>;
   if (error && !part) return <div className="plm-error">{error}</div>;
   if (!part)          return <div className="plm-muted">Part not found.</div>;
@@ -200,18 +202,11 @@ const PartDetailPage = () => {
     && part.lifecycleState !== 'OBSOLETE';
   const versionLabel = `${part.revision}.${part.iteration}`;
 
-  /* ── sub-components ─────────────────────────────────────────────────────── */
   const TabButton = ({ tab, children }) => (
     <button
       type="button"
       onClick={() => setActiveTab(tab)}
-      style={{
-        padding: '6px 10px', borderRadius: 8,
-        border: '1px solid #e5e7eb',
-        background: activeTab === tab ? '#0f4d6d' : '#fff',
-        color:      activeTab === tab ? '#fff'    : '#111827',
-        cursor: 'pointer', fontWeight: 600,
-      }}
+      className={`${styles.tabBtn} ${activeTab === tab ? styles.tabBtnActive : ''}`}
     >
       {children}
     </button>
@@ -273,40 +268,81 @@ const PartDetailPage = () => {
 
   /* ── render ─────────────────────────────────────────────────────────────── */
   return (
-    <div>
-      {/* ── InfoPage header: type label + title + attr grid ── */}
-      <InfoPage
-        title="Part"
-        subtitle={`${part.partNumber} — ${part.name}`}
-        badge={{ label: part.lifecycleState, variant: part.lifecycleState }}
-        actions={headerActions}
-        rows={infoRows}
-      />
+    <div className={styles.page}>
 
-      {/* ── Two-column workspace grid ── */}
+      {/* ══ Windchill-style Info Page header ══════════════════════════════ */}
+      <div className={styles.infoHeader}>
+        {/* Row 1: type icon + object identity */}
+        <div className={styles.infoHeaderTop}>
+          <div className={styles.infoHeaderLeft}>
+            <span className={styles.typeIcon}>⚙️</span>
+            <div>
+              <div className={styles.infoTitle}>
+                <span className={styles.partNumber}>{part.partNumber}</span>
+                <span className={styles.partName}>{part.name}</span>
+                <span className={styles.versionChip}>{versionLabel}</span>
+                <StateBadge state={part.lifecycleState} size="md" />
+                {!part.isLatest && (
+                  <span className={styles.notLatestBadge}>Not Latest</span>
+                )}
+              </div>
+              <div className={styles.infoSubtitle}>
+                {part.description || 'No description'}
+              </div>
+            </div>
+          </div>
+          <div className={styles.infoHeaderRight}>
+            {headerActions}
+          </div>
+        </div>
+
+        {/* Row 2: checkout banner (only when checked out) */}
+        {part.checkedOutBy && (
+          <div className={`${styles.checkoutBanner} ${checkedOutByMe ? styles.checkoutBannerMine : styles.checkoutBannerOther}`}>
+            {checkedOutByMe
+              ? <>🔒 Checked out by <strong>you</strong>. Changes will create a new working copy (iteration {part.iteration}).</>
+              : <>🔒 Locked by <strong>{part.checkedOutBy}</strong>. You cannot edit this part until it is checked in.</>
+            }
+            {checkedOutByMe && (
+              <div className={styles.checkoutBannerActions}>
+                <button className={styles.checkoutBannerBtn} onClick={checkIn}     disabled={coLoading}>✅ Check In</button>
+                <button className={styles.checkoutBannerBtn} onClick={undoCheckOut} disabled={coLoading}>↩ Undo</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Row 3: attribute grid */}
+        <div className={styles.attrGrid}>
+          {infoRows.map(r => (
+            <div key={r.label} className={styles.attrCell}>
+              <span className={styles.attrLabel}>{r.label}</span>
+              <span className={`${styles.attrValue} ${r.mono ? styles.mono : ''}`}>{r.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ Two-column workspace ══════════════════════════════════════════ */}
       <div className="detail-grid" style={{ marginTop: 16 }}>
 
         {/* ── LEFT: Checkout bar + Edit fields + Lifecycle + Promotion ── */}
         <div className="detail-card">
           <div className="card-title">Edit &amp; Actions</div>
 
-          {/* Checkout action bar */}
+          {/* Checkout bar (compact, for non-banner context) */}
           <div className="co-bar">
             {canCheckOut && (
               <Button variant="primary" size="sm" onClick={checkOut} disabled={coLoading || saving}>
                 🔒 Check Out
               </Button>
             )}
-            {checkedOutByMe && (
-              <>
-                <Button variant="primary"    size="sm" onClick={checkIn}     disabled={coLoading || saving}>✅ Check In</Button>
-                <Button variant="secondary"  size="sm" onClick={undoCheckOut} disabled={coLoading || saving}>↩ Undo</Button>
-              </>
-            )}
             {checkedOutByOther && (
               <span className="co-locked-msg">🔒 Locked by <strong>{part.checkedOutBy}</strong></span>
             )}
-            <span className="co-version-label">Version: <strong>{versionLabel}</strong></span>
+            {!part.checkedOutBy && (
+              <span className="co-version-label">Version: <strong>{versionLabel}</strong></span>
+            )}
           </div>
 
           {/* Editable fields */}
@@ -390,7 +426,6 @@ const PartDetailPage = () => {
                   </div>
                 )}
 
-                {/* Approver table */}
                 <div style={{ overflowX: 'auto', marginTop: 10 }}>
                   <table className="parts-table" style={{ width: '100%' }}>
                     <thead>
@@ -409,9 +444,7 @@ const PartDetailPage = () => {
                             <td className="mono">{w.dueAt       ? String(w.dueAt)       : '—'}</td>
                             <td className="mono">{w.completedAt ? String(w.completedAt) : '—'}</td>
                             <td style={{ textAlign: 'right' }}>
-                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>
-                                Open in Worklist
-                              </Button>
+                              <Button variant="secondary" size="sm" onClick={() => openWorkItemInWorklist(w.id)}>Open in Worklist</Button>
                             </td>
                           </tr>
                         );
@@ -423,7 +456,6 @@ const PartDetailPage = () => {
                   </table>
                 </div>
 
-                {/* Review comments */}
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>Review Comments</div>
                   {prComments.length === 0 && <div className="plm-muted">No comments yet.</div>}
@@ -453,7 +485,7 @@ const PartDetailPage = () => {
             alignItems: 'center', gap: 10, flexWrap: 'wrap',
           }}>
             <div>Workspace</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <TabButton tab={TAB.STRUCTURE}>Structure</TabButton>
               <TabButton tab={TAB.HISTORY}>History</TabButton>
               <TabButton tab={TAB.RELATED}>Related Objects</TabButton>
@@ -461,7 +493,6 @@ const PartDetailPage = () => {
             </div>
           </div>
 
-          {/* Structure (BOM) */}
           {activeTab === TAB.STRUCTURE && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 8 }}>BOM structure editor (parent → child lines).</div>
@@ -469,7 +500,6 @@ const PartDetailPage = () => {
             </div>
           )}
 
-          {/* History (Audit) */}
           {activeTab === TAB.HISTORY && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 8 }}>Audit trail for this exact version.</div>
@@ -477,7 +507,6 @@ const PartDetailPage = () => {
             </div>
           )}
 
-          {/* Related Objects */}
           {activeTab === TAB.RELATED && (
             <div className="related-split">
               <div className="related-nav">
@@ -485,7 +514,6 @@ const PartDetailPage = () => {
                 <RelatedNavItem view={RELATED_VIEW.WHERE_USED} label="Where Used" count={whereUsedLoaded ? (whereUsed || []).length : null} loading={whereUsedLoading} />
               </div>
               <div className="related-panel">
-
                 {relatedView === RELATED_VIEW.VERSIONS && (
                   <div>
                     <div style={{ marginBottom: 10 }}>
@@ -503,7 +531,7 @@ const PartDetailPage = () => {
                               <td className="mono">{v.partNumber}</td>
                               <td>{v.revision}</td>
                               <td>{v.iteration}</td>
-                              <td><span className={`pill pill-${(v.lifecycleState || '').toLowerCase()}`}>{v.lifecycleState}</span></td>
+                              <td><StateBadge state={v.lifecycleState} size="sm" /></td>
                               <td>{v.isLatest ? '✅' : '—'}</td>
                               <td>{v.checkedOutBy ? <span title={v.checkedOutBy}>🔒</span> : '—'}</td>
                               <td style={{ textAlign: 'right' }}>
@@ -543,7 +571,7 @@ const PartDetailPage = () => {
                               <tr key={p.id}>
                                 <td className="mono">{p.partNumber}</td>
                                 <td>{p.name}</td>
-                                <td><span className={`pill pill-${(p.lifecycleState || '').toLowerCase()}`}>{p.lifecycleState}</span></td>
+                                <td><StateBadge state={p.lifecycleState} size="sm" /></td>
                                 <td style={{ textAlign: 'right' }}>
                                   <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${p.id}`)}>Open</Button>
                                 </td>
@@ -562,7 +590,6 @@ const PartDetailPage = () => {
             </div>
           )}
 
-          {/* Attachments */}
           {activeTab === TAB.ATTACHMENTS && (
             <div>
               <div className="plm-muted" style={{ marginBottom: 12 }}>Files and documents attached to this part.</div>

@@ -1,19 +1,69 @@
+/* ─── Base chip ──────────────────────────────────────────────────────────── */
 .wc-state-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   border: 1px solid;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  user-select: none;
 }
-.wc-state-badge--sm { font-size: 10px; padding: 1px 6px; }
-.wc-state-badge--lg { font-size: 12px; padding: 3px 10px; }
+.wc-state-badge--sm  { font-size: 10px;  padding: 1px 6px;  }
+.wc-state-badge--md  { font-size: 11px;  padding: 2px 9px;  }
+.wc-state-badge--lg  { font-size: 12px;  padding: 3px 11px; }
 
-.badge--inwork      { background:var(--wc-state-inwork-bg);      color:var(--wc-state-inwork-text);      border-color:var(--wc-state-inwork-border); }
-.badge--underreview { background:var(--wc-state-underreview-bg); color:var(--wc-state-underreview-text); border-color:var(--wc-state-underreview-border); }
-.badge--released    { background:var(--wc-state-released-bg);    color:var(--wc-state-released-text);    border-color:var(--wc-state-released-border); }
-.badge--obsolete    { background:var(--wc-state-obsolete-bg);    color:var(--wc-state-obsolete-text);    border-color:var(--wc-state-obsolete-border); }
-.badge--default     { background:#F3F4F6; color:#374151; border-color:#D1D5DB; }
+/* ─── Part lifecycle ─────────────────────────────────────────────────────── */
+/* INWORK — neutral gray */
+.badge--inwork {
+  background: #f3f4f6;
+  color:       #374151;
+  border-color:#d1d5db;
+}
+/* UNDERREVIEW — amber */
+.badge--underreview {
+  background: #fef3c7;
+  color:       #92400e;
+  border-color:#fcd34d;
+}
+/* RELEASED — green */
+.badge--released {
+  background: #d1fae5;
+  color:       #065f46;
+  border-color:#6ee7b7;
+}
+/* OBSOLETE — muted red */
+.badge--obsolete {
+  background: #fee2e2;
+  color:       #991b1b;
+  border-color:#fca5a5;
+}
+
+/* ─── Extra workflow / change states ─────────────────────────────────────── */
+/* PENDING — orange */
+.badge--pending {
+  background: #ffedd5;
+  color:       #9a3412;
+  border-color:#fdba74;
+}
+/* DRAFT — light blue-gray */
+.badge--draft {
+  background: #e0f2fe;
+  color:       #0c4a6e;
+  border-color:#7dd3fc;
+}
+/* CRITICAL — deep red */
+.badge--critical {
+  background: #7f1d1d;
+  color:       #fef2f2;
+  border-color:#991b1b;
+}
+
+/* ─── Fallback ───────────────────────────────────────────────────────────── */
+.badge--default {
+  background: #f3f4f6;
+  color:       #374151;
+  border-color:#d1d5db;
+}
