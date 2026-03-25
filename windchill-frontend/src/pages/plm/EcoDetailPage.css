@@ -1,0 +1,201 @@
+/* ── EcoDetailPage styles ─────────────────────────────── */
+.eco-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: #fff;
+  font-family: var(--wc-font, 'Segoe UI', sans-serif);
+  font-size: 13px;
+  color: #1a1a2e;
+}
+
+/* Head */
+.eco-head {
+  padding: 14px 20px 10px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #dde3ec;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.eco-kicker {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 3px;
+}
+.eco-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1B3A6B;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eco-sub {
+  font-size: 13.5px;
+  color: #444;
+  margin-top: 3px;
+}
+.eco-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+/* Tabs */
+.eco-tabs {
+  display: flex;
+  border-bottom: 2px solid #dde3ec;
+  background: #eef1f7;
+  padding: 0 16px;
+}
+.eco-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: -2px;
+  transition: all .15s;
+}
+.eco-tab:hover { color: #1B3A6B; }
+.eco-tab-active {
+  color: #1B3A6B;
+  border-bottom-color: #1B3A6B;
+  font-weight: 600;
+}
+
+/* Body */
+.eco-body { padding: 16px 20px; flex: 1; }
+
+/* Grid cards */
+.eco-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 700px) { .eco-grid { grid-template-columns: 1fr; } }
+.eco-card {
+  background: #f7f9fc;
+  border: 1px solid #dde3ec;
+  border-radius: 5px;
+  padding: 14px 16px;
+}
+.eco-card-full { grid-column: 1 / -1; }
+.eco-card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #1B3A6B;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dde3ec;
+}
+
+/* KV pairs */
+.eco-kv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  row-gap: 6px;
+  column-gap: 8px;
+  align-items: center;
+}
+.eco-k { font-size: 11.5px; color: #777; font-weight: 500; }
+.eco-v { font-size: 13px; }
+.eco-v.mono { font-family: monospace; font-size: 12px; }
+
+/* State badge */
+.eco-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+.s-DRAFT        { background:#f1f5f9; color:#475569; }
+.s-OPEN         { background:#dbeafe; color:#1d4ed8; }
+.s-IN_REVIEW    { background:#fef3c7; color:#92400e; }
+.s-APPROVED     { background:#dcfce7; color:#166534; }
+.s-IMPLEMENTING { background:#ede9fe; color:#5b21b6; }
+.s-COMPLETED    { background:#dcfce7; color:#166534; }
+.s-CANCELLED    { background:#fee2e2; color:#991b1b; }
+
+/* Action buttons */
+.eco-btn {
+  border: none;
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: inherit;
+}
+.eco-btn-primary  { background: #1B3A6B; color: #fff; }
+.eco-btn-primary:hover  { background: #14305a; }
+.eco-btn-secondary { background: #fff; color: #333; border: 1px solid #bcc5d3; }
+.eco-btn-secondary:hover { background: #e6eaf3; }
+.eco-btn-danger   { background: #ef4444; color: #fff; }
+.eco-btn-danger:hover   { background: #dc2626; }
+
+/* AI metric cards */
+.eco-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 600px) { .eco-ai-grid { grid-template-columns: 1fr; } }
+.eco-ai-card {
+  background: #f7f9fc;
+  border: 1px solid #dde3ec;
+  border-radius: 5px;
+  padding: 16px;
+  text-align: center;
+  border-top-width: 4px;
+}
+.eco-ai-val {
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.eco-ai-label { font-size: 11.5px; color: #777; text-transform: uppercase; letter-spacing: .4px; }
+
+/* ECR linked card */
+.eco-linked-ecr {
+  background: #f7f9fc;
+  border: 1px solid #dde3ec;
+  border-radius: 5px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Misc */
+.eco-text { font-size: 13px; color: #333; line-height: 1.5; }
+.eco-muted { color: #888; font-size: 12.5px; }
+.eco-error {
+  margin: 10px 16px;
+  background: #fff0f0;
+  border: 1px solid #f5c2c2;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #c0392b;
+  font-size: 12px;
+}
+.eco-loading { padding: 40px; text-align: center; color: #1B3A6B; font-size: 13px; }

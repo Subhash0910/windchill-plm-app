@@ -7,7 +7,7 @@
   font-size: 13px;
 }
 
-/* Header */
+/* ── Header ───────────────────────────────────────────── */
 .pageHeader {
   padding: 14px 20px 10px;
   border-bottom: 1px solid #dde3ec;
@@ -31,7 +31,7 @@
   color: #666;
 }
 
-/* Stats bar */
+/* ── Stats bar ────────────────────────────────────────── */
 .statsBar {
   display: flex;
   gap: 1px;
@@ -62,7 +62,7 @@
   letter-spacing: .4px;
 }
 
-/* Toolbar */
+/* ── Toolbar ──────────────────────────────────────────── */
 .toolbar {
   display: flex;
   align-items: center;
@@ -127,7 +127,7 @@
 }
 .btnIcon:hover { background: #e6eaf3; }
 
-/* Create panel */
+/* ── Create panel ─────────────────────────────────────── */
 .createPanel {
   border: 1px solid #bcc5d3;
   border-radius: 4px;
@@ -178,10 +178,12 @@
   font-family: inherit;
   background: #fff;
 }
-.createBody input:focus, .createBody select:focus, .createBody textarea:focus { border-color: #1B3A6B; }
+.createBody input:focus, .createBody select:focus, .createBody textarea:focus {
+  border-color: #1B3A6B;
+}
 .createActions { display: flex; gap: 8px; margin-top: 4px; }
 
-/* Table */
+/* ── Table ────────────────────────────────────────────── */
 .tableWrap { flex: 1; overflow: auto; }
 .wcTable {
   width: 100%;
@@ -209,9 +211,7 @@
   border-bottom: 1px solid #eaecf2;
   transition: background .1s;
 }
-.tableRow {
-  cursor: pointer;
-}
+.tableRow { cursor: pointer; }
 .tableRow:hover { background: #f0f4fb; }
 .wcTable td { padding: 7px 12px; vertical-align: middle; }
 .ecrLink {
@@ -234,11 +234,14 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: .3px;
 }
-.priHigh    { background: #fde8e8; color: #c0392b; }
-.priMedium  { background: #fef3e0; color: #e67e00; }
-.priLow     { background: #e8f5e9; color: #1e8a44; }
-.dimCell { color: #777; font-size: 12px; }
+.priCRITICAL { background: #fde8e8; color: #991b1b; }
+.priHIGH     { background: #fde8e8; color: #c0392b; }
+.priMEDIUM   { background: #fef3e0; color: #e67e00; }
+.priLOW      { background: #e8f5e9; color: #1e8a44; }
+.dimCell  { color: #777; font-size: 12px; }
+.monoCell { font-family: monospace; font-size: 12px; }
 .emptyRow {
   text-align: center;
   padding: 40px;
@@ -275,4 +278,59 @@
   color: #777;
   border-top: 1px solid #eaecf2;
   background: #f7f9fc;
+}
+
+/* ── State badge ──────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* ECR */
+.sDRAFT       { background:#f1f5f9; color:#475569; }
+.sSUBMITTED   { background:#dbeafe; color:#1d4ed8; }
+.sIN_REVIEW   { background:#fef3c7; color:#92400e; }
+.sUNDER_REVIEW{ background:#fef3c7; color:#92400e; }
+.sAPPROVED    { background:#dcfce7; color:#166534; }
+.sREJECTED    { background:#fee2e2; color:#991b1b; }
+.sCLOSED      { background:#f1f5f9; color:#6b7280; }
+/* ECO extra */
+.sOPEN        { background:#dbeafe; color:#1d4ed8; }
+.sIMPLEMENTING{ background:#ede9fe; color:#5b21b6; }
+.sCOMPLETED   { background:#dcfce7; color:#166534; }
+.sCANCELLED   { background:#fee2e2; color:#991b1b; }
+
+/* ── Action buttons in table ──────────────────────────── */
+.actionBar { display: flex; gap: 4px; flex-wrap: wrap; }
+.actBtn {
+  border: 1px solid #bcc5d3;
+  background: #fff;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #1B3A6B;
+  white-space: nowrap;
+}
+.actBtn:hover { background: #eef1f7; }
+.actBtnDanger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.actBtnDanger:hover { background: #fee2e2; }
+
+/* ── Impacted parts count badge ───────────────────────── */
+.partsBadge {
+  background: #eef1f7;
+  color: #1B3A6B;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
 }

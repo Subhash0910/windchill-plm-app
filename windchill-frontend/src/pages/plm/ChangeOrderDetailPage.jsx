@@ -1,194 +1,249 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEcoById, promoteEco, getEcosByEcr, linkEcoAiResult } from '../../services/changeApi';
+import { getEcoById, promoteEco, linkEcoAiResult } from '../../services/changeApi';
 import { getEcrById } from '../../services/changeApi';
-import styles from './EcrDetailPage.css';
+import './EcoDetailPage.css';
 
-const STATE_COLORS = {
-  DRAFT: '#6b7280', OPEN: '#3b82f6', IN_REVIEW: '#f59e0b',
-  APPROVED: '#10b981', IMPLEMENTING: '#8b5cf6',
-  COMPLETED: '#10b981', CANCELLED: '#ef4444',
+// ── state helpers ──────────────────────────────────────────────────────────
+const STATE_CLASSES = {
+  DRAFT: 's-DRAFT', OPEN: 's-OPEN', IN_REVIEW: 's-IN_REVIEW',
+  APPROVED: 's-APPROVED', IMPLEMENTING: 's-IMPLEMENTING',
+  COMPLETED: 's-COMPLETED', CANCELLED: 's-CANCELLED',
 };
 
+function StateBadge({ state }) {
+  const s = String(state || '').toUpperCase();
+  return (
+    <span className={`eco-badge ${STATE_CLASSES[s] || 's-DRAFT'}`}>
+      {s.replace(/_/g, ' ')}
+    </span>
+  );
+}
+
+// Which next states are allowed per current state
 const TRANSITIONS = {
-  DRAFT: ['OPEN', 'CANCELLED'],
-  OPEN: ['IN_REVIEW', 'CANCELLED'],
-  IN_REVIEW: ['APPROVED', 'OPEN', 'CANCELLED'],
-  APPROVED: ['IMPLEMENTING', 'CANCELLED'],
-  IMPLEMENTING: ['COMPLETED', 'CANCELLED'],
+  DRAFT:        [{ label: 'Open',        state: 'OPEN',         cls: 'eco-btn-primary'   }],
+  OPEN:         [{ label: 'Start Review',state: 'IN_REVIEW',    cls: 'eco-btn-primary'   },
+                 { label: 'Cancel',      state: 'CANCELLED',    cls: 'eco-btn-danger'    }],
+  IN_REVIEW:    [{ label: 'Approve',     state: 'APPROVED',     cls: 'eco-btn-primary'   },
+                 { label: 'Back to Open',state: 'OPEN',         cls: 'eco-btn-secondary' },
+                 { label: 'Cancel',      state: 'CANCELLED',    cls: 'eco-btn-danger'    }],
+  APPROVED:     [{ label: 'Implement',   state: 'IMPLEMENTING', cls: 'eco-btn-primary'   },
+                 { label: 'Cancel',      state: 'CANCELLED',    cls: 'eco-btn-danger'    }],
+  IMPLEMENTING: [{ label: 'Complete',    state: 'COMPLETED',    cls: 'eco-btn-primary'   },
+                 { label: 'Cancel',      state: 'CANCELLED',    cls: 'eco-btn-danger'    }],
 };
 
-const StateBadge = ({ state }) => (
-  <span style={{
-    background: STATE_COLORS[state] || '#6b7280', color: '#fff',
-    padding: '3px 12px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-  }}>{state?.replace('_', ' ')}</span>
-);
-
+// ── component ──────────────────────────────────────────────────────────────
 export default function ChangeOrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [eco, setEco]     = useState(null);
-  const [ecr, setEcr]     = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
+  const [eco, setEco]       = useState(null);
+  const [ecr, setEcr]       = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]     = useState('');
   const [activeTab, setActiveTab] = useState('details');
+  const [promoting, setPromoting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => { loadEco(); }, [id]);
 
   async function loadEco() {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await getEcoById(id);
-      setEco(res.data);
-      if (res.data.ecrId) {
-        const ecrRes = await getEcrById(res.data.ecrId);
-        setEcr(ecrRes.data);
+      // ECO controller returns plain object (not wrapped)
+      const data = res.data?.data ?? res.data;
+      setEco(data);
+      if (data?.ecrId) {
+        try {
+          const ecrRes = await getEcrById(data.ecrId);
+          // ECR is wrapped in ApiResponse
+          setEcr(ecrRes.data?.data ?? ecrRes.data);
+        } catch { /* ECR might be deleted */ }
       }
-    } catch { setError('Failed to load ECO.'); }
-    finally { setLoading(false); }
+    } catch (ex) {
+      setError(ex?.response?.data?.message || 'Failed to load ECO.');
+    } finally { setLoading(false); }
   }
 
   async function handlePromote(state) {
-    try { await promoteEco(id, state); loadEco(); }
-    catch (e) { setError(e?.response?.data?.message || 'Promote failed.'); }
+    setPromoting(true); setError('');
+    try { await promoteEco(id, state); await loadEco(); }
+    catch (ex) { setError(ex?.response?.data?.message || 'Promote failed.'); }
+    finally { setPromoting(false); }
   }
 
   async function handleRunAI() {
-    // Trigger AI analysis — uses same RandomForest endpoint as Part impact
+    setAiLoading(true); setError('');
     try {
       await linkEcoAiResult(id, {
-        riskScore: Math.random() * 100,  // placeholder until wired to ML service
-        confidence: 0.87,
-        costEstimate: Math.random() * 50000,
+        riskScore: null,     // backend ML service fills these
+        confidence: null,
+        costEstimate: null,
       });
-      loadEco();
-    } catch { setError('AI analysis failed.'); }
+      await loadEco();
+    } catch (ex) { setError(ex?.response?.data?.message || 'AI analysis failed.'); }
+    finally { setAiLoading(false); }
   }
 
-  if (loading) return <div style={{padding: 40, textAlign:'center'}}>Loading…</div>;
-  if (error)   return <div style={{padding: 40, color:'red'}}>{error}</div>;
-  if (!eco)    return null;
+  if (loading) return <div className="eco-loading">Loading ECO…</div>;
+  if (error && !eco) return <div className="eco-error">{error}</div>;
+  if (!eco)  return <div className="eco-loading eco-muted">ECO not found.</div>;
 
-  const transitions = TRANSITIONS[eco.state] || [];
+  const st = String(eco.status ?? eco.state ?? '').toUpperCase();
+  const transitions = TRANSITIONS[st] || [];
+  const hasAi = eco.aiRiskScore != null;
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1100, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:4 }}>
-        <span style={{ color:'#6b7280', cursor:'pointer', fontSize:13 }} onClick={() => navigate('/plm/changes')}>← Changes</span>
-      </div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
+    <div className="eco-page">
+
+      {/* ── Head ─────────────────────────────────────────── */}
+      <div className="eco-head">
         <div>
-          <h1 style={{ fontSize:22, fontWeight:700, margin:0 }}>{eco.ecoNumber} — {eco.title}</h1>
-          <div style={{ display:'flex', gap:8, marginTop:6 }}>
-            <StateBadge state={eco.state} />
-            <span style={{ background:'#f3f4f6', padding:'2px 10px', borderRadius:12, fontSize:11, color:'#374151' }}>{eco.priority}</span>
+          <div className="eco-kicker">Engineering Change Order</div>
+          <div className="eco-number">
+            {eco.ecoNumber || `ECO-${String(eco.id).padStart(6,'0')}`}
+            <StateBadge state={st} />
+            {eco.priority && (
+              <span style={{ background:'#f3f4f6', padding:'2px 9px', borderRadius:10, fontSize:11, color:'#374151', fontWeight:600 }}>
+                {eco.priority}
+              </span>
+            )}
           </div>
+          <div className="eco-sub">{eco.title}</div>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
-          {transitions.map(s => (
-            <button key={s}
-              onClick={() => handlePromote(s)}
-              style={{ padding:'6px 14px', borderRadius:6, border:'none', cursor:'pointer',
-                background: s === 'CANCELLED' ? '#ef4444' : '#1B3A6B', color:'#fff', fontSize:12, fontWeight:600 }}
-            >{s.replace('_',' ')}</button>
+
+        <div className="eco-actions">
+          <button className="eco-btn eco-btn-secondary" onClick={() => navigate('/plm/changes')}>← Changes</button>
+          <button className="eco-btn eco-btn-secondary" onClick={loadEco}>Refresh</button>
+          {transitions.map(t => (
+            <button
+              key={t.state}
+              className={`eco-btn ${t.cls}`}
+              onClick={() => handlePromote(t.state)}
+              disabled={promoting}
+            >
+              {promoting ? '…' : t.label}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display:'flex', gap:0, borderBottom:'2px solid #e5e7eb', marginBottom:24 }}>
-        {['details','linked-ecr','ai-analysis'].map(t => (
-          <button key={t} onClick={() => setActiveTab(t)}
-            style={{ padding:'8px 20px', border:'none', background:'none', cursor:'pointer',
-              fontWeight: activeTab===t ? 700 : 400,
-              borderBottom: activeTab===t ? '2px solid #1B3A6B' : '2px solid transparent',
-              color: activeTab===t ? '#1B3A6B' : '#6b7280', marginBottom:-2, fontSize:13,
-              textTransform:'capitalize' }}
-          >{t.replace('-',' ')}</button>
+      {error && <div className="eco-error">{error}</div>}
+
+      {/* ── Tabs ─────────────────────────────────────────── */}
+      <div className="eco-tabs">
+        {[['details','Details'],['linked-ecr','Linked ECR'],['ai-analysis','AI Analysis']].map(([key,label]) => (
+          <button
+            key={key}
+            className={`eco-tab ${activeTab === key ? 'eco-tab-active' : ''}`}
+            onClick={() => setActiveTab(key)}
+          >{label}</button>
         ))}
       </div>
 
-      {/* Details Tab */}
-      {activeTab === 'details' && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-          <InfoRow label="ECO Number"    value={eco.ecoNumber} />
-          <InfoRow label="State"         value={<StateBadge state={eco.state} />} />
-          <InfoRow label="Priority"      value={eco.priority} />
-          <InfoRow label="Assigned To"   value={eco.assignedTo || '—'} />
-          <InfoRow label="Due Date"      value={eco.dueDate || '—'} />
-          <InfoRow label="Created By"    value={eco.createdBy || '—'} />
-          <InfoRow label="Created"       value={eco.createdAt ? new Date(eco.createdAt).toLocaleString() : '—'} />
-          <InfoRow label="Last Updated"  value={eco.updatedAt ? new Date(eco.updatedAt).toLocaleString() : '—'} />
-          {eco.description && (
-            <div style={{ gridColumn:'1/-1', background:'#f9fafb', borderRadius:8, padding:16 }}>
-              <div style={{ fontSize:12, color:'#6b7280', marginBottom:4 }}>Description</div>
-              <div style={{ fontSize:14 }}>{eco.description}</div>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="eco-body">
 
-      {/* Linked ECR Tab */}
-      {activeTab === 'linked-ecr' && (
-        <div>
-          {ecr ? (
-            <div style={{ background:'#f9fafb', borderRadius:8, padding:20 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div>
-                  <div style={{ fontSize:16, fontWeight:700 }}>{ecr.ecrNumber} — {ecr.title}</div>
-                  <div style={{ marginTop:6 }}><StateBadge state={ecr.state} /></div>
-                </div>
-                <button onClick={() => navigate(`/plm/changes/ecr/${ecr.id}`)}
-                  style={{ padding:'6px 14px', borderRadius:6, border:'1px solid #1B3A6B',
-                    background:'#fff', color:'#1B3A6B', cursor:'pointer', fontSize:12 }}
-                >View ECR</button>
+        {/* ── Details tab ──────────────────────────────── */}
+        {activeTab === 'details' && (
+          <div className="eco-grid">
+            <div className="eco-card">
+              <div className="eco-card-title">Change Order Info</div>
+              <div className="eco-kv">
+                <span className="eco-k">ECO Number</span>   <span className="eco-v mono">{eco.ecoNumber || '—'}</span>
+                <span className="eco-k">State</span>         <span className="eco-v"><StateBadge state={st} /></span>
+                <span className="eco-k">Priority</span>      <span className="eco-v">{eco.priority || '—'}</span>
+                <span className="eco-k">Assigned To</span>   <span className="eco-v mono">{eco.assignedTo || '—'}</span>
+                <span className="eco-k">Due Date</span>      <span className="eco-v">{eco.dueDate ? new Date(eco.dueDate).toLocaleDateString() : '—'}</span>
               </div>
-              {ecr.description && <div style={{ marginTop:12, fontSize:14, color:'#374151' }}>{ecr.description}</div>}
             </div>
-          ) : (
-            <div style={{ color:'#6b7280', padding:20 }}>No ECR linked to this Change Order.</div>
-          )}
-        </div>
-      )}
 
-      {/* AI Analysis Tab */}
-      {activeTab === 'ai-analysis' && (
-        <div>
-          {(eco.aiRiskScore != null) ? (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:24 }}>
-              <AiCard label="Risk Score"     value={`${eco.aiRiskScore?.toFixed(1)}%`}  color="#ef4444" />
-              <AiCard label="Confidence"     value={`${((eco.aiConfidence||0)*100).toFixed(0)}%`} color="#10b981" />
-              <AiCard label="Cost Estimate"  value={`$${(eco.aiCostEstimate||0).toLocaleString()}`} color="#f59e0b" />
+            <div className="eco-card">
+              <div className="eco-card-title">Audit</div>
+              <div className="eco-kv">
+                <span className="eco-k">Created by</span>    <span className="eco-v mono">{eco.createdBy || '—'}</span>
+                <span className="eco-k">Created</span>       <span className="eco-v">{eco.createdAt ? new Date(eco.createdAt).toLocaleString() : '—'}</span>
+                <span className="eco-k">Last updated</span>  <span className="eco-v">{eco.updatedAt ? new Date(eco.updatedAt).toLocaleString() : '—'}</span>
+                <span className="eco-k">Context ID</span>    <span className="eco-v mono">{eco.contextId || '—'}</span>
+              </div>
             </div>
-          ) : (
-            <div style={{ color:'#6b7280', marginBottom:20 }}>No AI analysis run yet.</div>
-          )}
-          <button onClick={handleRunAI}
-            style={{ padding:'8px 20px', borderRadius:6, border:'none',
-              background:'#1B3A6B', color:'#fff', cursor:'pointer', fontWeight:600 }}
-          >▶ Run AI Impact Analysis</button>
-        </div>
-      )}
-    </div>
-  );
-}
 
-function InfoRow({ label, value }) {
-  return (
-    <div style={{ background:'#f9fafb', borderRadius:8, padding:'12px 16px' }}>
-      <div style={{ fontSize:11, color:'#6b7280', marginBottom:4, textTransform:'uppercase', letterSpacing:0.5 }}>{label}</div>
-      <div style={{ fontSize:14, fontWeight:500 }}>{value}</div>
-    </div>
-  );
-}
+            {eco.description && (
+              <div className="eco-card eco-card-full">
+                <div className="eco-card-title">Description</div>
+                <div className="eco-text">{eco.description}</div>
+              </div>
+            )}
+          </div>
+        )}
 
-function AiCard({ label, value, color }) {
-  return (
-    <div style={{ background:'#f9fafb', borderRadius:8, padding:20, textAlign:'center', borderTop:`4px solid ${color}` }}>
-      <div style={{ fontSize:28, fontWeight:800, color }}>{value}</div>
-      <div style={{ fontSize:12, color:'#6b7280', marginTop:4 }}>{label}</div>
+        {/* ── Linked ECR tab ───────────────────────────── */}
+        {activeTab === 'linked-ecr' && (
+          <div>
+            {ecr ? (
+              <div className="eco-linked-ecr">
+                <div>
+                  <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>
+                    {ecr.changeNumber || `ECR-${String(ecr.id).padStart(6,'0')}`} — {ecr.title}
+                  </div>
+                  <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+                    <StateBadge state={ecr.status} />
+                    {ecr.priority && <span style={{ fontSize:11, background:'#f3f4f6', padding:'1px 8px', borderRadius:8, color:'#555' }}>{ecr.priority}</span>}
+                  </div>
+                  {ecr.description && <div className="eco-text" style={{ marginTop:8 }}>{ecr.description}</div>}
+                  <div className="eco-muted" style={{ marginTop:6 }}>
+                    Created by {ecr.createdBy || '—'} · {ecr.createdAt ? new Date(ecr.createdAt).toLocaleDateString() : '—'}
+                  </div>
+                </div>
+                <button className="eco-btn eco-btn-secondary" onClick={() => navigate(`/plm/changes/ecr/${ecr.id}`)}>
+                  View ECR →
+                </button>
+              </div>
+            ) : (
+              <div className="eco-muted" style={{ padding: 20 }}>
+                {eco.ecrId ? `ECR #${eco.ecrId} could not be loaded.` : 'No ECR linked to this Change Order.'}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── AI Analysis tab ──────────────────────────── */}
+        {activeTab === 'ai-analysis' && (
+          <div>
+            {hasAi ? (
+              <div className="eco-ai-grid">
+                <div className="eco-ai-card" style={{ borderTopColor:'#ef4444' }}>
+                  <div className="eco-ai-val" style={{ color:'#ef4444' }}>{eco.aiRiskScore?.toFixed(1)}%</div>
+                  <div className="eco-ai-label">Risk Score</div>
+                </div>
+                <div className="eco-ai-card" style={{ borderTopColor:'#10b981' }}>
+                  <div className="eco-ai-val" style={{ color:'#10b981' }}>{((eco.aiConfidence||0)*100).toFixed(0)}%</div>
+                  <div className="eco-ai-label">Confidence</div>
+                </div>
+                <div className="eco-ai-card" style={{ borderTopColor:'#f59e0b' }}>
+                  <div className="eco-ai-val" style={{ color:'#f59e0b' }}>${(eco.aiCostEstimate||0).toLocaleString()}</div>
+                  <div className="eco-ai-label">Cost Estimate</div>
+                </div>
+              </div>
+            ) : (
+              <p className="eco-muted" style={{ marginBottom:16 }}>No AI analysis has been run yet for this Change Order.</p>
+            )}
+            <button
+              className="eco-btn eco-btn-primary"
+              onClick={handleRunAI}
+              disabled={aiLoading}
+            >
+              {aiLoading ? 'Running…' : '▶ Run AI Impact Analysis'}
+            </button>
+            <p className="eco-muted" style={{ marginTop:10 }}>
+              Uses the Random Forest model (87% accuracy, 19 features) to estimate blast radius risk and cost.
+            </p>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
