@@ -22,72 +22,64 @@ public class PartController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<?>> create(@RequestBody Part part) {
-        Part created = partService.createPart(part);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.CREATED).data(created).build());
+        return ok(partService.createPart(part), APIConstants.CREATED);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> get(@PathVariable Long id) {
-        Part p = partService.getPart(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(p).build());
+        return ok(partService.getPart(id));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<?>> list(
             @RequestParam Long contextId,
             @RequestParam(required = false) Long folderId) {
-        List<Part> parts = folderId != null
+        List<Part> parts = (folderId != null)
                 ? partService.listPartsByFolder(contextId, folderId)
                 : partService.listParts(contextId);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(parts).build());
+        return ok(parts);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> update(@PathVariable Long id, @RequestBody Part details) {
-        Part updated = partService.updatePart(id, details);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(updated).build());
+        return ok(partService.updatePart(id, details));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> delete(@PathVariable Long id) {
         partService.deletePart(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.DELETED).data(null).build());
+        return ok(null, APIConstants.DELETED);
     }
 
     @PostMapping("/{id}/promote")
     public ResponseEntity<ApiResponse<?>> promote(
             @PathVariable Long id,
             @RequestParam LifecycleStateEnum target) {
-        Part promoted = partService.promote(id, target);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(promoted).build());
+        return ok(partService.promote(id, target));
     }
 
     @PostMapping("/{id}/revise")
     public ResponseEntity<ApiResponse<?>> revise(@PathVariable Long id) {
-        Part revised = partService.revise(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(revised).build());
+        return ok(partService.revise(id));
     }
 
     @GetMapping("/{id}/where-used")
     public ResponseEntity<ApiResponse<?>> whereUsed(@PathVariable Long id) {
-        List<Part> parents = partService.whereUsed(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(parents).build());
+        return ok(partService.whereUsed(id));
     }
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<?>> search(
             @RequestParam String q,
             @RequestParam(required = false) Long contextId) {
-        List<Part> results = partService.searchPartsByNumber(q);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(results).build());
+        return ok(partService.searchPartsByNumber(q));
     }
 
-    // ── Checkout / Checkin (Phase 0) ──────────────────────────────────────────
+    // ─── Checkout / Checkin ───────────────────────────────────────────────────
 
     @PostMapping("/{id}/checkout")
     public ResponseEntity<ApiResponse<?>> checkOut(@PathVariable Long id) {
-        Part checked = partService.checkOut(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(checked).build());
+        return ok(partService.checkOut(id));
     }
 
     @PostMapping("/{id}/checkin")
@@ -96,14 +88,12 @@ public class PartController {
             @RequestBody(required = false) Map<String, String> body) {
         String name        = body != null ? body.get("name")        : null;
         String description = body != null ? body.get("description") : null;
-        Part committed = partService.checkIn(id, name, description);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(committed).build());
+        return ok(partService.checkIn(id, name, description));
     }
 
     @PostMapping("/{id}/undo-checkout")
     public ResponseEntity<ApiResponse<?>> undoCheckOut(@PathVariable Long id) {
-        Part restored = partService.undoCheckOut(id);
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(restored).build());
+        return ok(partService.undoCheckOut(id));
     }
 
     @GetMapping("/{id}/version-label")
@@ -115,6 +105,16 @@ public class PartController {
                 "iteration",    String.valueOf(part.getIteration()),
                 "checkedOutBy", part.getCheckedOutBy() != null ? part.getCheckedOutBy() : ""
         );
-        return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(label).build());
+        return ok(label);
+    }
+
+    // ─── Helper ───────────────────────────────────────────────────────────────
+
+    private ResponseEntity<ApiResponse<?>> ok(Object data) {
+        return ok(data, APIConstants.SUCCESS);
+    }
+
+    private ResponseEntity<ApiResponse<?>> ok(Object data, String message) {
+        return ResponseEntity.ok(ApiResponse.builder().success(true).message(message).data(data).build());
     }
 }

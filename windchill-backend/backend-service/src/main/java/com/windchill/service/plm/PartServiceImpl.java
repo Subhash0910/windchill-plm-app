@@ -16,7 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,9 +32,7 @@ public class PartServiceImpl implements IPartService {
     private final PlmAclService acl;
     private final PromotionWorkflowService promotionWorkflowService;
 
-    // ─────────────────────────────────────────────────────────────
-    // CRUD
-    // ─────────────────────────────────────────────────────────────
+    // ─── CRUD ─────────────────────────────────────────────────────────────────
 
     @Override
     public Part createPart(Part part) {
@@ -63,7 +60,6 @@ public class PartServiceImpl implements IPartService {
         }
 
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CREATE", "Part created: " + saved.getPartNumber());
-        log.info("Part created: {} {}.{}", saved.getPartNumber(), saved.getRevision(), saved.getIteration());
         return saved;
     }
 
@@ -79,23 +75,29 @@ public class PartServiceImpl implements IPartService {
     @Override
     @Transactional(readOnly = true)
     public List<Part> listParts(Long contextId) {
-        if (contextId == null) {
-            throw new BusinessException("contextId is required");
-        }
+        if (contextId == null) throw new BusinessException("contextId is required");
         acl.requireContextMember(contextId);
         return partRepository.findByContextIdAndIsDeletedFalseOrderByPartNumberAsc(contextId);
     }
 
     @Override
     @Transactional(readOnly = true)
+    public List<Part> listPartsByFolder(Long contextId, Long folderId) {
+        if (contextId == null) throw new BusinessException("contextId is required");
+        acl.requireContextMember(contextId);
+        // filter in-memory — avoids needing a new repo query; folder lists are typically small
+        return partRepository.findByContextIdAndIsDeletedFalseOrderByPartNumberAsc(contextId)
+                .stream()
+                .filter(p -> folderId.equals(p.getFolderId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Part> searchPartsByNumber(String query) {
-        if (query == null || query.isBlank()) {
-            log.warn("searchPartsByNumber called with empty query");
-            return List.of();
-        }
-        log.info("Searching parts by number: {}", query);
-        List<Part> allMatches = partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query);
-        return allMatches.stream()
+        if (query == null || query.isBlank()) return List.of();
+        return partRepository.findByPartNumberContainingIgnoreCaseAndIsDeletedFalse(query)
+                .stream()
                 .filter(part -> {
                     try {
                         acl.requireContextMember(part.getContextId());
@@ -145,8 +147,6 @@ public class PartServiceImpl implements IPartService {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.ENGINEER);
         } else if (target == LifecycleStateEnum.RELEASED) {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER, RoleEnum.APPROVER);
-        } else if (target == LifecycleStateEnum.OBSOLETE) {
-            acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
         } else {
             acl.requireContextRole(part.getContextId(), RoleEnum.ADMIN, RoleEnum.MANAGER);
         }
@@ -156,17 +156,15 @@ public class PartServiceImpl implements IPartService {
         }
 
         boolean allowed =
-                (from == LifecycleStateEnum.INWORK && target == LifecycleStateEnum.UNDERREVIEW)
-                        || (from == LifecycleStateEnum.UNDERREVIEW && target == LifecycleStateEnum.RELEASED)
-                        || (from == LifecycleStateEnum.RELEASED && target == LifecycleStateEnum.OBSOLETE);
+                (from == LifecycleStateEnum.INWORK      && target == LifecycleStateEnum.UNDERREVIEW)
+             || (from == LifecycleStateEnum.UNDERREVIEW && target == LifecycleStateEnum.RELEASED)
+             || (from == LifecycleStateEnum.RELEASED    && target == LifecycleStateEnum.OBSOLETE);
 
-        if (!allowed) {
-            throw new BusinessException("Invalid lifecycle transition: " + from + " -> " + target);
-        }
+        if (!allowed) throw new BusinessException("Invalid lifecycle transition: " + from + " -> " + target);
 
         part.setLifecycleState(target);
         Part saved = partRepository.save(part);
-        auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "PROMOTE", "Lifecycle: " + from + " -> " + target);
+        auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "PROMOTE", from + " -> " + target);
         return saved;
     }
 
@@ -204,9 +202,7 @@ public class PartServiceImpl implements IPartService {
     public List<Part> whereUsed(Long partId) {
         Part child = getPart(partId);
         List<Long> parentIds = bomLineRepository.findDistinctParentPartIdsByChildPartId(partId);
-        if (parentIds == null || parentIds.isEmpty()) {
-            return List.of();
-        }
+        if (parentIds == null || parentIds.isEmpty()) return List.of();
         List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentIds);
         List<Part> filtered = new ArrayList<>();
         for (Part p : parents) {
@@ -230,12 +226,9 @@ public class PartServiceImpl implements IPartService {
         bomLineRepository.deleteByParentPartId(id);
         partRepository.deleteById(id);
         auditService.log(PlmEntityTypeEnum.PART, id, "DELETE", "Part deleted: " + part.getPartNumber());
-        log.info("Part deleted: id={} partNumber={}", id, part.getPartNumber());
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // CHECK OUT / CHECK IN  (Windchill Phase 0)
-    // ─────────────────────────────────────────────────────────────
+    // ─── CHECK OUT / CHECK IN ────────────────────────────────────────────────
 
     @Override
     public Part checkOut(Long partId) {
@@ -252,7 +245,7 @@ public class PartServiceImpl implements IPartService {
             if (current.getCheckedOutBy().equals(currentUsername())) {
                 throw new BusinessException("Part " + versionLabel(current) + " is already checked out by you.");
             }
-            throw new BusinessException("Part " + versionLabel(current) + " is already checked out by " + current.getCheckedOutBy() + ".");
+            throw new BusinessException("Part " + versionLabel(current) + " is checked out by " + current.getCheckedOutBy() + ".");
         }
 
         current.setIsLatest(false);
@@ -274,7 +267,6 @@ public class PartServiceImpl implements IPartService {
         Part saved = partRepository.save(working);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKOUT",
                 "Checked out by " + currentUsername() + " -> " + versionLabel(saved));
-        log.info("Part checked out: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
         return saved;
     }
 
@@ -298,7 +290,6 @@ public class PartServiceImpl implements IPartService {
         Part saved = partRepository.save(working);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "CHECKIN",
                 "Checked in by " + currentUsername() + " -> " + versionLabel(saved));
-        log.info("Part checked in: {} {} by {}", saved.getPartNumber(), versionLabel(saved), currentUsername());
         return saved;
     }
 
@@ -323,9 +314,7 @@ public class PartServiceImpl implements IPartService {
         }
 
         int previousIter = working.getIteration() - 1;
-        if (previousIter < 1) {
-            throw new BusinessException("No previous iteration to restore.");
-        }
+        if (previousIter < 1) throw new BusinessException("No previous iteration to restore.");
 
         partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
                 .ifPresent(prev -> {
@@ -337,15 +326,12 @@ public class PartServiceImpl implements IPartService {
         partRepository.deleteById(working.getId());
         auditService.log(PlmEntityTypeEnum.PART, partId, "UNDO_CHECKOUT",
                 "Checkout undone for " + label + " by " + currentUsername());
-        log.info("Undo checkout: {} {} by {}", working.getPartNumber(), label, currentUsername());
 
         return partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
                 .orElseThrow(() -> new ResourceNotFoundException("Part", "previousIteration", previousIter));
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     public static String versionLabel(Part p) {
         return p.getRevision() + "." + p.getIteration();
@@ -361,10 +347,7 @@ public class PartServiceImpl implements IPartService {
         int i = c.length() - 1;
         char[] chars = c.toCharArray();
         while (i >= 0) {
-            if (chars[i] < 'Z') {
-                chars[i] = (char) (chars[i] + 1);
-                return new String(chars);
-            }
+            if (chars[i] < 'Z') { chars[i] = (char)(chars[i] + 1); return new String(chars); }
             chars[i] = 'A';
             i--;
         }
