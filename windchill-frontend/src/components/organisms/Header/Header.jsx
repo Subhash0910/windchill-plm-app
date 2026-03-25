@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import NotificationBell from './NotificationBell';
+import Breadcrumb from '../../plm/Breadcrumb';
 import './Header.css';
 
+/**
+ * Windchill-style 48px navy top bar.
+ * Slot layout:  [Brand]  [Breadcrumb — flex 1]  [Admin chip | Bell | Avatar]
+ */
 const Header = ({ title }) => {
   const { user, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -24,12 +29,16 @@ const Header = ({ title }) => {
 
   return (
     <header className="wc-header">
-      {/* Brand / Logo area */}
+
+      {/* Brand */}
       <div className="wc-header-brand">
         <span className="wc-logo-mark">W</span>
         <span className="wc-logo-text">Windchill PLM</span>
-        {title && <span className="wc-header-sep" />}
-        {title && <span className="wc-header-context">{title}</span>}
+      </div>
+
+      {/* Breadcrumb — fills centre */}
+      <div className="wc-header-breadcrumb">
+        <Breadcrumb />
       </div>
 
       {/* Right controls */}
@@ -39,7 +48,6 @@ const Header = ({ title }) => {
         )}
         <NotificationBell />
 
-        {/* Avatar + dropdown */}
         <div className="wc-user-menu" ref={menuRef}>
           <button
             className="wc-avatar"
@@ -60,10 +68,7 @@ const Header = ({ title }) => {
                 <span className="wc-user-role">{user?.role}</span>
               </div>
               <hr className="wc-dropdown-sep" />
-              <button
-                className="wc-dropdown-item wc-dropdown-logout"
-                onClick={handleLogout}
-              >
+              <button className="wc-dropdown-item wc-dropdown-logout" onClick={handleLogout}>
                 Sign Out
               </button>
             </div>

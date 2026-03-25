@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { plmApi } from '../../services/plmApi';
 import './NavigatorPanel.css';
 
-/* ── Individual nav item ── */
-const NavItem = ({ to, icon, label, badge }) => (
+/* ── NavItem ─────────────────────────────────────────────────────────── */
+const NavItem = ({ to, icon, label, badge, end: endProp }) => (
   <NavLink
     to={to}
+    end={endProp ?? to === '/plm/parts'}
     className={({ isActive }) => `wc-nav__item ${isActive ? 'active' : ''}`}
-    end={to === '/plm/parts'}
   >
     <span className="wc-nav__item-icon">{icon}</span>
     <span className="wc-nav__item-label">{label}</span>
-    {badge != null && <span className="wc-nav__item-badge">{badge}</span>}
+    {badge != null && badge > 0 && <span className="wc-nav__item-badge">{badge}</span>}
   </NavLink>
 );
 
-/* ── Collapsible group ── */
+/* ── NavGroup (collapsible accordion) ─────────────────────────────────── */
 const NavGroup = ({ icon, label, children, defaultOpen = true }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -30,18 +31,35 @@ const NavGroup = ({ icon, label, children, defaultOpen = true }) => {
   );
 };
 
+/* ── Main NavigatorPanel ───────────────────────────────────────────────── */
 const NavigatorPanel = () => {
-  const location = useLocation();
+  const [worklistCount,  setWorklistCount]  = useState(null);
+  const [notifCount,     setNotifCount]     = useState(null);
+
+  useEffect(() => {
+    // Live badge counts — fire & forget, silent failure
+    plmApi.listMyWorkItems()
+      .then(items => setWorklistCount(Array.isArray(items) ? items.filter(i => i.status === 'PENDING').length : 0))
+      .catch(() => {});
+    plmApi.getNotificationCount()
+      .then(n => setNotifCount(n ?? 0))
+      .catch(() => {});
+  }, []);
+
   return (
     <nav className="wc-navigator" aria-label="Navigator">
-      <div className="wc-navigator__header">Navigator</div>
+      <div className="wc-navigator__header">
+        <span>Navigator</span>
+      </div>
 
+      {/* HOME */}
       <NavGroup icon="🏠" label="Home" defaultOpen>
-        <NavItem to="/dashboard"     icon="⬛" label="My Dashboard" />
-        <NavItem to="/plm/worklist"  icon="✅" label="My Worklist" />
-        <NavItem to="/plm/notifications" icon="🔔" label="Notifications" />
+        <NavItem to="/dashboard"         icon="⊞" label="My Dashboard" end />
+        <NavItem to="/plm/worklist"      icon="✅" label="My Worklist"  badge={worklistCount} />
+        <NavItem to="/plm/notifications" icon="🔔" label="Notifications" badge={notifCount} />
       </NavGroup>
 
+      {/* PRODUCT DATA */}
       <NavGroup icon="📦" label="Product Data" defaultOpen>
         <NavItem to="/plm/products"  icon="📦" label="Products" />
         <NavItem to="/plm/parts"     icon="⚙️" label="Parts" />
@@ -49,20 +67,24 @@ const NavigatorPanel = () => {
         <NavItem to="/plm/library"   icon="📚" label="Library" />
       </NavGroup>
 
+      {/* CHANGE MANAGEMENT */}
       <NavGroup icon="🔄" label="Change Management" defaultOpen>
         <NavItem to="/plm/changes"       icon="📋" label="Change Requests" />
         <NavItem to="/plm/changes/tasks" icon="🔧" label="Change Tasks" />
       </NavGroup>
 
+      {/* PROJECTS */}
       <NavGroup icon="🗂️" label="Projects" defaultOpen={false}>
-        <NavItem to="/plm/projects"  icon="🗂️" label="All Projects" />
-        <NavItem to="/plm/team"      icon="👥" label="Team" />
+        <NavItem to="/plm/projects" icon="🗂️" label="All Projects" />
+        <NavItem to="/plm/team"     icon="👥" label="Team" />
       </NavGroup>
 
-      <NavGroup icon="⚡" label="AI & Analytics" defaultOpen={false}>
-        <NavItem to="/plm/ai-demo"   icon="⚡" label="AI Impact Engine" />
+      {/* AI */}
+      <NavGroup icon="⚡" label="AI &amp; Analytics" defaultOpen={false}>
+        <NavItem to="/plm/ai-demo" icon="⚡" label="AI Impact Engine" />
       </NavGroup>
 
+      {/* ADMIN */}
       <NavGroup icon="🛠️" label="Administration" defaultOpen={false}>
         <NavItem to="/admin/users"   icon="👤" label="User Management" />
         <NavItem to="/plm/audit-log" icon="📋" label="Audit Log" />
