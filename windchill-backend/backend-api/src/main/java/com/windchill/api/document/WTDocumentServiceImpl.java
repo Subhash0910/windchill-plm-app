@@ -3,6 +3,7 @@ package com.windchill.api.document;
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.service.plm.IAuditService;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ public class WTDocumentServiceImpl implements WTDocumentService {
     @PersistenceContext
     private EntityManager em;
 
-    // ------------------------------------------------------------------ list
+    // ── list ─────────────────────────────────────────────────────────────────
     @Override
     public List<WTDocumentDto> listByContext(Long contextId, String docType) {
         if (contextId == null) return List.of();
@@ -31,13 +32,13 @@ public class WTDocumentServiceImpl implements WTDocumentService {
         return docs.stream().map(this::toDto).collect(Collectors.toList());
     }
 
-    // ------------------------------------------------------------------ get
+    // ── get ──────────────────────────────────────────────────────────────────
     @Override
     public WTDocumentDto getById(Long id) {
         return toDto(findOrThrow(id));
     }
 
-    // ------------------------------------------------------------------ create
+    // ── create ───────────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto create(WTDocumentCreateRequest req, String username) {
@@ -48,25 +49,21 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             .name(req.getName())
             .description(req.getDescription())
             .docType(req.getDocType() != null ? req.getDocType().toUpperCase() : "SPEC")
-            .lifecycleState("INWORK")
-            .revision("A")
-            .iteration(1)
-            .isLatest(true)
-            .createdBy(username)
-            .updatedBy(username)
             .build();
+        // BaseEntity fields not in builder - set via setters
+        doc.setCreatedBy(username);
+        doc.setUpdatedBy(username);
+
         WTDocument saved = repo.save(doc);
         if (saved.getMasterId() == null) {
             saved.setMasterId(saved.getId());
             repo.save(saved);
         }
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, saved.getId(),
-            "CREATE", "Created document " + saved.getDocNumber(), username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, saved.getId(), "CREATE", username);
         return toDto(saved);
     }
 
-    // ------------------------------------------------------------------ update
+    // ── update ───────────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto update(Long id, WTDocumentUpdateRequest req, String username) {
@@ -77,28 +74,24 @@ public class WTDocumentServiceImpl implements WTDocumentService {
         if (req.getDescription() != null) doc.setDescription(req.getDescription());
         if (req.getDocType()     != null) doc.setDocType(req.getDocType().toUpperCase());
         doc.setUpdatedBy(username);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id, "UPDATE", "Updated document", username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "UPDATE", username);
         return toDto(repo.save(doc));
     }
 
-    // ------------------------------------------------------------------ promote
+    // ── promote ──────────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto promote(Long id, String targetState, String username) {
         WTDocument doc = findOrThrow(id);
         if (doc.getCheckedOutBy() != null)
             throw new IllegalStateException("Cannot promote a checked-out document.");
-        String from = doc.getLifecycleState();
         doc.setLifecycleState(targetState.toUpperCase());
         doc.setUpdatedBy(username);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id,
-            "PROMOTE", from + " -> " + targetState.toUpperCase(), username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "PROMOTE_" + targetState.toUpperCase(), username);
         return toDto(repo.save(doc));
     }
 
-    // ------------------------------------------------------------------ checkout
+    // ── checkout ─────────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto checkOut(Long id, String username) {
@@ -122,19 +115,17 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             .lifecycleState(base.getLifecycleState())
             .revision(base.getRevision())
             .iteration(base.getIteration() + 1)
-            .isLatest(true)
             .checkedOutBy(username)
-            .createdBy(username)
-            .updatedBy(username)
             .build();
+        working.setCreatedBy(username);
+        working.setUpdatedBy(username);
+
         WTDocument saved = repo.save(working);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id,
-            "CHECKOUT", "Checked out by " + username + ", new iter=" + saved.getIteration(), username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "CHECKOUT", username);
         return toDto(saved);
     }
 
-    // ------------------------------------------------------------------ checkin
+    // ── checkin ──────────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto checkIn(Long id, String username) {
@@ -143,12 +134,11 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             throw new IllegalStateException("Only the checkout owner can check in.");
         doc.setCheckedOutBy(null);
         doc.setUpdatedBy(username);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id, "CHECKIN", "Checked in by " + username, username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "CHECKIN", username);
         return toDto(repo.save(doc));
     }
 
-    // ------------------------------------------------------------------ undo
+    // ── undo checkout ────────────────────────────────────────────────────────
     @Override
     @Transactional
     public WTDocumentDto undoCheckOut(Long id, String username) {
@@ -168,12 +158,11 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             repo.save(prev.get(0));
         }
         repo.delete(working);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id, "UNDO_CHECKOUT", "Undo by " + username, username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "UNDO_CHECKOUT", username);
         return prev.isEmpty() ? null : toDto(prev.get(0));
     }
 
-    // ------------------------------------------------------------------ delete
+    // ── delete (soft) ────────────────────────────────────────────────────────
     @Override
     @Transactional
     public void delete(Long id, String username) {
@@ -181,11 +170,10 @@ public class WTDocumentServiceImpl implements WTDocumentService {
         doc.setIsDeleted(true);
         doc.setUpdatedBy(username);
         repo.save(doc);
-        auditService.logAction(
-            PlmEntityTypeEnum.DOCUMENT, id, "DELETE", "Soft-deleted", username);
+        auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "DELETE", username);
     }
 
-    // ------------------------------------------------------------------ part links
+    // ── part links ───────────────────────────────────────────────────────────
     @Override
     public List<WTDocumentDto> listByPart(Long partId) {
         return repo.findByPartId(partId).stream().map(this::toDto).collect(Collectors.toList());
@@ -211,11 +199,10 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             .executeUpdate();
     }
 
-    // ------------------------------------------------------------------ helpers
+    // ── helpers ───────────────────────────────────────────────────────────────
     private WTDocument findOrThrow(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-            .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                "Document not found: " + id));
+            .orElseThrow(() -> new EntityNotFoundException("Document not found: " + id));
     }
 
     private WTDocumentDto toDto(WTDocument d) {
@@ -239,8 +226,8 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             .versionLabel(d.getRevision() + "." + d.getIteration())
             .createdBy(d.getCreatedBy())
             .updatedBy(d.getUpdatedBy())
-            .createdAt(d.getCreatedAt())
-            .updatedAt(d.getUpdatedAt())
+            .createdAt(d.getCreatedAt())       // LocalDateTime - matches BaseEntity
+            .updatedAt(d.getUpdatedAt())       // LocalDateTime - matches BaseEntity
             .build();
     }
 }

@@ -7,5 +7,6 @@ public enum PlmEntityTypeEnum {
     CONTEXT,
     FOLDER,
     PART,
-    BOM_LINE
+    BOM_LINE,
+    DOCUMENT
 }
