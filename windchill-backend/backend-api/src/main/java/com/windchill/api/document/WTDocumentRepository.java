@@ -27,12 +27,13 @@ public interface WTDocumentRepository extends JpaRepository<WTDocument, Long> {
         """)
     List<WTDocument> search(@Param("ctxId") Long contextId, @Param("kw") String keyword);
 
-    // Docs linked to a specific part
-    @Query("""
-        SELECT d FROM WTDocument d
+    // Docs linked to a specific part — uses native SQL because part_documents is a
+    // plain join table, not a JPA-managed entity; JPQL cannot JOIN raw table names.
+    @Query(value = """
+        SELECT d.* FROM wt_documents d
         JOIN part_documents pd ON pd.document_id = d.id
-        WHERE pd.part_id = :partId AND d.isDeleted = false
-        """)
+        WHERE pd.part_id = :partId AND d.is_deleted = false
+        """, nativeQuery = true)
     List<WTDocument> findByPartId(@Param("partId") Long partId);
 
     Optional<WTDocument> findByIdAndIsDeletedFalse(Long id);
