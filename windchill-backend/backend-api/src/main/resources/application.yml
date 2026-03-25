@@ -29,7 +29,8 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        # MySQL8Dialect is deprecated in Hibernate 6.3 and auto-detected.
+        # Removing explicit dialect eliminates HHH90000025/HHH90000026 warnings.
         format_sql: true
         use_sql_comments: true
         connection:
