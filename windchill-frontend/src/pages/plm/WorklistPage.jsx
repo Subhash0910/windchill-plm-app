@@ -1,227 +1,206 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { plmApi } from '../../services/plmApi';
-import { clearAuth } from '../../utils/localStorage';
-import './WorklistPage.css';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import StateBadge from '../../components/plm/StateBadge';
+import styles from './WorklistPage.module.css';
 
-const fmtDate = (iso) => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
-};
+const API = import.meta.env.VITE_API_URL ?? '';
 
-const STATUS_CLASS = {
-  PENDING:  'wl-pending',
-  APPROVED: 'wl-approved',
-  REJECTED: 'wl-rejected',
-};
+const TABS = ['All', 'Pending', 'Completed'];
 
-const WorklistPage = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const focusWorkItemId = searchParams.get('workItemId');
+export default function WorklistPage() {
+  const navigate   = useNavigate();
+  const [items,   setItems]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [tab,     setTab]     = useState('All');
+  const [acting,  setActing]  = useState(null);
+  const [comment, setComment] = useState('');
+  const [confirmItem, setConfirmItem] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
-  const [loading,     setLoading]     = useState(false);
-  const [items,       setItems]       = useState([]);
-  const [error,       setError]       = useState('');
-  const [commentById, setCommentById] = useState({});
-  const [highlightId, setHighlightId] = useState(null);
-  const scrollDoneRef = useRef(false);
+  const token   = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const pendingCount = useMemo(
-    () => items.filter(i => i.status === 'PENDING').length,
-    [items]
-  );
-
-  const forceRelogin = () => {
-    clearAuth();
-    navigate('/login', { replace: true });
-  };
-
-  const load = async () => {
+  const load = useCallback(() => {
     setLoading(true);
-    setError('');
+    fetch(`${API}/api/v1/plm/worklist`, { headers })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => { setItems(Array.isArray(data) ? data : (data.data ?? [])); setError(null); })
+      .catch(e  => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openConfirm = (item, action) => {
+    setConfirmItem(item); setConfirmAction(action); setComment('');
+  };
+  const closeConfirm = () => { setConfirmItem(null); setConfirmAction(null); };
+
+  const submitAction = async () => {
+    if (!confirmItem || !confirmAction) return;
+    setActing(confirmItem.id);
+    const url = confirmAction === 'approve'
+      ? `${API}/api/v1/plm/worklist/${confirmItem.id}/approve`
+      : `${API}/api/v1/plm/worklist/${confirmItem.id}/reject`;
     try {
-      const data = await plmApi.listMyWorkItems();
-      setItems(Array.isArray(data) ? data : []);
-    } catch (e) {
-      const status = e?.response?.status;
-      if (status === 401 || status === 403) { forceRelogin(); return; }
-      setError(e?.response?.data?.message || e?.message || 'Failed to load worklist');
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(url, {
+        method: 'POST', headers,
+        body: JSON.stringify({ comment }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      closeConfirm();
+      load();
+    } catch (e) { alert(e.message); }
+    finally { setActing(null); }
   };
 
-  useEffect(() => { load(); }, []);
-
-  // Deep-link: /plm/worklist?workItemId=123
-  useEffect(() => {
-    scrollDoneRef.current = false;
-    setHighlightId(focusWorkItemId ? String(focusWorkItemId) : null);
-  }, [focusWorkItemId]);
-
-  useEffect(() => {
-    if (!highlightId || loading || scrollDoneRef.current) return;
-    const row = document.getElementById(`wl-row-${highlightId}`);
-    if (!row) return;
-    scrollDoneRef.current = true;
-    setTimeout(() => row.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-  }, [highlightId, loading, items.length]);
-
-  const onApprove = async (id) => {
-    setError('');
-    try {
-      const comment = (commentById[id] || '').trim();
-      await plmApi.approveWorkItem(id, comment || null);
-      await load();
-    } catch (e) {
-      const status = e?.response?.status;
-      if (status === 401 || status === 403) { forceRelogin(); return; }
-      setError(e?.response?.data?.message || e?.message || 'Approve failed');
-    }
+  const statusFilter = item => {
+    if (tab === 'Pending')   return item.status === 'PENDING'   || item.status === 'IN_REVIEW';
+    if (tab === 'Completed') return item.status === 'APPROVED'  || item.status === 'REJECTED';
+    return true;
   };
 
-  const onReject = async (id) => {
-    setError('');
-    const comment = (commentById[id] || '').trim();
-    if (!comment) { setError('A rejection comment is required.'); return; }
-    try {
-      await plmApi.rejectWorkItem(id, comment);
-      await load();
-    } catch (e) {
-      const status = e?.response?.status;
-      if (status === 401 || status === 403) { forceRelogin(); return; }
-      setError(e?.response?.data?.message || e?.message || 'Reject failed');
-    }
-  };
+  const filtered = items.filter(statusFilter);
+  const pending  = items.filter(i => i.status === 'PENDING' || i.status === 'IN_REVIEW').length;
+
+  const fmtDate = s => s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="wl-page">
-      {/* ── Header ── */}
-      <div className="wl-header">
-        <div>
-          <h2 className="wl-title">Worklist</h2>
-          <div className="wl-sub">
-            {pendingCount > 0
-              ? <span style={{ color: '#dc2626', fontWeight: 600 }}>{pendingCount} pending review{pendingCount > 1 ? 's' : ''} awaiting you</span>
-              : <span style={{ color: '#16a34a' }}>✅ All caught up — no pending tasks</span>
-            }
-          </div>
-        </div>
-        <button className="wl-btn" onClick={load} disabled={loading}>Refresh</button>
-      </div>
-
-      {error && <div className="wl-error">{error}</div>}
-
-      <div className="wl-card">
-        {loading ? (
-          <div className="wl-empty">Loading…</div>
-        ) : items.length === 0 ? (
-          <div className="wl-empty">
-            <div style={{ fontSize: '2em', marginBottom: 8 }}>🎉</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>No work items assigned to you</div>
-            <div style={{ color: '#64748b', fontSize: '0.9em' }}>
-              When a part is promoted for review and you are a context manager,
-              a work item will appear here.
+    <div className={styles.page}>
+      {/* Header */}
+      <div className={styles.pageHeader}>
+        <div className={styles.pageTitleRow}>
+          <div className={styles.pageTitle}>
+            <span className={styles.typeIcon}>📋</span>
+            <div>
+              <h1>My Worklist</h1>
+              <p className={styles.subtitle}>Pending approvals and review tasks</p>
             </div>
           </div>
-        ) : (
-          <table className="wl-table">
+          {pending > 0 && <span className={styles.pendingBadge}>{pending} pending</span>}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className={styles.toolbar}>
+        <div className={styles.tabs}>
+          {TABS.map(t => (
+            <button
+              key={t}
+              className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
+              onClick={() => setTab(t)}
+            >{t}</button>
+          ))}
+        </div>
+        <div className={styles.toolbarRight}>
+          <button className={styles.btnIcon} title="Refresh" onClick={load}>↻</button>
+        </div>
+      </div>
+
+      {/* Confirm dialog */}
+      {confirmItem && (
+        <div className={styles.dialogOverlay}>
+          <div className={styles.dialog}>
+            <div className={`${styles.dialogHeader} ${confirmAction === 'approve' ? styles.approveHeader : styles.rejectHeader}`}>
+              {confirmAction === 'approve' ? '✔ Approve Task' : '✖ Reject Task'}
+            </div>
+            <div className={styles.dialogBody}>
+              <p className={styles.dialogDesc}>
+                <strong>{confirmItem.title}</strong>
+              </p>
+              <label>Comment (optional)
+                <textarea
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Add a comment…"
+                  rows={3}
+                />
+              </label>
+              <div className={styles.dialogActions}>
+                <button
+                  className={confirmAction === 'approve' ? styles.btnApprove : styles.btnReject}
+                  onClick={submitAction}
+                  disabled={!!acting}
+                >
+                  {acting ? 'Processing…' : (confirmAction === 'approve' ? 'Approve' : 'Reject')}
+                </button>
+                <button className={styles.btnCancel} onClick={closeConfirm}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className={styles.tableWrap}>
+        {loading && <div className={styles.loading}>Loading worklist…</div>}
+        {error   && <div className={styles.errorBanner}>Error: {error} <button onClick={load}>Retry</button></div>}
+        {!loading && !error && (
+          <table className={styles.wcTable}>
             <thead>
               <tr>
-                <th>#</th>
-                <th>Part</th>
+                <th>Task</th>
+                <th>Object</th>
+                <th>Type</th>
+                <th>Target State</th>
+                <th>Assigned By</th>
+                <th>Due Date</th>
                 <th>Status</th>
-                <th>Due</th>
-                <th>Completed</th>
-                <th>Comment</th>
-                <th>Actions</th>
+                <th className={styles.actionsCol}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map(it => {
-                const comment     = commentById[it.id] || '';
-                const isPending   = it.status === 'PENDING';
-                const isHighlight = highlightId && String(it.id) === String(highlightId);
-
-                return (
-                  <tr
-                    key={it.id}
-                    id={`wl-row-${it.id}`}
-                    className={isHighlight ? 'wl-highlight' : ''}
-                  >
-                    {/* Work item # */}
-                    <td className="mono" style={{ color: '#94a3b8', fontSize: '0.85em' }}>#{it.id}</td>
-
-                    {/* Part — show part number as link, part name as subtitle */}
-                    <td>
-                      <button
-                        type="button"
-                        className="wl-link"
-                        onClick={() => it.partId && navigate(`/plm/parts/${it.partId}`)}
-                        title={it.partId ? `Open Part #${it.partId}` : ''}
-                      >
-                        {it.partNumber || `#${it.partId}`}
-                      </button>
-                      {it.partName && (
-                        <div style={{ fontSize: '0.78em', color: '#64748b', marginTop: 2, fontStyle: 'italic' }}>
-                          {it.partName}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Status badge */}
-                    <td>
-                      <span className={`wl-status ${STATUS_CLASS[it.status] || ''}`}>
-                        {it.status}
-                      </span>
-                    </td>
-
-                    <td style={{ fontSize: '0.85em', color: '#64748b' }}>{fmtDate(it.dueAt)}</td>
-                    <td style={{ fontSize: '0.85em', color: '#64748b' }}>{fmtDate(it.completedAt)}</td>
-
-                    {/* Comment input */}
-                    <td>
-                      <input
-                        className="wl-input"
-                        placeholder={isPending ? 'Optional (required for reject)' : '—'}
-                        value={comment}
-                        disabled={!isPending}
-                        onChange={e => setCommentById(p => ({ ...p, [it.id]: e.target.value }))}
-                      />
-                    </td>
-
-                    {/* Actions */}
-                    <td>
-                      <div className="wl-row-actions">
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} className={styles.emptyRow}>No tasks in this view.</td></tr>
+              )}
+              {filtered.map(item => (
+                <tr key={item.id} className={styles.row}>
+                  <td className={styles.taskCell}>
+                    <span className={styles.taskTitle}>{item.title ?? `Task #${item.id}`}</span>
+                    {item.description && <span className={styles.taskDesc}>{item.description}</span>}
+                  </td>
+                  <td>
+                    <span
+                      className={styles.objLink}
+                      onClick={() => item.partId && navigate(`/plm/parts/${item.partId}`)}
+                    >
+                      {item.partNumber ?? item.objectRef ?? `#${item.relatedObjectId}`}
+                    </span>
+                  </td>
+                  <td><span className={styles.typePill}>{item.workItemType ?? 'REVIEW'}</span></td>
+                  <td><StateBadge state={item.targetState} /></td>
+                  <td className={styles.dimCell}>{item.assignedBy ?? '—'}</td>
+                  <td className={styles.dimCell}>{fmtDate(item.dueDate)}</td>
+                  <td><StateBadge state={item.status} /></td>
+                  <td className={styles.actionsCell}>
+                    {(item.status === 'PENDING' || item.status === 'IN_REVIEW') && (
+                      <>
                         <button
-                          className="wl-btn wl-approve"
-                          onClick={() => onApprove(it.id)}
-                          disabled={!isPending}
-                          title="Approve this work item"
-                        >
-                          ✔ Approve
-                        </button>
+                          className={styles.btnApproveSmall}
+                          onClick={() => openConfirm(item, 'approve')}
+                          disabled={acting === item.id}
+                        >Approve</button>
                         <button
-                          className="wl-btn wl-reject"
-                          onClick={() => onReject(it.id)}
-                          disabled={!isPending}
-                          title="Reject (comment required)"
-                        >
-                          ✖ Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                          className={styles.btnRejectSmall}
+                          onClick={() => openConfirm(item, 'reject')}
+                          disabled={acting === item.id}
+                        >Reject</button>
+                      </>
+                    )}
+                    {item.status === 'APPROVED' && <span className={styles.completedLabel}>✔ Approved</span>}
+                    {item.status === 'REJECTED' && <span className={styles.rejectedLabel}>✖ Rejected</span>}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
       </div>
+
+      <div className={styles.statusBar}>
+        {filtered.length} task{filtered.length !== 1 ? 's' : ''}
+      </div>
     </div>
   );
-};
-
-export default WorklistPage;
+}

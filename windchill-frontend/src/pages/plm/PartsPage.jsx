@@ -1,221 +1,195 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import Button from '../../components/atoms/Button/Button';
-import PartsTable from '../../components/plm/PartsTable';
-import { plmApi } from '../../services/plmApi';
-import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
-import './PartsPage.css';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import StateBadge from '../../components/plm/StateBadge';
+import styles from './PartsPage.module.css';
 
-const LC_STATES = ['ALL', 'INWORK', 'UNDER_REVIEW', 'RELEASED', 'OBSOLETE', 'SUPERSEDED'];
-const LC_COLORS = {
-  INWORK:       { bg: '#f1f5f9', text: '#475569' },
-  UNDER_REVIEW: { bg: '#fef3c7', text: '#92400e' },
-  RELEASED:     { bg: '#dcfce7', text: '#166534' },
-  OBSOLETE:     { bg: '#fee2e2', text: '#991b1b' },
-  SUPERSEDED:   { bg: '#ede9fe', text: '#5b21b6' },
-};
+const API = import.meta.env.VITE_API_URL ?? '';
 
-const folderLabel = (path) => {
-  if (!path || path === '/') return 'Root';
-  const segs = path.split('/').filter(Boolean);
-  return segs[segs.length - 1] || 'Root';
-};
+const COLS = [
+  { key: 'partNumber', label: 'Number' },
+  { key: 'name',       label: 'Name' },
+  { key: 'version',    label: 'Version' },
+  { key: 'state',      label: 'State' },
+  { key: 'checkedOutBy', label: 'Checked Out By' },
+  { key: 'modifiedBy', label: 'Modified By' },
+];
 
-const PartsPage = () => {
-  const { selectedContextId, selectedFolderId, selectedFolderPath } = useContext(PlmWorkspaceContext);
+export default function PartsPage() {
+  const navigate = useNavigate();
+  const [parts,    setParts]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [search,   setSearch]   = useState('');
+  const [creating, setCreating] = useState(false);
+  const [form,     setForm]     = useState({ partNumber: '', name: '', description: '' });
+  const [saving,   setSaving]   = useState(false);
 
-  const [parts,          setParts]          = useState([]);
-  const [folders,        setFolders]        = useState([]);
-  const [loading,        setLoading]        = useState(false);
-  const [error,          setError]          = useState(null);
-  const [showAllFolders, setShowAllFolders] = useState(false);
-  const [search,         setSearch]         = useState('');
-  const [searching,      setSearching]      = useState(false);
-  const [lcFilter,       setLcFilter]       = useState('ALL');
-  const [form,           setForm]           = useState({ partNumber: '', name: '', description: '' });
+  const contextId = localStorage.getItem('activeContextId') || 1;
+  const token     = localStorage.getItem('token');
+  const headers   = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const searchTimer = useRef(null);
-
-  const folderMap = useMemo(() => {
-    const m = {};
-    folders.forEach(f => { m[f.id] = f; });
-    return m;
-  }, [folders]);
-
-  const load = useCallback(async () => {
-    if (!selectedContextId) { setParts([]); setFolders([]); return; }
-    try {
-      setLoading(true); setError(null);
-      const [pd, fd] = await Promise.all([
-        plmApi.listParts(selectedContextId),
-        plmApi.listFolders(selectedContextId),
-      ]);
-      setParts(pd || []);
-      setFolders(fd || []);
-    } catch (e) {
-      setError(e.response?.data?.message || e.message || 'Failed to load parts');
-    } finally { setLoading(false); }
-  }, [selectedContextId]);
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch(`${API}/api/v1/plm/parts?contextId=${contextId}`, { headers })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => { setParts(Array.isArray(data) ? data : (data.data ?? [])); setError(null); })
+      .catch(e  => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [contextId]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Debounced server-side search
-  useEffect(() => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!selectedContextId) return;
-    if (!search.trim()) { load(); return; }
-    if (search.trim().length < 2) return;
-    searchTimer.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await plmApi.searchParts(search.trim(), selectedContextId);
-        setParts(res || []);
-      } catch { /* keep current list */ }
-      finally { setSearching(false); }
-    }, 300);
-    return () => clearTimeout(searchTimer.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedContextId]);
+  const filtered = parts.filter(p =>
+    p.partNumber?.toLowerCase().includes(search.toLowerCase()) ||
+    p.name?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const filtered = useMemo(() => {
-    let list = parts;
-    if (!showAllFolders && selectedFolderId != null)
-      list = list.filter(p => Number(p.folderId) === Number(selectedFolderId));
-    if (lcFilter !== 'ALL')
-      list = list.filter(p => p.lifecycleState === lcFilter);
-    return list;
-  }, [parts, selectedFolderId, showAllFolders, lcFilter]);
+  const toggleRow = id =>
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const create = async () => {
-    if (!selectedContextId) return;
+  const toggleAll = () =>
+    setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map(p => p.id)));
+
+  const handleNew = async () => {
+    if (!form.partNumber.trim() || !form.name.trim()) return;
+    setSaving(true);
     try {
-      setError(null);
-      await plmApi.createPart({
-        contextId:   selectedContextId,
-        folderId:    selectedFolderId ?? null,
-        partNumber:  form.partNumber,
-        name:        form.name,
-        description: form.description,
+      const res = await fetch(`${API}/api/v1/plm/parts`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ ...form, contextId: Number(contextId) }),
       });
+      if (!res.ok) throw new Error(await res.text());
+      setCreating(false);
       setForm({ partNumber: '', name: '', description: '' });
-      setSearch('');
-      await load();
-    } catch (e) {
-      setError(e.response?.data?.message || e.message || 'Failed to create part');
-    }
+      load();
+    } catch (e) { alert(e.message); }
+    finally { setSaving(false); }
   };
 
-  const handlePartDeleted = (id) => setParts(prev => prev.filter(p => p.id !== id));
-
-  const activeFolderName = folderLabel(selectedFolderPath);
-  const isNonRoot        = selectedFolderPath && selectedFolderPath !== '/';
-  const isSearchMode     = search.trim().length >= 2;
+  const versionLabel = p => {
+    if (p.revision && p.iteration != null) return `${p.revision}.${p.iteration}`;
+    if (p.version) return p.version;
+    return 'A.1';
+  };
 
   return (
-    <div className="pp-page">
-      {/* Header */}
-      <div className="pp-header">
-        <div>
-          <h1 className="pp-title">Parts Workspace</h1>
-          <p className="pp-sub">
-            {isSearchMode
-              ? `🔍 Search results for “${search}”`
-              : showAllFolders
-                ? 'Showing all folders'
-                : `Folder: ${selectedFolderPath || '/'}`}
-          </p>
+    <div className={styles.page}>
+      {/* Page header */}
+      <div className={styles.pageHeader}>
+        <div className={styles.pageTitle}>
+          <span className={styles.typeIcon}>⚙</span>
+          <div>
+            <h1>Parts</h1>
+            <p className={styles.subtitle}>Product structures and part masters</p>
+          </div>
         </div>
-        {!selectedContextId && (
-          <div className="pp-no-ctx">⚠️ Select a context on the left to start</div>
+      </div>
+
+      {/* Toolbar */}
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarLeft}>
+          <button className={styles.btnPrimary} onClick={() => setCreating(true)}>+ New</button>
+          <button
+            className={styles.btnSecondary}
+            disabled={selected.size !== 1}
+            onClick={() => navigate(`/plm/parts/${[...selected][0]}`)}
+          >Edit</button>
+          <button className={styles.btnSecondary} disabled={selected.size === 0}>Delete</button>
+          <div className={styles.divider} />
+          <button className={styles.btnSecondary} disabled={selected.size === 0}>Check Out</button>
+          <button className={styles.btnSecondary} disabled={selected.size === 0}>Promote</button>
+          <button className={styles.btnSecondary} disabled={selected.size === 0}>Revise</button>
+        </div>
+        <div className={styles.toolbarRight}>
+          <input
+            className={styles.searchBox}
+            placeholder="Search parts…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button className={styles.btnIcon} title="Refresh" onClick={load}>↻</button>
+          <button className={styles.btnIcon} title="Export">⬇</button>
+        </div>
+      </div>
+
+      {/* Create form slide-in */}
+      {creating && (
+        <div className={styles.createPanel}>
+          <div className={styles.createHeader}>
+            <span>New Part</span>
+            <button className={styles.closeBtn} onClick={() => setCreating(false)}>✕</button>
+          </div>
+          <div className={styles.createBody}>
+            <label>Part Number *
+              <input value={form.partNumber} onChange={e => setForm(f => ({ ...f, partNumber: e.target.value }))} placeholder="e.g. ECU-010" />
+            </label>
+            <label>Name *
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Part name" />
+            </label>
+            <label>Description
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+            </label>
+            <div className={styles.createActions}>
+              <button className={styles.btnPrimary} onClick={handleNew} disabled={saving}>{saving ? 'Saving…' : 'Create'}</button>
+              <button className={styles.btnSecondary} onClick={() => setCreating(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className={styles.tableWrap}>
+        {loading && <div className={styles.loadingBar}><span>Loading…</span></div>}
+        {error   && <div className={styles.errorBanner}>Error: {error} <button onClick={load}>Retry</button></div>}
+        {!loading && !error && (
+          <table className={styles.wcTable}>
+            <thead>
+              <tr>
+                <th className={styles.checkCell}>
+                  <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleAll} />
+                </th>
+                {COLS.map(c => <th key={c.key}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={COLS.length + 1} className={styles.emptyRow}>No parts found.</td></tr>
+              )}
+              {filtered.map(p => (
+                <tr
+                  key={p.id}
+                  className={`${styles.row} ${selected.has(p.id) ? styles.rowSelected : ''}`}
+                  onClick={() => toggleRow(p.id)}
+                  onDoubleClick={() => navigate(`/plm/parts/${p.id}`)}
+                >
+                  <td className={styles.checkCell} onClick={e => { e.stopPropagation(); toggleRow(p.id); }}>
+                    <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleRow(p.id)} onClick={e => e.stopPropagation()} />
+                  </td>
+                  <td className={styles.linkCell}>
+                    <span className={styles.link} onClick={e => { e.stopPropagation(); navigate(`/plm/parts/${p.id}`); }}>
+                      {p.partNumber}
+                    </span>
+                  </td>
+                  <td>{p.name}</td>
+                  <td>
+                    <span className={styles.versionChip}>{versionLabel(p)}</span>
+                    {p.checkedOutBy && <span className={styles.checkoutDot} title={`Checked out by ${p.checkedOutBy}`}>●</span>}
+                  </td>
+                  <td><StateBadge state={p.lifecycleState} /></td>
+                  <td className={styles.dimCell}>{p.checkedOutBy ?? '—'}</td>
+                  <td className={styles.dimCell}>{p.updatedBy ?? p.createdBy ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {!!selectedContextId && (
-        <>
-          {/* Toolbar: search + lifecycle chips */}
-          <div className="pp-toolbar">
-            <div className="pp-search-wrap">
-              <span className="pp-search-icon">🔍</span>
-              <input
-                className="pp-search"
-                placeholder="Search by part number, name…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              {searching && <span className="pp-search-spin" />}
-              {search && !searching && (
-                <button className="pp-search-clear" onClick={() => { setSearch(''); load(); }}>&times;</button>
-              )}
-            </div>
-            <div className="pp-chips">
-              {LC_STATES.map(s => {
-                const c = s !== 'ALL' ? LC_COLORS[s] : null;
-                const active = lcFilter === s;
-                return (
-                  <button
-                    key={s}
-                    className={`pp-chip ${active ? 'pp-chip--active' : ''}`}
-                    style={active && c ? { background: c.bg, color: c.text, borderColor: `${c.text}55` } : {}}
-                    onClick={() => setLcFilter(s)}
-                  >
-                    {s === 'ALL' ? 'All States' : s.replace('_', ' ')}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Create Part */}
-          <div className="pp-create">
-            <div className="pp-create-label">
-              <span>+ New Part</span>
-              <span className={`pp-folder-tag ${isNonRoot ? 'pp-folder-tag--sub' : ''}`}>📁 {activeFolderName}</span>
-              <span className="pp-state-tag">INWORK</span>
-            </div>
-            <div className="pp-create-row">
-              <input className="pp-input" placeholder="Part Number *" value={form.partNumber} onChange={e => setForm({...form, partNumber: e.target.value})} />
-              <input className="pp-input" placeholder="Name *"         value={form.name}       onChange={e => setForm({...form, name: e.target.value})} />
-              <input className="pp-input pp-input--wide" placeholder="Description (optional)" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-              <Button variant="secondary" size="sm" onClick={create} disabled={!form.partNumber.trim() || !form.name.trim()}>Create</Button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {error && <div className="pp-error">{error}</div>}
-
-      {!!selectedContextId && (
-        <div className="pp-list">
-          <div className="pp-list-bar">
-            <label className="pp-all-toggle">
-              <input type="checkbox" checked={showAllFolders} onChange={e => setShowAllFolders(e.target.checked)} />
-              Show all folders
-            </label>
-            <span className="pp-result-count">
-              {isSearchMode
-                ? `🔍 ${filtered.length} result${filtered.length !== 1 ? 's' : ''}`
-                : `${filtered.length} / ${parts.length} parts`}
-            </span>
-          </div>
-
-          {loading ? (
-            <div className="pp-state-box"><div className="pp-spinner" /><p>Loading parts…</p></div>
-          ) : filtered.length === 0 ? (
-            <div className="pp-empty">
-              <span>{isSearchMode ? '🔍' : '🔩'}</span>
-              <p>{isSearchMode
-                ? `No parts match “${search}”`
-                : lcFilter !== 'ALL'
-                  ? `No ${lcFilter.replace('_',' ')} parts in this view`
-                  : 'No parts here — create one above'}
-              </p>
-            </div>
-          ) : (
-            <PartsTable parts={filtered} onPartDeleted={handlePartDeleted} folderMap={folderMap} />
-          )}
-        </div>
-      )}
+      <div className={styles.statusBar}>
+        {filtered.length} item{filtered.length !== 1 ? 's' : ''}
+        {selected.size > 0 && <span> · {selected.size} selected</span>}
+      </div>
     </div>
   );
-};
-
-export default PartsPage;
+}
