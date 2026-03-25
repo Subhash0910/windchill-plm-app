@@ -78,7 +78,8 @@ public class WTDocument extends BaseEntity {
     @Column(name = "storage_path", length = 1024)
     private String storagePath;
 
-    @Version
-    @Column(name = "version")
-    private Long version;
+    // NOTE: version field is intentionally NOT declared here.
+    // It is inherited from BaseEntity (@Version protected Long version).
+    // Declaring it again here would cause:
+    // 'Attempt to add version property ... but already have property registered'
 }
