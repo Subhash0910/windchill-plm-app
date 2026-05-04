@@ -12,11 +12,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @Service
 public class MLServiceClient {
+
+    private static final List<String> ALLOWED_HOSTS =
+        List.of("ml-service", "localhost", "127.0.0.1", "ml-fastapi");
 
     private final RestTemplate restTemplate;
     private final String mlServiceUrl;
@@ -26,10 +32,28 @@ public class MLServiceClient {
             RestTemplate restTemplate,
             @Value("${ml.service.url:http://ml-service:5000}") String mlServiceUrl,
             @Value("${ml.service.enabled:true}") boolean mlServiceEnabled) {
+        validateUrl(mlServiceUrl);
         this.restTemplate = restTemplate;
         this.mlServiceUrl = mlServiceUrl;
         this.mlServiceEnabled = mlServiceEnabled;
         log.info("ML Service Client initialized: url={}, enabled={}", mlServiceUrl, mlServiceEnabled);
+    }
+
+    private static void validateUrl(String url) {
+        try {
+            URI uri = new URI(url);
+            String scheme = uri.getScheme();
+            String host   = uri.getHost();
+            if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
+                throw new IllegalStateException("ml.service.url must use http or https scheme: " + url);
+            }
+            if (host == null || ALLOWED_HOSTS.stream().noneMatch(host::equals)) {
+                throw new IllegalStateException(
+                    "ml.service.url host '" + host + "' is not in the allowed list: " + ALLOWED_HOSTS);
+            }
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("ml.service.url is not a valid URI: " + url, e);
+        }
     }
 
     public RiskPredictionResponse predictRisk(RiskPredictionRequest request) {

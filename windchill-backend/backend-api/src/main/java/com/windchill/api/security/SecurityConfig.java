@@ -126,7 +126,9 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+                .authorizeHttpRequests(authz -> authz
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                    .anyRequest().authenticated());
 
         return http.build();
     }
@@ -147,7 +149,6 @@ public class SecurityConfig {
                         // Support both /api/v1/auth/** (standard) and /auth/** (direct calls)
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/v1/ai/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()

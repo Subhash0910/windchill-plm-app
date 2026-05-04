@@ -1,6 +1,7 @@
 package com.windchill.service.ai;
 
 import com.windchill.common.enums.LifecycleStateEnum;
+import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.ai.dto.*;
@@ -27,7 +28,7 @@ public class ImpactAnalyzerService {
         log.info("Starting impact analysis: partId={}, changeType={}", request.getPartId(), request.getChangeType());
         try {
             Part part = partRepository.findById(request.getPartId())
-                .orElseThrow(() -> new RuntimeException("Part not found: " + request.getPartId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Part not found"));
 
             GraphImpactResult graphResult = graphAnalysisService.analyzePartChange(
                 request.getPartId(), request.getChangeType());
@@ -56,9 +57,11 @@ public class ImpactAnalyzerService {
                 riskPrediction.getRiskScore(), graphResult.getTotalAffectedCount());
             return response;
 
+        } catch (ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Impact analysis failed", e);
-            throw new RuntimeException("Impact analysis failed: " + e.getMessage(), e);
+            log.error("Impact analysis failed for partId={}", request.getPartId(), e);
+            throw new RuntimeException("Impact analysis could not be completed", e);
         }
     }
 
@@ -83,7 +86,7 @@ public class ImpactAnalyzerService {
 
     private RiskPredictionResponse createFallbackRisk(GraphImpactResult graphResult, Part part) {
         double score = 0;
-        if (graphResult.getReleasedAffectedCount() > 10)     score += 4;
+        if (graphResult.getReleasedAffectedCount() > 10)      score += 4;
         else if (graphResult.getReleasedAffectedCount() > 5)  score += 3;
         else if (graphResult.getReleasedAffectedCount() > 2)  score += 2;
         else if (graphResult.getReleasedAffectedCount() > 0)  score += 1;

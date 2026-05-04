@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -73,12 +74,20 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
     @Transactional
     public ChangeOrderDto promote(Long id, String targetState, String currentUser) {
         ChangeOrder eco = findOrThrow(id);
+
+        boolean isOwner    = Objects.equals(eco.getCreatedBy(), currentUser);
+        boolean isAssignee = Objects.equals(eco.getAssignedTo(), currentUser);
+        if (!isOwner && !isAssignee) {
+            throw new BusinessException("Not authorized to promote ECO " + eco.getEcoNumber());
+        }
+
         ChangeOrder.State target;
         try {
             target = ChangeOrder.State.valueOf(targetState.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new BusinessException("Unknown state: " + targetState);
         }
+
         Set<ChangeOrder.State> allowed = TRANSITIONS.getOrDefault(eco.getState(), Set.of());
         if (!allowed.contains(target)) {
             throw new BusinessException(
@@ -91,11 +100,13 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
 
     @Override
     @Transactional
-    public ChangeOrderDto linkAiResult(Long id, Double riskScore, Double confidence, Double costEstimate) {
+    public ChangeOrderDto linkAiResult(Long id, Double riskScore, Double confidence,
+                                       Double costEstimate, String currentUser) {
         ChangeOrder eco = findOrThrow(id);
         eco.setAiRiskScore(riskScore);
         eco.setAiConfidence(confidence);
         eco.setAiCostEstimate(costEstimate);
+        eco.setUpdatedBy(currentUser);
         return ChangeOrderDto.from(repo.save(eco));
     }
 
@@ -103,6 +114,9 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
     @Transactional
     public void delete(Long id, String currentUser) {
         ChangeOrder eco = findOrThrow(id);
+        if (!Objects.equals(eco.getCreatedBy(), currentUser)) {
+            throw new BusinessException("Not authorized to delete ECO " + eco.getEcoNumber());
+        }
         eco.setIsDeleted(true);
         eco.setUpdatedBy(currentUser);
         repo.save(eco);
@@ -110,7 +124,7 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
 
     private ChangeOrder findOrThrow(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-            .orElseThrow(() -> new ResourceNotFoundException("ChangeOrder " + id + " not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("ChangeOrder not found"));
     }
 
     private String generateEcoNumber(Long contextId) {

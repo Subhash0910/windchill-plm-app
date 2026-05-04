@@ -5,9 +5,12 @@ import com.windchill.service.ai.dto.ImpactAnalysisResponse;
 import com.windchill.service.ai.ImpactAnalyzerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -22,25 +25,24 @@ public class ImpactAnalysisController {
     @PostMapping("/analyze")
     @Operation(
         summary = "Analyze engineering change impact",
-        description = "Performs comprehensive impact analysis using graph algorithms and ML risk prediction. " +
-                     "Returns affected parts, risk score, recommendations, and warnings."
+        description = "Performs comprehensive impact analysis using graph algorithms and ML risk prediction."
     )
     public ResponseEntity<ImpactAnalysisResponse> analyzeChange(
-            @RequestBody ImpactAnalysisRequest request) {
+            @Valid @RequestBody ImpactAnalysisRequest request,
+            @AuthenticationPrincipal UserDetails user) {
 
-        log.info("Received impact analysis request: partId={}, changeType={}",
-                request.getPartId(), request.getChangeType());
+        log.info("Impact analysis request: partId={}, changeType={}, requestedBy={}",
+                request.getPartId(),
+                request.getChangeType() != null ? request.getChangeType().replaceAll("[\r\n]", "_") : "null",
+                user.getUsername());
 
         try {
             ImpactAnalysisResponse response = impactAnalyzerService.analyzeChange(request);
-
             log.info("Impact analysis completed: partId={}, riskLevel={}, riskScore={}",
                     request.getPartId(),
                     response.getRiskPrediction().getRiskLevel(),
                     response.getRiskPrediction().getRiskScore());
-
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
             log.error("Impact analysis failed for partId={}", request.getPartId(), e);
             return ResponseEntity.internalServerError().build();
@@ -48,8 +50,7 @@ public class ImpactAnalysisController {
     }
 
     @GetMapping("/health")
-    @Operation(summary = "AI service health check",
-               description = "Check if AI impact analysis services are operational")
+    @Operation(summary = "AI service health check")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("AI Impact Analysis Service is running");
     }

@@ -1,6 +1,7 @@
 package com.windchill.service.ai;
 
 import com.windchill.common.enums.LifecycleStateEnum;
+import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.BomLine;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
@@ -26,7 +27,7 @@ public class GraphAnalysisService {
         log.info("Starting graph analysis for partId={}, changeType={}", partId, changeType);
         try {
             Part targetPart = partRepository.findById(partId)
-                .orElseThrow(() -> new RuntimeException("Part not found: " + partId));
+                .orElseThrow(() -> new ResourceNotFoundException("Part not found"));
 
             Set<Long> affectedPartIds = new HashSet<>();
             int maxDepth = findAffectedParents(partId, affectedPartIds, 0);
@@ -56,9 +57,11 @@ public class GraphAnalysisService {
                 affectedPartIds.size(), releasedCount, maxDepth);
             return result;
 
+        } catch (ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Graph analysis failed for partId={}", partId, e);
-            throw new RuntimeException("Graph analysis failed: " + e.getMessage(), e);
+            throw new RuntimeException("Graph analysis could not be completed", e);
         }
     }
 

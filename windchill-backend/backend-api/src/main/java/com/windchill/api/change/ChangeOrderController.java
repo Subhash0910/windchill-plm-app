@@ -22,17 +22,23 @@ public class ChangeOrderController {
     private final IChangeOrderService service;
 
     @GetMapping("/context/{contextId}")
-    public ResponseEntity<List<ChangeOrderDto>> listByContext(@PathVariable Long contextId) {
+    public ResponseEntity<List<ChangeOrderDto>> listByContext(
+            @PathVariable Long contextId,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(service.listByContext(contextId));
     }
 
     @GetMapping("/by-ecr/{ecrId}")
-    public ResponseEntity<List<ChangeOrderDto>> listByEcr(@PathVariable Long ecrId) {
+    public ResponseEntity<List<ChangeOrderDto>> listByEcr(
+            @PathVariable Long ecrId,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(service.listByEcr(ecrId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ChangeOrderDto> getById(@PathVariable Long id) {
+    public ResponseEntity<ChangeOrderDto> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(service.getById(id));
     }
 
@@ -55,12 +61,14 @@ public class ChangeOrderController {
     @PostMapping("/{id}/ai-result")
     public ResponseEntity<ChangeOrderDto> linkAiResult(
             @PathVariable Long id,
-            @RequestBody Map<String, Double> body) {
+            @RequestBody Map<String, Double> body,
+            @AuthenticationPrincipal UserDetails user) {
         return ResponseEntity.ok(service.linkAiResult(
             id,
             body.get("riskScore"),
             body.get("confidence"),
-            body.get("costEstimate")
+            body.get("costEstimate"),
+            user.getUsername()
         ));
     }
 
