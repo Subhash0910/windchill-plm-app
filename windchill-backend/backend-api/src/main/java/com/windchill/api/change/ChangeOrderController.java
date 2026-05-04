@@ -1,5 +1,8 @@
 package com.windchill.api.change;
 
+import com.windchill.service.change.ChangeOrderCreateRequest;
+import com.windchill.service.change.ChangeOrderDto;
+import com.windchill.service.change.IChangeOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChangeOrderController {
 
-    private final ChangeOrderService service;
+    private final IChangeOrderService service;
 
     @GetMapping("/context/{contextId}")
     public ResponseEntity<List<ChangeOrderDto>> listByContext(@PathVariable Long contextId) {

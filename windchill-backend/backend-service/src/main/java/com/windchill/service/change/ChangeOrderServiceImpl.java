@@ -1,32 +1,32 @@
-package com.windchill.api.change;
+package com.windchill.service.change;
 
+import com.windchill.common.exception.BusinessException;
+import com.windchill.common.exception.ResourceNotFoundException;
+import com.windchill.domain.entity.ChangeOrder;
+import com.windchill.repository.ChangeOrderRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ChangeOrderServiceImpl implements ChangeOrderService {
+public class ChangeOrderServiceImpl implements IChangeOrderService {
 
     private final ChangeOrderRepository repo;
 
-    // ── valid state transitions ──────────────────────────────────────────
-    private static final java.util.Map<ChangeOrder.State, Set<ChangeOrder.State>> TRANSITIONS =
-        java.util.Map.of(
-            ChangeOrder.State.DRAFT,          Set.of(ChangeOrder.State.OPEN, ChangeOrder.State.CANCELLED),
-            ChangeOrder.State.OPEN,           Set.of(ChangeOrder.State.IN_REVIEW, ChangeOrder.State.CANCELLED),
-            ChangeOrder.State.IN_REVIEW,      Set.of(ChangeOrder.State.APPROVED, ChangeOrder.State.OPEN, ChangeOrder.State.CANCELLED),
-            ChangeOrder.State.APPROVED,       Set.of(ChangeOrder.State.IMPLEMENTING, ChangeOrder.State.CANCELLED),
-            ChangeOrder.State.IMPLEMENTING,   Set.of(ChangeOrder.State.COMPLETED, ChangeOrder.State.CANCELLED),
-            ChangeOrder.State.COMPLETED,      Set.of(),
-            ChangeOrder.State.CANCELLED,      Set.of()
-        );
+    private static final Map<ChangeOrder.State, Set<ChangeOrder.State>> TRANSITIONS = Map.of(
+        ChangeOrder.State.DRAFT,        Set.of(ChangeOrder.State.OPEN, ChangeOrder.State.CANCELLED),
+        ChangeOrder.State.OPEN,         Set.of(ChangeOrder.State.IN_REVIEW, ChangeOrder.State.CANCELLED),
+        ChangeOrder.State.IN_REVIEW,    Set.of(ChangeOrder.State.APPROVED, ChangeOrder.State.OPEN, ChangeOrder.State.CANCELLED),
+        ChangeOrder.State.APPROVED,     Set.of(ChangeOrder.State.IMPLEMENTING, ChangeOrder.State.CANCELLED),
+        ChangeOrder.State.IMPLEMENTING, Set.of(ChangeOrder.State.COMPLETED, ChangeOrder.State.CANCELLED),
+        ChangeOrder.State.COMPLETED,    Set.of(),
+        ChangeOrder.State.CANCELLED,    Set.of()
+    );
 
     @Override
     @Transactional
@@ -36,9 +36,7 @@ public class ChangeOrderServiceImpl implements ChangeOrderService {
             .ecoNumber(ecoNumber)
             .title(req.getTitle())
             .description(req.getDescription())
-            .priority(req.getPriority() != null
-                ? ChangeOrder.Priority.valueOf(req.getPriority().toUpperCase())
-                : ChangeOrder.Priority.MEDIUM)
+            .priority(req.getPriority() != null ? req.getPriority() : ChangeOrder.Priority.MEDIUM)
             .contextId(req.getContextId())
             .ecrId(req.getEcrId())
             .assignedTo(req.getAssignedTo())
@@ -52,20 +50,23 @@ public class ChangeOrderServiceImpl implements ChangeOrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChangeOrderDto getById(Long id) {
         return ChangeOrderDto.from(findOrThrow(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ChangeOrderDto> listByContext(Long contextId) {
         return repo.findByContextIdAndIsDeletedFalseOrderByCreatedAtDesc(contextId)
-            .stream().map(ChangeOrderDto::from).collect(Collectors.toList());
+            .stream().map(ChangeOrderDto::from).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ChangeOrderDto> listByEcr(Long ecrId) {
         return repo.findByEcrIdAndIsDeletedFalse(ecrId)
-            .stream().map(ChangeOrderDto::from).collect(Collectors.toList());
+            .stream().map(ChangeOrderDto::from).toList();
     }
 
     @Override
@@ -76,11 +77,11 @@ public class ChangeOrderServiceImpl implements ChangeOrderService {
         try {
             target = ChangeOrder.State.valueOf(targetState.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown state: " + targetState);
+            throw new BusinessException("Unknown state: " + targetState);
         }
         Set<ChangeOrder.State> allowed = TRANSITIONS.getOrDefault(eco.getState(), Set.of());
         if (!allowed.contains(target)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
+            throw new BusinessException(
                 "Cannot transition ECO from " + eco.getState() + " to " + target);
         }
         eco.setState(target);
@@ -107,14 +108,13 @@ public class ChangeOrderServiceImpl implements ChangeOrderService {
         repo.save(eco);
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────
     private ChangeOrder findOrThrow(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ChangeOrder " + id + " not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("ChangeOrder " + id + " not found"));
     }
 
     private String generateEcoNumber(Long contextId) {
-        long count = repo.findByContextIdAndIsDeletedFalseOrderByCreatedAtDesc(contextId).size() + 1;
+        long count = repo.countByContextIdAndIsDeletedFalse(contextId) + 1;
         return String.format("ECO-%05d", count);
     }
 }

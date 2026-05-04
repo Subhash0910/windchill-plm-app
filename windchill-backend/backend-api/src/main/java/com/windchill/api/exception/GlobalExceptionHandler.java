@@ -1,6 +1,8 @@
 package com.windchill.api.exception;
 
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.common.exception.BusinessException;
+import com.windchill.common.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,28 @@ import org.springframework.web.context.request.WebRequest;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
+        log.warn("Resource not found: {} at {}", ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .data(null)
+                .build());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<?>> handleBusinessException(BusinessException ex, WebRequest request) {
+        log.warn("Business rule violation: {} at {}", ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ApiResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .data(null)
+                .build());
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleGlobalException(Exception ex, WebRequest request) {

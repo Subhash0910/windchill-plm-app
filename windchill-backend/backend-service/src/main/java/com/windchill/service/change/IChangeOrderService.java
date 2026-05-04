@@ -1,8 +1,8 @@
-package com.windchill.api.change;
+package com.windchill.service.change;
 
 import java.util.List;
 
-public interface ChangeOrderService {
+public interface IChangeOrderService {
     ChangeOrderDto create(ChangeOrderCreateRequest req, String currentUser);
     ChangeOrderDto getById(Long id);
     List<ChangeOrderDto> listByContext(Long contextId);

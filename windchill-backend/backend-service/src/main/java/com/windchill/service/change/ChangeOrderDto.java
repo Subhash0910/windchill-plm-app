@@ -1,10 +1,11 @@
-package com.windchill.api.change;
+package com.windchill.service.change;
 
+import com.windchill.domain.entity.ChangeOrder;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data @Builder
 public class ChangeOrderDto {
@@ -22,8 +23,8 @@ public class ChangeOrderDto {
     private Double aiConfidence;
     private Double aiCostEstimate;
     private String createdBy;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static ChangeOrderDto from(ChangeOrder e) {
         return ChangeOrderDto.builder()

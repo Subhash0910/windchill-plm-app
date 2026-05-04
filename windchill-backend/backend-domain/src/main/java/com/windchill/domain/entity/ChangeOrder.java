@@ -1,11 +1,9 @@
-package com.windchill.api.change;
+package com.windchill.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -18,15 +16,14 @@ import java.time.LocalDate;
         @Index(name = "idx_eco_ecr",     columnList = "ecr_id")
     }
 )
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class ChangeOrder {
+@Getter @Setter @NoArgsConstructor
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class ChangeOrder extends BaseEntity {
 
-    public enum State  { DRAFT, OPEN, IN_REVIEW, APPROVED, IMPLEMENTING, COMPLETED, CANCELLED }
+    public enum State    { DRAFT, OPEN, IN_REVIEW, APPROVED, IMPLEMENTING, COMPLETED, CANCELLED }
     public enum Priority { LOW, MEDIUM, HIGH, CRITICAL }
     public enum ChangeType { ADD, MODIFY, REMOVE, REPLACE }
-
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(name = "eco_number", nullable = false, length = 40)
     private String ecoNumber;
@@ -65,21 +62,4 @@ public class ChangeOrder {
 
     @Column(name = "ai_cost_estimate")
     private Double aiCostEstimate;
-
-    @Column(name = "created_by", length = 100)
-    private String createdBy;
-
-    @Column(name = "updated_by", length = 100)
-    private String updatedBy;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
 }

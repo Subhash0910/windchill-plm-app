@@ -1,5 +1,6 @@
-package com.windchill.api.change;
+package com.windchill.repository;
 
+import com.windchill.domain.entity.ChangeOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,8 @@ public interface ChangeOrderRepository extends JpaRepository<ChangeOrder, Long> 
     List<ChangeOrder> findByEcrIdAndIsDeletedFalse(Long ecrId);
 
     Optional<ChangeOrder> findByIdAndIsDeletedFalse(Long id);
+
+    long countByContextIdAndIsDeletedFalse(Long contextId);
 
     boolean existsByContextIdAndEcoNumber(Long contextId, String ecoNumber);
 
