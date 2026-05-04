@@ -1,0 +1,1170 @@
+{
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\app.py": {
+    "mtime": 1776172896.0345051,
+    "hash": "78b1be69caa555c5963d7f2986fc3648"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\chat_service.py": {
+    "mtime": 1776172896.0361896,
+    "hash": "565fbb834a56175fb9f29792eff44021"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\chat_service_v2.py": {
+    "mtime": 1776172896.0372083,
+    "hash": "0df26c5aa58045e10c8724bc91b6488e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\test_api.py": {
+    "mtime": 1776172896.05376,
+    "hash": "403ae9faf8365ba4998ad2b94957e423"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\training\\generate_training_data.py": {
+    "mtime": 1776172896.0587623,
+    "hash": "7321fbbac488b8a9ca32b4a6ea4268d4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\training\\train_model.py": {
+    "mtime": 1776172896.0612772,
+    "hash": "cd8ca604724d61500cf530dbcaea444e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\config\\AIServiceConfig.java": {
+    "mtime": 1776172896.072674,
+    "hash": "e91f90b1c5459c2dca55a1f59945c9d3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\config\\MLServiceConfig.java": {
+    "mtime": 1776172896.0736837,
+    "hash": "9954120043edbed7911fdaa7be9fc27b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\controller\\ImpactAnalysisController.java": {
+    "mtime": 1776172896.0766726,
+    "hash": "9375a128c8a362477b8aeb7209dae547"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\AffectedPartInfo.java": {
+    "mtime": 1776172896.0796778,
+    "hash": "8803873264aa0ff6a54525eeae094eac"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\GraphImpactResult.java": {
+    "mtime": 1776172896.0806818,
+    "hash": "db71bf5eb370be59cc0bd48da3c315a5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\ImpactAnalysisRequest.java": {
+    "mtime": 1776172896.0834591,
+    "hash": "5cf95963275e3253940e4df390dd7010"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\ImpactAnalysisResponse.java": {
+    "mtime": 1776172896.0854678,
+    "hash": "30fc768c4d090386fe9338d92ba4089d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\RiskPredictionRequest.java": {
+    "mtime": 1776172896.0874715,
+    "hash": "fbefb49299446ea8417b11c73e4f0483"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\dto\\RiskPredictionResponse.java": {
+    "mtime": 1776172896.0884652,
+    "hash": "a638847892bce904319f1b046e740438"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\model\\AffectedPart.java": {
+    "mtime": 1776172896.0910232,
+    "hash": "cfb93a270d59cb773acf049fbf425aa4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\model\\GraphMetrics.java": {
+    "mtime": 1776172896.09205,
+    "hash": "0e2218513b2557ad5e661361ceec6f67"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\model\\RiskAssessment.java": {
+    "mtime": 1776172896.0940504,
+    "hash": "e4a38d660a4008b432061df3d5ab2e95"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\service\\GraphAnalysisService.java": {
+    "mtime": 1776172896.0960505,
+    "hash": "302d4e7ff3fbb6b42e3652e05b617d1e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\service\\ImpactAnalyzerService.java": {
+    "mtime": 1776172896.0980668,
+    "hash": "4aa6fface5e55eb0276aa252b0ad281d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\ai\\service\\MLServiceClient.java": {
+    "mtime": 1776172896.0998423,
+    "hash": "7ff3ba5e8468fb847150c8ad8e91e492"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\WindchillApplication.java": {
+    "mtime": 1776172896.1013486,
+    "hash": "fec8f3a9389b55260d75ddfaaf3d6595"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrder.java": {
+    "mtime": 1776172896.103357,
+    "hash": "0aaab4b6fd7f6118c105c1c7b6bfaee3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderController.java": {
+    "mtime": 1776172896.105356,
+    "hash": "765d63ad1a68b6f656e8491e258b6d0f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderCreateRequest.java": {
+    "mtime": 1776172896.107361,
+    "hash": "268a65e100df3af0182fcbdbcdc82eb9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderDto.java": {
+    "mtime": 1776172896.1083553,
+    "hash": "0d40c48dd47bb22f49694f77750aecb3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderRepository.java": {
+    "mtime": 1776172896.1093614,
+    "hash": "c1b69e69fabd30bca80340cbf1b0966f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderService.java": {
+    "mtime": 1776172896.1108754,
+    "hash": "c46ed86db4cc65003a0f4165c556ccc4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\change\\ChangeOrderServiceImpl.java": {
+    "mtime": 1776172896.1118853,
+    "hash": "91265edee244bd42bc9a700ef5b10182"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\config\\AIConfig.java": {
+    "mtime": 1776172896.1150224,
+    "hash": "398c25ba9dc0fd68a8be9aed11c025b5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\config\\DataInitializer.java": {
+    "mtime": 1776172896.116552,
+    "hash": "ced8e395612d384759ced7a171c1c1dc"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\config\\DevAdminInitializer.java": {
+    "mtime": 1776172896.118567,
+    "hash": "a6a2e67dce8ea36c2cc90283a4734ce7"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\config\\WebMvcConfig.java": {
+    "mtime": 1776172896.1205645,
+    "hash": "43eaddaa662f3db4f9ee916633a21bc2"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\AdminUserController.java": {
+    "mtime": 1776172896.1274595,
+    "hash": "b11a481deb911cd0b04b95d16659b051"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\AIChatController.java": {
+    "mtime": 1776172896.1234467,
+    "hash": "8042972c8f904c6a6f19833695337fc4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\AIImpactController.java": {
+    "mtime": 1776172896.1244683,
+    "hash": "696f959082c82f217317437cb56b933c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\AuditController.java": {
+    "mtime": 1776172896.1294572,
+    "hash": "0f8dd8ff8cb89da2e107f0d04f8b1494"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\AuthController.java": {
+    "mtime": 1776172896.1353424,
+    "hash": "29d60fa6cd3b43990d6a30c46700c70a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\BomController.java": {
+    "mtime": 1776172896.136341,
+    "hash": "f8c9340d18824fbee598d38039e13026"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\ChangeRequestController.java": {
+    "mtime": 1776172896.1373408,
+    "hash": "3a4eac1f826d8e8154136340aeda4ee7"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\ContextualAiController.java": {
+    "mtime": 1777379207.339223,
+    "hash": "d037652edd96b938e0ee8caea5de5940"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\DashboardController.java": {
+    "mtime": 1776172896.1393712,
+    "hash": "404a8d74ac37d0abde7aa3667f689e7a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\DocumentController.java": {
+    "mtime": 1776172896.1428568,
+    "hash": "71517743a41e76606851b1b7597d95aa"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\FolderController.java": {
+    "mtime": 1776172896.143866,
+    "hash": "b1f818b5faf83f57f79ff534c2d0fd37"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\NotificationController.java": {
+    "mtime": 1776172896.144867,
+    "hash": "2f91877c59b7eb8a2a7f191659b42f67"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\PartController.java": {
+    "mtime": 1776172896.146875,
+    "hash": "c55cc9c7e755d7db5bba0a9536b68d71"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\PlmContextController.java": {
+    "mtime": 1776172896.1488678,
+    "hash": "8982c7914c28ab1feeae67ad65a80b85"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\ProductController.java": {
+    "mtime": 1776172896.1508653,
+    "hash": "c0b88d50b54a1bd42d46d0a635fcf25f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\ProjectController.java": {
+    "mtime": 1776172896.1533802,
+    "hash": "0635f530267f9ac34ff63dbf6309ae28"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\PromotionController.java": {
+    "mtime": 1776172896.1564052,
+    "hash": "f6abeb71b6ca96e1e96a5647d8c11605"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\UserController.java": {
+    "mtime": 1776172896.1573894,
+    "hash": "93dc3136e0304bac3efe02c7aec2831f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\controller\\WorkItemController.java": {
+    "mtime": 1776172896.1593914,
+    "hash": "0aa92b9f4c55962bd249b232a6237d8b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocument.java": {
+    "mtime": 1776172896.1617744,
+    "hash": "6ebdb2fd60c3b7a9b594c4beb33a46c9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentController.java": {
+    "mtime": 1777379207.3348331,
+    "hash": "6ecd81968c74220861a339f2ca1279c1"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentCreateRequest.java": {
+    "mtime": 1776172896.165316,
+    "hash": "b6b84819aaa3d2aff768b5b874940af9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentDto.java": {
+    "mtime": 1776172896.1673207,
+    "hash": "121db8e0b96dd4ef9450addbc0de8402"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentRepository.java": {
+    "mtime": 1777379350.8039432,
+    "hash": "71b598e049773d238b7dd7b9ce26edbd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentService.java": {
+    "mtime": 1777379207.3307981,
+    "hash": "4efafded38da35de4e7383149e321272"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentServiceImpl.java": {
+    "mtime": 1777379207.3331935,
+    "hash": "c8860f20081f0fc09a84af290aaaf78e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\document\\WTDocumentUpdateRequest.java": {
+    "mtime": 1776172896.1748688,
+    "hash": "6537d57fc09893d60778a13ed60d204a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\ContextMemberCreateRequest.java": {
+    "mtime": 1776172896.177862,
+    "hash": "e405cfbcfc498f8678bc05112f283b18"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\ContextMemberRoleUpdateRequest.java": {
+    "mtime": 1776172896.18086,
+    "hash": "f31d730c289d856714c5ccfbb98572cf"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\CreateProductRequest.java": {
+    "mtime": 1768654348.4713387,
+    "hash": "3b816f5fb30ce0d75e9c9d28426ffb1c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\CreateProjectRequest.java": {
+    "mtime": 1768654348.4723432,
+    "hash": "8266f4f344ab23213558ada4cf650f98"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\CreateUserRequest.java": {
+    "mtime": 1768572549.644901,
+    "hash": "14b8094c8c9af2f9ba69e04c1647198b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\LoginRequest.java": {
+    "mtime": 1768654348.472848,
+    "hash": "e2b986962ad7f61ef0608a66f505a4f9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\LoginResponse.java": {
+    "mtime": 1768572549.6459076,
+    "hash": "58fb76c074e1755ec4a6168d5fc434ff"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\PaginatedResponse.java": {
+    "mtime": 1768654144.6505742,
+    "hash": "9d53a0e70bea9867454953962697163b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\PaginationRequest.java": {
+    "mtime": 1768654144.6505742,
+    "hash": "f68c52e4fc3cb624c2ced46db745cd75"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\PromotionStatusDto.java": {
+    "mtime": 1776172896.1838624,
+    "hash": "740ce5e4c85884740ff5c0b10b934ceb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\UserStatusUpdateRequest.java": {
+    "mtime": 1776172896.1873841,
+    "hash": "d0975dd4388a6f9a9564a9db49878aee"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\WorkItemDto.java": {
+    "mtime": 1776172896.1883824,
+    "hash": "833429b31b883aecbcd8b3bbd294a8fb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\ai\\ContextualAiFactDto.java": {
+    "mtime": 1776177752.2429688,
+    "hash": "579a9e791005768448ab0111c62b48eb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\ai\\ContextualAiResponseDto.java": {
+    "mtime": 1776177752.2488065,
+    "hash": "df0479e6cc97290208016bcfe8764299"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\change\\ChangeNoticeDto.java": {
+    "mtime": 1776172896.191382,
+    "hash": "be6a4f8f14f968c31034a793fd54e100"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\change\\ChangeRequestDto.java": {
+    "mtime": 1776172896.1923835,
+    "hash": "a03a3b011bf454aff4897a46a543bb46"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\change\\ChangeRequestSummaryDto.java": {
+    "mtime": 1776172896.1939046,
+    "hash": "a359db481316e6e30dd52acca57bdb2c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\change\\CreateChangeRequestRequest.java": {
+    "mtime": 1776172896.1964223,
+    "hash": "5e68b77c9bce89ef221e525ebf07ae59"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\dto\\change\\ReviewChangeRequestRequest.java": {
+    "mtime": 1776172896.1984212,
+    "hash": "2730645d90c7e92a14bf702b8407e16c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\exception\\GlobalExceptionHandler.java": {
+    "mtime": 1776172896.2014215,
+    "hash": "aa9267f8844d3792369630eed7609957"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\exception\\ResourceNotFoundException.java": {
+    "mtime": 1768654144.4491935,
+    "hash": "fc3455d0dfc32b4e54f1980230df8d14"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\exception\\ValidationException.java": {
+    "mtime": 1768654144.4501932,
+    "hash": "3c6530b08e936859ab2c2ff175142074"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\security\\AuthenticatedUser.java": {
+    "mtime": 1776172896.2044218,
+    "hash": "b56aa511be0fbaac89b8705afd60aa9d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\security\\CorsFilter.java": {
+    "mtime": 1776172896.2073913,
+    "hash": "0f6191d0988ed4a299f5640eed94c33f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\security\\CurrentUserProviderImpl.java": {
+    "mtime": 1776172896.2104025,
+    "hash": "8cfe83c0a6079c4b9d3fd9f3cb273bcb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\security\\JwtAuthenticationFilter.java": {
+    "mtime": 1776172896.212422,
+    "hash": "2b2d5e82b58b06eb92b63624d4f7b460"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\security\\SecurityConfig.java": {
+    "mtime": 1776172896.2222862,
+    "hash": "33051b55fab8d8433c6b5abfa2051b8a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\java\\com\\windchill\\api\\service\\ContextualAiService.java": {
+    "mtime": 1777379207.3373768,
+    "hash": "866c3c68a6cd9c5d76505ee5538b1ffd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\init-data.sql": {
+    "mtime": 1776172896.2313185,
+    "hash": "3a5c1a42595b8a16ba8a5fa3e1d4362c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V100__create_change_management.sql": {
+    "mtime": 1776172896.2323184,
+    "hash": "2c709d1f979ac10225444dcc48132e4d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V101__create_change_impact.sql": {
+    "mtime": 1776172896.2333183,
+    "hash": "f2639c52c563698dc3d528203e3fabbf"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V102__impact_similarity_snapshot.sql": {
+    "mtime": 1776172896.2343314,
+    "hash": "4b9c8400a84572991cfa39edcf3d442e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V103__impact_route_decisions.sql": {
+    "mtime": 1776172896.2363183,
+    "hash": "aa763f68501fa947a0c73dcb9155a635"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V104__create_notifications.sql": {
+    "mtime": 1776172896.238911,
+    "hash": "b97ab5fa9522a995481c801fe80e1f0f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V105__seed_demo_data.sql": {
+    "mtime": 1776172896.2401495,
+    "hash": "8f4184d0a295f1a11bb96e3f8955e4d5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V106__create_wt_documents.sql": {
+    "mtime": 1776172896.2437215,
+    "hash": "141ec1bfb4883e12094e7aa7a8a54b29"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V107__audit_entity_type_add_document.sql": {
+    "mtime": 1776172896.2472205,
+    "hash": "23cb3d5db0853632ca851c0324a234e5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V108__change_orders.sql": {
+    "mtime": 1776172896.2532978,
+    "hash": "7f474e511e1d0fb777abf5674edc0675"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V1__initial_schema.sql": {
+    "mtime": 1768572549.6519651,
+    "hash": "7d8d7d53a04124c897c8189ea4bb054d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V2__plm_core_spine.sql": {
+    "mtime": 1776172896.2595344,
+    "hash": "1efe29c7f68e22d8e39cbaf5c1896afe"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\db\\migration\\V3__plm_context_members.sql": {
+    "mtime": 1776172896.2640212,
+    "hash": "44ee832e26c8291ec85294c8958a9d2f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\constants\\APIConstants.java": {
+    "mtime": 1768572549.657014,
+    "hash": "7220338bbb9dc734fc2c0c7b105455df"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\constants\\ErrorConstants.java": {
+    "mtime": 1768572549.658015,
+    "hash": "b3415239c38969884cb454cb9e8b4ff1"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\dto\\AdminUserView.java": {
+    "mtime": 1776172896.2660198,
+    "hash": "d059404bfd5143f169a121b766bc2b35"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\dto\\ApiResponse.java": {
+    "mtime": 1776172896.282396,
+    "hash": "83c60f8f9cdf8f23f64ea8c15dea1de6"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\dto\\ContextMemberView.java": {
+    "mtime": 1776172896.2884097,
+    "hash": "cb4f4670888a1c9d45039f82a6b31eae"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\dto\\ErrorResponse.java": {
+    "mtime": 1768572549.6600175,
+    "hash": "7ef7e9dac428b8af70ba919cec226f9b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\ChangeNoticeStatus.java": {
+    "mtime": 1776172896.2904642,
+    "hash": "55c30c6592de00a866cc05d0f86543b2"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\ChangePriority.java": {
+    "mtime": 1776172896.2964773,
+    "hash": "a4571a02ac6f4f630877ccfc380e0532"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\ChangeRequestStatus.java": {
+    "mtime": 1776172896.2984734,
+    "hash": "91f7755e44a32d036d0dda6ee6a73bab"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\ContextTypeEnum.java": {
+    "mtime": 1776172896.2994733,
+    "hash": "98422b6efe340f575e302bcb63c28637"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\LifecycleStateEnum.java": {
+    "mtime": 1776172896.303034,
+    "hash": "a49c9fd502972ec414febeba348d555f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\PlmEntityTypeEnum.java": {
+    "mtime": 1776172896.3090024,
+    "hash": "6b95192ee548573fa03123d20b9d3480"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\PromotionRequestStatusEnum.java": {
+    "mtime": 1776172896.31453,
+    "hash": "e3152d575c1e354390b191e85751191c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\RoleEnum.java": {
+    "mtime": 1768572549.6605635,
+    "hash": "006750073f3593a1b4a645144b287421"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\StatusEnum.java": {
+    "mtime": 1768572549.6620758,
+    "hash": "f52694008a2718f12063823580743bee"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\enums\\WorkItemStatusEnum.java": {
+    "mtime": 1776172896.3184407,
+    "hash": "f3136e171a0ff7e7b4afa9d985a9d885"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exception\\BusinessException.java": {
+    "mtime": 1769196836.6880841,
+    "hash": "081636b83f78d8855552588431356a22"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exception\\ResourceNotFoundException.java": {
+    "mtime": 1769196836.6890821,
+    "hash": "b88f32b69c302c8af59934011d701e11"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exception\\UnauthorizedException.java": {
+    "mtime": 1769196836.690588,
+    "hash": "660fba25810f26c96bacabe154fcb2e4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exceptions\\BusinessException.java": {
+    "mtime": 1768572549.6640818,
+    "hash": "16593f0ddc86881d6c00d550a5d14551"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exceptions\\ResourceNotFoundException.java": {
+    "mtime": 1768572549.6640818,
+    "hash": "aa05c8e835c1b4c9a12b05e2132b1eef"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\exceptions\\UnauthorizedException.java": {
+    "mtime": 1768572549.6650844,
+    "hash": "f7ef46462c9bfe26b92329ba648ed6d1"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\response\\ApiResponse.java": {
+    "mtime": 1776172896.3249788,
+    "hash": "8b4a3fe3cbece41407e520825ced5d50"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-common\\src\\main\\java\\com\\windchill\\common\\security\\CurrentUserProvider.java": {
+    "mtime": 1776172896.3289788,
+    "hash": "667b451f3fa857b368576f0adefc3f63"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\AuditLog.java": {
+    "mtime": 1776172896.351411,
+    "hash": "859b40083723af60e208072ea0fc5671"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\BaseEntity.java": {
+    "mtime": 1768572549.6759927,
+    "hash": "d2f317395722f87b0958630a2cd6c972"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\BomLine.java": {
+    "mtime": 1776172896.355415,
+    "hash": "73176265d2a5d7d6d54253133debec82"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\ChangeNotice.java": {
+    "mtime": 1776172896.3579519,
+    "hash": "271a456840b6e04e76fe087587dd6a81"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\ChangeOrderItem.java": {
+    "mtime": 1776172896.3609684,
+    "hash": "ce4b006dbe12bf1b06946e4271104804"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\ChangeRequest.java": {
+    "mtime": 1776172896.3619618,
+    "hash": "2cffc5ae2d60effc03543aa10ba3e581"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Document.java": {
+    "mtime": 1768649912.5141695,
+    "hash": "714099a6551740306232beeb8f09796a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Folder.java": {
+    "mtime": 1776172896.3640974,
+    "hash": "995543deae0db1ccb80e3a7f1af09207"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Notification.java": {
+    "mtime": 1776172896.3651087,
+    "hash": "80402b55f2a9c5e88066f52db867a030"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Part.java": {
+    "mtime": 1776172896.3661108,
+    "hash": "1b39d74152b359dcd206497f3d1e73a6"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\PlmContext.java": {
+    "mtime": 1776172896.3692975,
+    "hash": "2d7c667d6f7cfa4bfe906d2f6c16b93c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\PlmContextMember.java": {
+    "mtime": 1776172896.371309,
+    "hash": "fbeb72879dbc3a6a636df4f96eacb004"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Product.java": {
+    "mtime": 1768651256.07689,
+    "hash": "bd7243cf14cfaefbfa1a3ce7c9856906"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\Project.java": {
+    "mtime": 1768651802.6227312,
+    "hash": "c0c07fb46c2d11c12029563cea412666"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\PromotionRequest.java": {
+    "mtime": 1776172896.3773093,
+    "hash": "6949a21a8f63297126ab4173b9c15bff"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\User.java": {
+    "mtime": 1768652032.1196277,
+    "hash": "6794abc2f5539877192d1ae0edf66145"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\WorkItem.java": {
+    "mtime": 1776172896.3831358,
+    "hash": "2105f5fe23a0a43ae3d409696b524492"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\entity\\WorkItemComment.java": {
+    "mtime": 1776172896.391294,
+    "hash": "cde496b28aeff093d65a0e05f6569dcb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-domain\\src\\main\\java\\com\\windchill\\domain\\util\\VersionUtils.java": {
+    "mtime": 1776172896.403409,
+    "hash": "f1c80f160b7b35b09338b34b0508584d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\AuditLogRepository.java": {
+    "mtime": 1776172896.406405,
+    "hash": "2272ac90293b74fff616a4a2d2641b21"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\BomLineRepository.java": {
+    "mtime": 1776172896.4210038,
+    "hash": "e58a20bcecb12ef3224bf18b645da298"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\ChangeNoticeRepository.java": {
+    "mtime": 1776172896.4283762,
+    "hash": "f37747848ae0c22a3b71177d118c9698"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\ChangeOrderItemRepository.java": {
+    "mtime": 1776172896.4313662,
+    "hash": "368dae015b63bf0fa0085654a1a52b7b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\ChangeRequestRepository.java": {
+    "mtime": 1776172896.4358895,
+    "hash": "fdffa95f332ff9ff8964e038dae00031"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\DocumentRepository.java": {
+    "mtime": 1768572549.6845055,
+    "hash": "e8f142a2e2660ac69c8612c4a5d9f23c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\FolderRepository.java": {
+    "mtime": 1776172896.4398863,
+    "hash": "7e16d67b9c843402eb076f79326dc72e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\NotificationRepository.java": {
+    "mtime": 1776172896.4468124,
+    "hash": "9743d7458664350e804b5e48be42395f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\PartRepository.java": {
+    "mtime": 1776172896.4488287,
+    "hash": "d6e40e0741631607dd2c8f0b9d5330db"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\PlmContextMemberRepository.java": {
+    "mtime": 1776172896.4508336,
+    "hash": "cf76a65647c3dba1aa8e00072304e99c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\PlmContextRepository.java": {
+    "mtime": 1776172896.4528208,
+    "hash": "9f5d05d5d61ee3f6d027a36317321b21"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\ProductRepository.java": {
+    "mtime": 1768572549.685506,
+    "hash": "349ed500b6f85d208a3c41e6e43bbcec"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\ProjectRepository.java": {
+    "mtime": 1768572549.6865058,
+    "hash": "42c42b009882e196bbff23c132526006"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\PromotionRequestRepository.java": {
+    "mtime": 1776172896.4538238,
+    "hash": "8ce73ef41a4e4e709bee304114f23407"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\UserRepository.java": {
+    "mtime": 1776172896.4626226,
+    "hash": "aad495d3d24049ff0c94905a7146c8af"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\WorkItemCommentRepository.java": {
+    "mtime": 1776172896.4636402,
+    "hash": "5702ca6c4bd807a3f5caeff351811801"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-repository\\src\\main\\java\\com\\windchill\\repository\\WorkItemRepository.java": {
+    "mtime": 1776172896.4652443,
+    "hash": "f2aebbd98121d32b555bf38097feaac8"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\IChangeRequestService.java": {
+    "mtime": 1776172896.4767334,
+    "hash": "728f2d8f79a659675075ce19f6bfc74b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\INotificationService.java": {
+    "mtime": 1776172896.4822404,
+    "hash": "c3d52db4581e59825a901c8db14ad94d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\AIChatServiceImpl.java": {
+    "mtime": 1776172896.4872446,
+    "hash": "033c15a3a83b5f5628440abc655c480b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\AIImpactServiceImpl.java": {
+    "mtime": 1776172896.4907603,
+    "hash": "af14231202c4aba88337748ea87018f4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\IAIChatService.java": {
+    "mtime": 1776172896.494278,
+    "hash": "1261d6f155402990f375fc037841610b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\IAIImpactService.java": {
+    "mtime": 1776172896.4972756,
+    "hash": "ab4f6cec2a5d110787b0da6ebba571ea"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\dto\\AIChatRequest.java": {
+    "mtime": 1776172896.5012767,
+    "hash": "add4491721e3b6755ded81bd5731b92a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\dto\\AIChatResponse.java": {
+    "mtime": 1776172896.5073197,
+    "hash": "d1c8f8ade53b99834ee8b858ee006a8c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\dto\\AIImpactAnalysis.java": {
+    "mtime": 1776172896.5103102,
+    "hash": "d067a185aa10ea5c3c0aa7945f96671c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\dto\\MLRiskRequest.java": {
+    "mtime": 1776172896.5148225,
+    "hash": "740d856624d2db9fdee6393a22216dcf"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\ai\\dto\\MLRiskResponse.java": {
+    "mtime": 1776172896.5178607,
+    "hash": "8968b84b4b114ecd141200b4486b1067"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\document\\DocumentServiceImpl.java": {
+    "mtime": 1768572549.6925752,
+    "hash": "d213f1fbd87b3ea54333eb16af3a1840"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\document\\IDocumentService.java": {
+    "mtime": 1768572549.6925752,
+    "hash": "bf4fc014d9c39faccf940a7ce1839f26"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\impl\\ChangeRequestServiceImpl.java": {
+    "mtime": 1776172896.5251853,
+    "hash": "2987688c4734dda13c6877fabb239d5e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\impl\\NotificationServiceImpl.java": {
+    "mtime": 1776172896.5283234,
+    "hash": "c8db3ebbc9d0a533bd1421912b4a8579"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\AuditServiceImpl.java": {
+    "mtime": 1776172896.5351212,
+    "hash": "4cab78c783afffc1ba0d6e9e74eb990f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\BomServiceImpl.java": {
+    "mtime": 1776172896.5376525,
+    "hash": "18c19b3060a6210aca496cd383ba33ba"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\FolderServiceImpl.java": {
+    "mtime": 1776172896.5389595,
+    "hash": "7ce2a0a20ac3040ce67c94b469908b70"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\IAuditService.java": {
+    "mtime": 1776172896.5419726,
+    "hash": "4d9f3ca443c83e4287b7bfaee43b604b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\IBomService.java": {
+    "mtime": 1776172896.5459836,
+    "hash": "e76814d38f7dbefd56b66575ba90cf58"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\IFolderService.java": {
+    "mtime": 1776172896.5509593,
+    "hash": "1cc81b4bab218f60b592fe440918e028"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\IPartService.java": {
+    "mtime": 1776172896.5549953,
+    "hash": "6c404b866d72152935420e15d5159cc8"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\IPlmContextService.java": {
+    "mtime": 1776172896.5589733,
+    "hash": "824b5b026e8fb8fd378b3ddbbafd1e07"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\PartServiceImpl.java": {
+    "mtime": 1776172896.5645509,
+    "hash": "4da16bfe664d81191b61d78b7759b6d9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\PlmContextServiceImpl.java": {
+    "mtime": 1776172896.5719283,
+    "hash": "de65c5a3dee277cdd4ce7dda110f2248"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\plm\\security\\PlmAclService.java": {
+    "mtime": 1776172896.5769434,
+    "hash": "de7fffffc61572e9af8a77455a2c248c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\product\\IProductService.java": {
+    "mtime": 1768572549.693581,
+    "hash": "0e716867637e35294a64c7dc36784ec3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\product\\ProductServiceImpl.java": {
+    "mtime": 1768572549.6945813,
+    "hash": "6b7e97c9cf2bff5931ea3aac29f9d76f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\project\\IProjectService.java": {
+    "mtime": 1768572549.695581,
+    "hash": "3103fbeb4bee98de14826396d6bb25cb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\project\\ProjectServiceImpl.java": {
+    "mtime": 1768572549.6965806,
+    "hash": "8b7abe4ef2d86f5f270f3b4b619c3253"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\user\\IUserService.java": {
+    "mtime": 1768572549.6975813,
+    "hash": "e71973b3cce2f455ca3a5a0f06061e32"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\user\\UserServiceImpl.java": {
+    "mtime": 1776172896.5819473,
+    "hash": "a6d5d6bd50b6bcce7b524bfae001ce10"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-service\\src\\main\\java\\com\\windchill\\service\\workflow\\PromotionWorkflowService.java": {
+    "mtime": 1776172896.5855894,
+    "hash": "f5704826fe118a2e135f9a5c22de0eb9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\fix_part_detail.py": {
+    "mtime": 1777634035.805242,
+    "hash": "da2c793e831e8b46a377f1fb6e641da1"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\vite.config.js": {
+    "mtime": 1769195633.5867758,
+    "hash": "7575e22a2be03b9a3d754664c24682cd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\App.jsx": {
+    "mtime": 1776172896.7268953,
+    "hash": "4bbc16c096f393568713e47fe2d355b0"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\main.jsx": {
+    "mtime": 1768572549.7204404,
+    "hash": "dd812d6bdc9e07a0deeff42b77ec8498"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\ErrorBoundary.jsx": {
+    "mtime": 1776172896.7278965,
+    "hash": "a3220f1da7d0140aadc456321a0c71b7"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\ai\\AIChatBot.jsx": {
+    "mtime": 1776172896.7344036,
+    "hash": "83bedc81529e4b0b03b5621145ae336c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\ai\\ContextualInsightPanel.jsx": {
+    "mtime": 1776177823.190159,
+    "hash": "a6dc5487a9c9d3088c702c5045d47923"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\ai\\ImpactPreview.jsx": {
+    "mtime": 1776172896.737397,
+    "hash": "4e75f46fcf6301e4ef486ff0c1d727b4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\ai\\PartPickerModal.jsx": {
+    "mtime": 1776172896.7403975,
+    "hash": "10acfd0125fe5dfcd4000a600cd0c387"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\atoms\\Button\\Button.jsx": {
+    "mtime": 1768572549.709419,
+    "hash": "61d238e8ba5a8edae2e07f000750afd5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\atoms\\Input\\Input.jsx": {
+    "mtime": 1768572549.7114167,
+    "hash": "acf942bc1d4f7c1d955e22ec488d56a4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\files\\FileList.jsx": {
+    "mtime": 1776172896.7459493,
+    "hash": "5d6dd9f96db0a5add72a8a4ef9c7df2a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\files\\FileUpload.jsx": {
+    "mtime": 1776172896.746941,
+    "hash": "32e585364089720a98aaed9a1c43dffe"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\molecules\\Card\\Card.jsx": {
+    "mtime": 1768572549.7134185,
+    "hash": "b6da41d124ef7c415c29a03113c76823"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\notifications\\NotificationBell.jsx": {
+    "mtime": 1776172896.748942,
+    "hash": "e690662eef61b12dd64c1643cc69b930"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\notifications\\NotificationDropdown.jsx": {
+    "mtime": 1776172896.7517273,
+    "hash": "8de8265063c5c70f64fb4aba941d90fb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\notifications\\ToastProvider.jsx": {
+    "mtime": 1776172896.7542415,
+    "hash": "2fd7f46697a2c8b727ed3137ae323a7a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\organisms\\Header\\Header.jsx": {
+    "mtime": 1777638526.6535683,
+    "hash": "b8c3affb2353f27f83e55faee053c8c9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\organisms\\Header\\NotificationBell.jsx": {
+    "mtime": 1776172896.7603312,
+    "hash": "239fa5249bda68d497942bfb0d570aef"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\AttachmentsPanel.jsx": {
+    "mtime": 1776172896.7633324,
+    "hash": "c77dd10b12e6055a33fbbb1019101ce2"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\AuditPanel.jsx": {
+    "mtime": 1776172896.7668526,
+    "hash": "da68da39b416d72c3f8d6fe629d9777d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\BomEditor.jsx": {
+    "mtime": 1776172896.7688525,
+    "hash": "2d91a5f8bf39d9a38d020d7b561fc502"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\Breadcrumb.jsx": {
+    "mtime": 1777379341.386515,
+    "hash": "0ee1934e20df473e42fd23ae6e47d929"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\ContextSwitcher.jsx": {
+    "mtime": 1777641254.083924,
+    "hash": "8db383cd8aa6d42abf155253276cd590"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\ContextTeamPanel.jsx": {
+    "mtime": 1776172896.7758498,
+    "hash": "d576c266079fdf1fff04841d8df34e8d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\FolderTree.jsx": {
+    "mtime": 1777641314.0221422,
+    "hash": "0892d3f8bf89ca6386ef3030d9a5286a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\ImpactVisualizer.jsx": {
+    "mtime": 1777633871.7459846,
+    "hash": "747a546f12713046b36de9abb45e940e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\InfoPage.jsx": {
+    "mtime": 1776172896.7831216,
+    "hash": "660b6e16e6bd27313edf6c0f253a7a62"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\LifecycleActions.jsx": {
+    "mtime": 1776172896.7851262,
+    "hash": "5059888ce7333f3c6ddf08cb1e9dff67"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\Navigator.jsx": {
+    "mtime": 1776172896.7881777,
+    "hash": "1e4deebf15362dd57b71503885137de4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\NavigatorPanel.jsx": {
+    "mtime": 1777641355.2001047,
+    "hash": "91ff8c241ff751ede0631989ffa9b9a7"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\PartsTable.jsx": {
+    "mtime": 1776172896.7922037,
+    "hash": "8a53226fa95a3b528099a83d8e231a88"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\components\\plm\\StateBadge.jsx": {
+    "mtime": 1776172896.7947068,
+    "hash": "8428cae1e66d61cb805ab8aa2cf69cd4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\config\\api.config.js": {
+    "mtime": 1776172896.7964346,
+    "hash": "2ffa32b42dcf485150bf6957d808bd06"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\context\\AuthContext.jsx": {
+    "mtime": 1776172896.7999723,
+    "hash": "dc41d813bf57f445df02e2d09abe07a1"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\context\\PlmWorkspaceContext.jsx": {
+    "mtime": 1776172896.8019712,
+    "hash": "2e7b98664ddc5b236cf220213d2453c0"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\hooks\\useAuth.js": {
+    "mtime": 1768572549.718441,
+    "hash": "90ca1d7bc91e4947afe164ad339a92b5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\hooks\\useFetch.js": {
+    "mtime": 1768572549.7194402,
+    "hash": "e563b952f64e373632f8a72708f25412"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\hooks\\useWebSocket.js": {
+    "mtime": 1776172896.8029704,
+    "hash": "3311fb1db2d33830eca24ed488d0942b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\AIDemo.jsx": {
+    "mtime": 1776174841.650051,
+    "hash": "805bcad77875c683c7422830cefdc4ee"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\NotFoundPage.jsx": {
+    "mtime": 1776172896.8090332,
+    "hash": "d5d1420c02dfbb8e953645686f6b7fbb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\admin\\UsersAdminPage.jsx": {
+    "mtime": 1776172896.8146298,
+    "hash": "64c899f963677b7f721aedf963902313"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\auth\\LoginPage.jsx": {
+    "mtime": 1768572549.7229507,
+    "hash": "b4cbecf8b86ca4342f320d5f16ddc1cd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\dashboard\\DashboardPage.jsx": {
+    "mtime": 1777640264.9140584,
+    "hash": "df2dcdcaae542c243db2442186e33bed"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\AuditLogPage.jsx": {
+    "mtime": 1777646298.6926079,
+    "hash": "3cc8f254c3534fb3ba5c85a6334f4c2f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\ChangeOrderDetailPage.jsx": {
+    "mtime": 1777646717.6121886,
+    "hash": "f59f18b0e63d21124f76ba05b0b86c16"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\ChangesHomePage.jsx": {
+    "mtime": 1776172896.832207,
+    "hash": "4a0b6a2802cd92bde055270673fc7dd5"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\ChangeTasksPage.jsx": {
+    "mtime": 1777646685.973277,
+    "hash": "3a8ced7a92463648873076b34fb86845"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\DocumentDetailPage.jsx": {
+    "mtime": 1777646423.5576494,
+    "hash": "a89cd4dd9866494b146cb689f0ef43a3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\DocumentsPage.jsx": {
+    "mtime": 1777646400.5239224,
+    "hash": "06539a19f291a7f9a2f685a7809ebc0f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\EcoDetailPage.jsx": {
+    "mtime": 1777646270.5450704,
+    "hash": "e217b421633e1b3fcf559985c746a230"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\EcrDetailPage.jsx": {
+    "mtime": 1777646243.8388505,
+    "hash": "6d18fa67e18b45356138622c1d37b535"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\LibraryPage.jsx": {
+    "mtime": 1777646660.2748847,
+    "hash": "e1fbe009e29ff520901b7211bb6985fd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\NotificationsPage.jsx": {
+    "mtime": 1777646547.2917075,
+    "hash": "5dfa5badd4b0842b3a944a8623536ea4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\PartDetailPage.jsx": {
+    "mtime": 1777646102.9768782,
+    "hash": "8104082d24d9ca24befff413848bd45b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\PartsPage.jsx": {
+    "mtime": 1777646364.2459097,
+    "hash": "915670a590521209a317c9482e97e29d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\PlmLayout.jsx": {
+    "mtime": 1777641179.5606027,
+    "hash": "8521b23426f5eb92c76d241dc13ab6b2"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\ProductsPage.jsx": {
+    "mtime": 1777646498.0519896,
+    "hash": "8537e8632429ca91ab43d8dbc41c8d2f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\ProjectsPage.jsx": {
+    "mtime": 1777646516.8531241,
+    "hash": "cda05af18755d6a13446bb1c44112c37"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\TeamManagementPage.jsx": {
+    "mtime": 1777646581.9683092,
+    "hash": "012d63a0512dae72802ae95185fee741"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\pages\\plm\\WorklistPage.jsx": {
+    "mtime": 1776177963.3671997,
+    "hash": "ba156f11674ac6fb1a6b46a54b337fd6"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\routing\\AppRoutes.jsx": {
+    "mtime": 1776172896.8727229,
+    "hash": "8d161f166d50f7fef4177b2d334eca9f"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\routing\\PrivateRoute.jsx": {
+    "mtime": 1768572549.7268693,
+    "hash": "bb3367bd9b95fd8884d3d8b254d5882b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\routing\\PublicRoute.jsx": {
+    "mtime": 1768572549.7268693,
+    "hash": "8883b82569e47cf1adad81a844b13071"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\services\\adminUserApi.js": {
+    "mtime": 1776172896.8767235,
+    "hash": "22621ca993157ceff3416bcdf97983ff"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\services\\aiService.js": {
+    "mtime": 1777379219.540308,
+    "hash": "fdd9bf5e2642afc5a7e8813ec4d420eb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\services\\changeApi.js": {
+    "mtime": 1776172896.8787324,
+    "hash": "9f3529f03673090b8856fa7caf94aca3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\services\\documentApi.js": {
+    "mtime": 1777379219.5433097,
+    "hash": "e563c441477e85a2ff4e5e83b74c465e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\services\\plmApi.js": {
+    "mtime": 1776177823.203454,
+    "hash": "e420b4df2f87ca9279d205facbc8fd2a"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\utils\\api.js": {
+    "mtime": 1776172896.8865411,
+    "hash": "5f01370772c6d34ac6bf5a3f16eeb416"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\src\\utils\\localStorage.js": {
+    "mtime": 1776172896.887541,
+    "hash": "d9e318c078c4ed50c7be81344e9ab85b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\AGENTS.md": {
+    "mtime": 1776175558.0034838,
+    "hash": "ee7a6c0abc76843c6122145b50dd2dbd"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\CLAUDE.md": {
+    "mtime": 1777846319.319303,
+    "hash": "8cb9eba01fca2eb29686dfc24a15cee3"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\CONTRIBUTING.md": {
+    "mtime": 1776174760.2794485,
+    "hash": "5d065ead1a449a6840831b0e6a34aebb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\DEPLOYMENT.md": {
+    "mtime": 1776172896.004374,
+    "hash": "6ade6378a428c78261740bfae02bea2b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docker-compose.yml": {
+    "mtime": 1776172896.0126264,
+    "hash": "3f81e62b36bc0d5981c9c32e95e8751d"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\QUICK_START.md": {
+    "mtime": 1776172896.0076158,
+    "hash": "bc060830e334f71decf8530403720c40"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\README.md": {
+    "mtime": 1776174714.6415842,
+    "hash": "7456a41f1c2c851a61cf2ab1e2a35c67"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ROADMAP.md": {
+    "mtime": 1776174760.2769039,
+    "hash": "c3659bada1d53e9122046bebd15c8ac6"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_API_REFERENCE.md": {
+    "mtime": 1776172896.0151472,
+    "hash": "f68c191aa5a3757aad5a89894fe746f4"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_BACKEND_INTEGRATION_COMPLETE.md": {
+    "mtime": 1776172896.0181577,
+    "hash": "519d06631261f9461d1128418d000bdb"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_COMPLETE_TESTING_GUIDE.md": {
+    "mtime": 1776172896.0192752,
+    "hash": "ee7c2cd55f8cce0faaec6e904b381d7b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_DEPLOYMENT_GUIDE.md": {
+    "mtime": 1776172896.0202818,
+    "hash": "6a5f7024da54712f495b752a117794d0"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_FEATURE_SHOWCASE.md": {
+    "mtime": 1776172896.021977,
+    "hash": "3c9edf79a95c0109dd14b49f44ad4077"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_IMPLEMENTATION.md": {
+    "mtime": 1776172896.0229738,
+    "hash": "6dd94b0d5bdd7f810cc0f9210d622ce9"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\AI_INTEGRATION_GUIDE.md": {
+    "mtime": 1776172896.0249758,
+    "hash": "790e09322af21db6c80d3b61f59df108"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\ARCHITECTURE.md": {
+    "mtime": 1776174760.2824478,
+    "hash": "2ed4f98a176ba43debd66259c73274e8"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\FOLDER_STRUCTURE.md": {
+    "mtime": 1768572549.633839,
+    "hash": "05dcb2e0b192048bf13a9ea2025b376e"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\PLM_CORE_SPINE.md": {
+    "mtime": 1776172896.0259721,
+    "hash": "5b9cce6c44370523c0c4e1f15b0bdebf"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\docs\\SETUP_GUIDE.md": {
+    "mtime": 1776174760.2864523,
+    "hash": "693494e484eec1acbc31f5c50bcd9d37"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\README.md": {
+    "mtime": 1776172896.032502,
+    "hash": "f54faf447c53a91e7fa8ee7b699b08ed"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\ml-service\\requirements.txt": {
+    "mtime": 1776172896.0516524,
+    "hash": "7bcb7442437e5fcb16a3846f211b3d8c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\application-dev.yml": {
+    "mtime": 1768572549.6493073,
+    "hash": "7045c8407d5598235faa78c4b618feac"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\application-prod.yml": {
+    "mtime": 1776172896.2278001,
+    "hash": "c28c7d41e257827a904605f405973948"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-backend\\backend-api\\src\\main\\resources\\application.yml": {
+    "mtime": 1776174888.3679595,
+    "hash": "b61e74348088e1704f3f61f1d87c82ae"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\build_log.txt": {
+    "mtime": 1777634409.4799068,
+    "hash": "a832ed7a22af1ff6b3b22226398cbb3c"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\index.html": {
+    "mtime": 1777633241.129014,
+    "hash": "3ebaba514f0c14b736346a10db51137b"
+  },
+  "C:\\Users\\subha\\windchill-plm-app\\windchill-frontend\\README_AI_UI.md": {
+    "mtime": 1776172896.7203765,
+    "hash": "db16f081815d7e0df899d170731a02c6"
+  }
+}

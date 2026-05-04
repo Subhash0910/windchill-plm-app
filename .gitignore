@@ -75,6 +75,11 @@ spring.log
 *.tmp
 *.temp
 
+# ── Graphify ────────────────────────────────────────────────────────
+graphify-out/cache/
+graphify-out/.graphify_*
+.graphify_python
+
 # ── Package manager lock files ──────────────────────────────────────
 yarn.lock
 pnpm-lock.yaml
