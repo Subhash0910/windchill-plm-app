@@ -2,6 +2,7 @@ package com.windchill.api.document;
 
 import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class WTDocumentController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<?>> create(
-            @RequestBody WTDocumentCreateRequest req,
+            @Valid @RequestBody WTDocumentCreateRequest req,
             Authentication auth) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -45,7 +46,7 @@ public class WTDocumentController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> update(
             @PathVariable Long id,
-            @RequestBody WTDocumentUpdateRequest req,
+            @Valid @RequestBody WTDocumentUpdateRequest req,
             Authentication auth) {
         return ok(service.update(id, req, auth.getName()));
     }
