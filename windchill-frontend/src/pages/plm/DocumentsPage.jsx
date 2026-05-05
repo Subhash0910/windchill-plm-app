@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
-import { plmApi } from '../../services/plmApi';
+import { documentApi } from '../../services/documentApi';
 import styles from './DocumentsPage.module.css';
 
-const DOC_TYPES = ['GENERAL', 'SPECIFICATION', 'MANUAL', 'REPORT', 'DRAWING'];
+const DOC_TYPES = ['SPEC', 'DRAWING', 'PROCEDURE', 'REPORT'];
 
 const DocumentsPage = () => {
   const navigate = useNavigate();
@@ -13,16 +13,16 @@ const DocumentsPage = () => {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(new Set());
-  
+
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ documentNumber: '', title: '', description: '', type: 'GENERAL' });
+  const [form, setForm] = useState({ docNumber: '', name: '', description: '', docType: 'SPEC' });
   const [saving, setSaving] = useState(false);
 
   const contextId = localStorage.getItem('activeContextId') || 1;
 
   const load = useCallback(() => {
     setLoading(true);
-    plmApi.listDocuments(contextId)
+    documentApi.list(contextId)
       .then(data => { setDocs(Array.isArray(data) ? data : []); setError(null); })
       .catch(e => setError(e.response?.data?.message || e.message))
       .finally(() => setLoading(false));
@@ -30,28 +30,27 @@ const DocumentsPage = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = docs.filter(d => 
-    d.documentNumber?.toLowerCase().includes(search.toLowerCase()) ||
-    d.title?.toLowerCase().includes(search.toLowerCase())
+  const filtered = docs.filter(d =>
+    d.docNumber?.toLowerCase().includes(search.toLowerCase()) ||
+    d.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleRow = (id) => {
     setSelected(prev => {
       const s = new Set(prev);
-      if (s.has(id)) s.delete(id);
-      else s.add(id);
+      if (s.has(id)) s.delete(id); else s.add(id);
       return s;
     });
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!form.documentNumber.trim() || !form.title.trim()) return;
+    if (!form.name.trim()) return;
     setSaving(true);
     try {
-      await plmApi.createDocument({ ...form, contextId: Number(contextId) });
+      await documentApi.create({ ...form, contextId: Number(contextId) });
       setCreating(false);
-      setForm({ documentNumber: '', title: '', description: '', type: 'GENERAL' });
+      setForm({ docNumber: '', name: '', description: '', docType: 'SPEC' });
       load();
     } catch (ex) { alert(ex.response?.data?.message || ex.message); }
     finally { setSaving(false); }
@@ -77,7 +76,6 @@ const DocumentsPage = () => {
           <div className={styles.divider} />
           <button className={styles.btnSecondary} onClick={load}>Refresh</button>
         </div>
-
         <div className={styles.toolbarRight}>
           <input
             className={styles.searchBox}
@@ -86,7 +84,7 @@ const DocumentsPage = () => {
             onChange={e => setSearch(e.target.value)}
           />
           <div className={styles.divider} />
-          <button className={styles.btnSecondary} disabled={selected.size === 0} onClick={() => {}}>Actions</button>
+          <button className={styles.btnSecondary} disabled={selected.size === 0}>Actions</button>
         </div>
       </div>
 
@@ -98,15 +96,15 @@ const DocumentsPage = () => {
           </div>
           <div className={styles.createBody}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <label>Number <input value={form.documentNumber} onChange={e => setForm({...form, documentNumber: e.target.value})} placeholder="DOC-0000" /></label>
-              <label>Type 
-                <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+              <label>Number <input value={form.docNumber} onChange={e => setForm({ ...form, docNumber: e.target.value })} placeholder="DOC-0001" /></label>
+              <label>Type
+                <select value={form.docType} onChange={e => setForm({ ...form, docType: e.target.value })}>
                   {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </label>
             </div>
-            <label>Title <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Enter document title" /></label>
-            <label>Description <textarea rows="2" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></label>
+            <label>Title <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Enter document title" /></label>
+            <label>Description <textarea rows="2" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label>
             <div className={styles.createActions}>
               <button type="submit" className={styles.btnPrimary} disabled={saving}>
                 {saving ? 'Creating…' : 'Create Document'}
@@ -133,25 +131,25 @@ const DocumentsPage = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className={styles.loadingBar}>Loading secure documents…</td></tr>
+              <tr><td colSpan="7" className={styles.loadingBar}>Loading documents…</td></tr>
             ) : filtered.length ? (
               filtered.map(d => (
                 <tr key={d.id} className={selected.has(d.id) ? styles.rowSelected : ''} onClick={() => toggleRow(d.id)}>
                   <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleRow(d.id)} /></td>
                   <td className={styles.linkCell}>
                     <span className={styles.link} onClick={e => { e.stopPropagation(); navigate(`/plm/documents/${d.id}`); }}>
-                      {d.documentNumber}
+                      {d.docNumber || '—'}
                     </span>
                   </td>
-                  <td style={{ fontWeight: 600 }}>{d.title}</td>
-                  <td className={styles.dimCell}>{d.type}</td>
-                  <td><span className={styles.versionChip}>{d.version || 'A'}</span></td>
+                  <td style={{ fontWeight: 600 }}>{d.name}</td>
+                  <td className={styles.dimCell}>{d.docType}</td>
+                  <td><span className={styles.versionChip}>{d.versionLabel || `${d.revision || 'A'}.${d.iteration || 1}`}</span></td>
                   <td><StateBadge state={d.lifecycleState} size="sm" /></td>
                   <td className={styles.dimCell}>{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-'}</td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="7" className={styles.emptyRow}>No documents found matching your criteria.</td></tr>
+              <tr><td colSpan="7" className={styles.emptyRow}>No documents found.</td></tr>
             )}
           </tbody>
         </table>
