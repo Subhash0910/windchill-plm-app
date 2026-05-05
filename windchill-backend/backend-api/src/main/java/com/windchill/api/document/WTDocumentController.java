@@ -88,6 +88,11 @@ public class WTDocumentController {
         return ok(service.listByPart(partId));
     }
 
+    @GetMapping("/by-doc/{docId}")
+    public ResponseEntity<ApiResponse<?>> byDoc(@PathVariable Long docId) {
+        return ok(service.listRelatedParts(docId));
+    }
+
     @PostMapping("/{id}/link-part/{partId}")
     public ResponseEntity<ApiResponse<?>> linkPart(
             @PathVariable Long id, @PathVariable Long partId) {

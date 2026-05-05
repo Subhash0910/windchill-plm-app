@@ -1,264 +1,165 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { documentApi } from '../../services/documentApi';
-import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import StateBadge from '../../components/plm/StateBadge';
-import './DocumentsPage.css';
+import { plmApi } from '../../services/plmApi';
+import styles from './DocumentsPage.module.css';
 
-const DOC_TYPES = ['SPEC', 'DRAWING', 'PROCEDURE', 'REPORT'];
-
-const TYPE_ICON = {
-  SPEC:      '📌',
-  DRAWING:   '📐',
-  PROCEDURE: '📋',
-  REPORT:    '📊',
-};
-
-const EMPTY_FORM = {
-  docNumber:   '',
-  name:        '',
-  description: '',
-  docType:     'SPEC',
-};
+const DOC_TYPES = ['GENERAL', 'SPECIFICATION', 'MANUAL', 'REPORT', 'DRAWING'];
 
 const DocumentsPage = () => {
   const navigate = useNavigate();
-  const { selectedContextId } = useContext(PlmWorkspaceContext);
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(new Set());
+  
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ documentNumber: '', title: '', description: '', type: 'GENERAL' });
+  const [saving, setSaving] = useState(false);
 
-  const [docs,       setDocs]       = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [search,     setSearch]     = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [showForm,   setShowForm]   = useState(false);
-  const [editDoc,    setEditDoc]    = useState(null);
-  const [form,       setForm]       = useState(EMPTY_FORM);
-  const [saving,     setSaving]     = useState(false);
-  const [error,      setError]      = useState('');
+  const contextId = localStorage.getItem('activeContextId') || 1;
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setLoading(true);
-    try {
-      const data = await documentApi.list(selectedContextId || null, typeFilter || null);
-      setDocs(Array.isArray(data) ? data : []);
-    } catch {
-      setDocs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedContextId, typeFilter]);
+    plmApi.listDocuments(contextId)
+      .then(data => { setDocs(Array.isArray(data) ? data : []); setError(null); })
+      .catch(e => setError(e.response?.data?.message || e.message))
+      .finally(() => setLoading(false));
+  }, [contextId]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Local filter — no extra round-trip
-  const visible = search.trim()
-    ? docs.filter(d =>
-        (d.docNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-        (d.name      || '').toLowerCase().includes(search.toLowerCase())
-      )
-    : docs;
+  const filtered = docs.filter(d => 
+    d.documentNumber?.toLowerCase().includes(search.toLowerCase()) ||
+    d.title?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  // ---- modal helpers ----------------------------------------------------
-  const openCreate = () => {
-    setEditDoc(null); setForm(EMPTY_FORM); setError(''); setShowForm(true);
-  };
-  const openEdit = (doc) => {
-    setEditDoc(doc);
-    setForm({
-      docNumber:   doc.docNumber,
-      name:        doc.name,
-      description: doc.description || '',
-      docType:     doc.docType,
+  const toggleRow = (id) => {
+    setSelected(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
     });
-    setError(''); setShowForm(true);
   };
 
-  const handleSave = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    if (!form.docNumber.trim() || !form.name.trim()) {
-      setError('Doc number and name are required'); return;
-    }
-    setSaving(true); setError('');
+    if (!form.documentNumber.trim() || !form.title.trim()) return;
+    setSaving(true);
     try {
-      if (editDoc) {
-        await documentApi.update(editDoc.id, {
-          name:        form.name,
-          description: form.description,
-          docType:     form.docType,
-        });
-      } else {
-        await documentApi.create({
-          contextId:   selectedContextId,
-          docNumber:   form.docNumber,
-          name:        form.name,
-          description: form.description,
-          docType:     form.docType,
-        });
-      }
-      setShowForm(false);
-      await load();
-    } catch (ex) {
-      setError(ex?.response?.data?.message || 'Save failed');
-    } finally { setSaving(false); }
+      await plmApi.createDocument({ ...form, contextId: Number(contextId) });
+      setCreating(false);
+      setForm({ documentNumber: '', title: '', description: '', type: 'GENERAL' });
+      load();
+    } catch (ex) { alert(ex.response?.data?.message || ex.message); }
+    finally { setSaving(false); }
   };
-
-  const handleDelete = async (doc) => {
-    if (!window.confirm(`Delete ${doc.docNumber}?`)) return;
-    try { await documentApi.delete(doc.id); await load(); }
-    catch { alert('Delete failed'); }
-  };
-
-  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   return (
-    <div className="docp">
-
-      {/* ── Page header */}
-      <div className="docp__header">
-        <div>
-          <h1 className="docp__title">Documents</h1>
-          <p className="docp__sub">Specs · Drawings · Procedures · Reports</p>
+    <div className={styles.page}>
+      <header className={styles.pageHeader}>
+        <div className={styles.pageTitle}>
+          <span className={styles.typeIcon}>📄</span>
+          <div>
+            <h1>Document Management</h1>
+            <p className={styles.subtitle}>Control specifications, manuals, and technical reports with revision history.</p>
+          </div>
         </div>
-        <button className="docp__btn-new" onClick={openCreate}>+ New Document</button>
-      </div>
+      </header>
 
-      {/* ── Toolbar */}
-      <div className="docp__toolbar">
-        <div className="docp__search-wrap">
-          <span>🔍</span>
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarLeft}>
+          <button className={styles.btnPrimary} onClick={() => setCreating(!creating)}>
+            {creating ? 'Close Panel' : 'New Document'}
+          </button>
+          <div className={styles.divider} />
+          <button className={styles.btnSecondary} onClick={load}>Refresh</button>
+        </div>
+
+        <div className={styles.toolbarRight}>
           <input
-            className="docp__search"
-            placeholder="Search doc number or name…"
+            className={styles.searchBox}
+            placeholder="Search documents…"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-        </div>
-        <div className="docp__type-tabs">
-          <button
-            className={`docp__tab ${typeFilter === '' ? 'active' : ''}`}
-            onClick={() => setTypeFilter('')}
-          >All</button>
-          {DOC_TYPES.map(t => (
-            <button
-              key={t}
-              className={`docp__tab ${typeFilter === t ? 'active' : ''}`}
-              onClick={() => setTypeFilter(t)}
-            >
-              {TYPE_ICON[t]} {t}
-            </button>
-          ))}
+          <div className={styles.divider} />
+          <button className={styles.btnSecondary} disabled={selected.size === 0} onClick={() => {}}>Actions</button>
         </div>
       </div>
 
-      {/* ── Create / Edit modal */}
-      {showForm && (
-        <div className="docp__modal-bg" onClick={() => setShowForm(false)}>
-          <div className="docp__modal" onClick={e => e.stopPropagation()}>
-            <div className="docp__modal-hdr">
-              <h2>{editDoc ? 'Edit Document' : 'New Document'}</h2>
-              <button onClick={() => setShowForm(false)}>&times;</button>
-            </div>
-            <form className="docp__form" onSubmit={handleSave}>
-              <div className="docp__row">
-                <div className="docp__field">
-                  <label>Doc Number *</label>
-                  <input
-                    value={form.docNumber}
-                    onChange={f('docNumber')}
-                    disabled={!!editDoc}
-                    placeholder="e.g. SPEC-001"
-                  />
-                </div>
-                <div className="docp__field">
-                  <label>Type</label>
-                  <select value={form.docType} onChange={f('docType')}>
-                    {DOC_TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="docp__field">
-                <label>Name *</label>
-                <input value={form.name} onChange={f('name')} placeholder="Document name" />
-              </div>
-              <div className="docp__field">
-                <label>Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={f('description')}
-                  rows={3}
-                  placeholder="Optional description…"
-                />
-              </div>
-              {error && <p className="docp__err">{error}</p>}
-              <div className="docp__form-actions">
-                <button type="button" className="docp__btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit"  className="docp__btn-save"  disabled={saving}>
-                  {saving ? 'Saving…' : editDoc ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
+      {creating && (
+        <form className={styles.createPanel} onSubmit={handleCreate}>
+          <div className={styles.createHeader}>
+            <span>Create New Document</span>
+            <button type="button" className={styles.closeBtn} onClick={() => setCreating(false)}>×</button>
           </div>
-        </div>
+          <div className={styles.createBody}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <label>Number <input value={form.documentNumber} onChange={e => setForm({...form, documentNumber: e.target.value})} placeholder="DOC-0000" /></label>
+              <label>Type 
+                <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+                  {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </label>
+            </div>
+            <label>Title <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Enter document title" /></label>
+            <label>Description <textarea rows="2" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></label>
+            <div className={styles.createActions}>
+              <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                {saving ? 'Creating…' : 'Create Document'}
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
-      {/* ── Table */}
-      {loading ? (
-        <div className="docp__loading"><div className="docp__spin" /><span>Loading documents…</span></div>
-      ) : visible.length === 0 ? (
-        <div className="docp__empty">
-          <span className="docp__empty-icon">📄</span>
-          <h3>{search || typeFilter ? 'No matching documents' : 'No documents yet'}</h3>
-          <p>{search || typeFilter ? 'Try changing filters' : 'Create the first document using the button above'}</p>
-        </div>
-      ) : (
-        <div className="docp__table-wrap">
-          <table className="docp__table">
-            <thead>
-              <tr>
-                <th>Doc Number</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Rev</th>
-                <th>State</th>
-                <th>Checked Out</th>
-                <th>Created</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map(d => (
-                <tr
-                  key={d.id}
-                  className="docp__row"
-                  onClick={() => navigate(`/plm/documents/${d.id}`)}
-                >
-                  <td className="docp__docnum">
-                    <span>{TYPE_ICON[d.docType] || '📄'}</span> {d.docNumber}
+      {error && <div className={styles.errorBanner}>Error: {error}</div>}
+
+      <div className={styles.tableWrap}>
+        <table className={styles.wcTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '40px' }} />
+              <th>Doc Number</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Version</th>
+              <th>State</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan="7" className={styles.loadingBar}>Loading secure documents…</td></tr>
+            ) : filtered.length ? (
+              filtered.map(d => (
+                <tr key={d.id} className={selected.has(d.id) ? styles.rowSelected : ''} onClick={() => toggleRow(d.id)}>
+                  <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(d.id)} onChange={() => toggleRow(d.id)} /></td>
+                  <td className={styles.linkCell}>
+                    <span className={styles.link} onClick={e => { e.stopPropagation(); navigate(`/plm/documents/${d.id}`); }}>
+                      {d.documentNumber}
+                    </span>
                   </td>
-                  <td>{d.name}</td>
-                  <td><span className="docp__type-pill">{d.docType}</span></td>
-                  <td className="docp__ver">{d.versionLabel}</td>
-                  <td><StateBadge state={d.lifecycleState} /></td>
-                  <td className="docp__co">
-                    {d.checkedOutBy
-                      ? <span className="docp__co-badge">🔒 {d.checkedOutBy}</span>
-                      : <span className="docp__co-free">—</span>}
-                  </td>
-                  <td className="docp__date">
-                    {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—'}
-                  </td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <div className="docp__actions">
-                      <button className="docp__act-btn" onClick={() => openEdit(d)}>Edit</button>
-                      <button className="docp__act-btn docp__act-del" onClick={() => handleDelete(d)}>Delete</button>
-                    </div>
-                  </td>
+                  <td style={{ fontWeight: 600 }}>{d.title}</td>
+                  <td className={styles.dimCell}>{d.type}</td>
+                  <td><span className={styles.versionChip}>{d.version || 'A'}</span></td>
+                  <td><StateBadge state={d.lifecycleState} size="sm" /></td>
+                  <td className={styles.dimCell}>{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '-'}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="docp__footer">{visible.length} document{visible.length !== 1 ? 's' : ''}</div>
-        </div>
-      )}
+              ))
+            ) : (
+              <tr><td colSpan="7" className={styles.emptyRow}>No documents found matching your criteria.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <footer className={styles.statusBar}>
+        Showing {filtered.length} documents • Last updated {new Date().toLocaleTimeString()}
+      </footer>
     </div>
   );
 };

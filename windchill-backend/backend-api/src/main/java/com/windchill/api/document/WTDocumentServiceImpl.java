@@ -1,6 +1,8 @@
 package com.windchill.api.document;
 
 import com.windchill.common.enums.PlmEntityTypeEnum;
+import com.windchill.domain.entity.Part;
+import com.windchill.repository.PartRepository;
 import com.windchill.service.plm.IAuditService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class WTDocumentServiceImpl implements WTDocumentService {
 
     private final WTDocumentRepository repo;
+    private final PartRepository       partRepository;
     private final IAuditService        auditService;
 
     @PersistenceContext
@@ -177,6 +180,15 @@ public class WTDocumentServiceImpl implements WTDocumentService {
     @Override
     public List<WTDocumentDto> listByPart(Long partId) {
         return repo.findByPartId(partId).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Part> listRelatedParts(Long docId) {
+        List<Long> partIds = repo.findRelatedPartIds(docId);
+        if (partIds == null || partIds.isEmpty()) {
+            return List.of();
+        }
+        return partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(partIds);
     }
 
     @Override

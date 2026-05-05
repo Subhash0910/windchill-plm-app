@@ -48,9 +48,7 @@ const NavigatorPanel = () => {
 
   return (
     <nav className="wc-navigator" aria-label="Navigator">
-      <div className="wc-navigator__header">
-        <span>Navigator</span>
-      </div>
+      <div className="wc-navigator__section-label">Navigator</div>
 
       {/* HOME */}
       <NavGroup icon="🏠" label="Home" defaultOpen>

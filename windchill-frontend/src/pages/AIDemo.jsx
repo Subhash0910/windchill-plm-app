@@ -159,9 +159,9 @@ const AIDemo = () => {
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          AI Impact Analysis Demo
+          AI Change Intelligence Studio
         </h1>
-        <p>Test the AI-powered engineering impact analysis engine</p>
+        <p>Run explainable change-impact analysis on realistic PLM scenarios.</p>
       </div>
 
       <div className="ai-demo-container">
@@ -221,7 +221,7 @@ const AIDemo = () => {
                 {loadingPart ? 'Loading...' : 'Search & Select Part'}
               </button>
             )}
-            <small>Select a part from your database to analyze</small>
+            <small>Select a managed part from your workspace to generate AI-backed impact guidance.</small>
           </div>
 
           <div className="form-group">
@@ -252,8 +252,8 @@ const AIDemo = () => {
             </select>
             <small>
               {selectedPart
-                ? `Smart suggestions based on ${selectedPart.lifecycleState} state`
-                : 'Select a part first to see appropriate change types'
+                ? `Recommendations are tuned to the ${selectedPart.lifecycleState} lifecycle state`
+                : 'Select a part first to unlock guided change options'
               }
             </small>
           </div>

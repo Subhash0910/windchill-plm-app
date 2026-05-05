@@ -2,35 +2,19 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
-import './ProjectsPage.css';
-
-const STATUS_COLORS = {
-  DRAFT:    { bg: '#fef3c7', text: '#92400e' },
-  ACTIVE:   { bg: '#dbeafe', text: '#1e40af' },
-  RELEASED: { bg: '#dcfce7', text: '#166534' },
-  INACTIVE: { bg: '#f1f5f9', text: '#475569' },
-  OBSOLETE: { bg: '#fce7f3', text: '#9d174d' },
-};
+import styles from './ProjectsPage.module.css';
 
 const STATUSES = ['DRAFT', 'ACTIVE', 'RELEASED', 'INACTIVE', 'OBSOLETE'];
-
 const EMPTY_FORM = {
   projectCode: '', name: '', description: '', status: 'DRAFT',
   managerId: '', progress: 0, startDate: '', endDate: '',
-};
-
-const progressColor = (p) => {
-  if (p >= 80) return '#22c55e';
-  if (p >= 50) return '#3b82f6';
-  if (p >= 20) return '#f59e0b';
-  return '#ef4444';
 };
 
 const ProjectsPage = () => {
   const navigate = useNavigate();
   const { setSelectedContextId } = useContext(PlmWorkspaceContext);
 
-  // ── PLM Project Contexts (from plm_contexts table, type=PROJECT) ──
+  // ── PLM Project Contexts ──
   const [plmContexts,  setPlmContexts]  = useState([]);
   const [ctxLoading,   setCtxLoading]   = useState(true);
 
@@ -50,7 +34,7 @@ const ProjectsPage = () => {
     navigate('/plm/parts');
   };
 
-  // ── Project entities (from projects table) ───────────────────────────────
+  // ── Project entities ───────────────────────────────────────────────
   const [projects,       setProjects]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [search,         setSearch]         = useState('');
@@ -108,9 +92,8 @@ const ProjectsPage = () => {
       const payload = { ...form, managerId: form.managerId ? Number(form.managerId) : null, progress: Number(form.progress) };
       editId ? await plmApi.updateProject(editId, payload) : await plmApi.createProject(payload);
       setShowForm(false); setSearch(''); await load();
-    } catch (ex) {
-      setError(ex?.response?.data?.message || 'Save failed');
-    } finally { setSaving(false); }
+    } catch (ex) { setError(ex?.response?.data?.message || 'Save failed'); }
+    finally { setSaving(false); }
   };
 
   const handleDelete = async (id, code) => {
@@ -143,98 +126,72 @@ const ProjectsPage = () => {
   const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
 
   return (
-    <div className="pj-page">
-      <div className="pj-page-header">
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
         <div>
-          <h1 className="pj-page-title">🗂️ Projects</h1>
-          <p className="pj-page-sub">PLM project contexts &amp; project tracker</p>
+          <h1 className={styles.pageTitle}>🗂️ Projects</h1>
+          <p className={styles.pageSub}>PLM project contexts &amp; tracker</p>
         </div>
-        <button className="pj-btn-create" onClick={openCreate}>+ New Project</button>
+        <button className={styles.btnCreate} onClick={openCreate}>+ New Project</button>
       </div>
 
-      {/* ──────────────────── SECTION 1 — PLM Project Contexts ──────────────────── */}
-      <div className="pj-ctx-section">
-        <div className="pj-section-header">
-          <h2 className="pj-section-title">🏢 PLM Project Contexts</h2>
-          <p className="pj-section-sub">
-            Windchill-style project containers (created via the Context panel on the left)
-          </p>
+      <div className={styles.ctxSection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>🏢 PLM Project Contexts</h2>
+          <p className={styles.sectionSub}>Windchill-style project containers</p>
         </div>
-
         {ctxLoading ? (
-          <div className="pj-ctx-loading">↻ Loading contexts…</div>
+          <div className={styles.ctxLoading}>↻ Loading contexts…</div>
         ) : plmContexts.length === 0 ? (
-          <div className="pj-ctx-empty">
-            <span>No PROJECT-type contexts yet.</span>
-            &nbsp;Use the <strong>Context → New</strong> panel on the left
-            sidebar and choose type <strong>PROJECT</strong> to create one.
-          </div>
+          <div className={styles.ctxEmpty}>No PROJECT contexts found. Use the sidebar to create one.</div>
         ) : (
-          <div className="pj-ctx-table">
+          <div className={styles.ctxTable}>
             {plmContexts.map(ctx => (
-              <div className="pj-ctx-row" key={ctx.id}>
-                <span className="pj-ctx-type-pill">PROJECT</span>
-                <span className="pj-ctx-code">{ctx.code}</span>
-                <span className="pj-ctx-name">{ctx.name}</span>
-                {ctx.description && (
-                  <span className="pj-ctx-desc" title={ctx.description}>
-                    {ctx.description.length > 50 ? ctx.description.slice(0, 50) + '…' : ctx.description}
-                  </span>
-                )}
-                <button
-                  className="pj-ctx-open-btn"
-                  onClick={() => openContext(ctx)}
-                  title={`Switch to ${ctx.name} context and open workspace`}
-                >
-                  Open Workspace →
-                </button>
+              <div className={styles.ctxRow} key={ctx.id}>
+                <span className={styles.ctxTypePill}>PROJECT</span>
+                <span className={styles.ctxCode}>{ctx.code}</span>
+                <span className={styles.ctxName}>{ctx.name}</span>
+                <button className={styles.ctxOpenBtn} onClick={() => openContext(ctx)}>Open Workspace →</button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Divider */}
-      <div className="pj-section-divider">
-        <span>📋 Project Tracker</span>
-      </div>
+      <div className={styles.sectionDivider}><span>📋 Project Tracker</span></div>
 
-      {/* ──────────────────── SECTION 2 — Project entities ────────────────────── */}
-      <div className="pj-search-wrap">
-        <span className="pj-search-icon">🔍</span>
-        <input className="pj-search" placeholder="Search by code, name…" value={search} onChange={e => setSearch(e.target.value)} />
-        {searching && <span className="pj-search-spin" />}
+      <div className={styles.searchWrap}>
+        <span className={styles.searchIcon}>🔍</span>
+        <input className={styles.search} placeholder="Search by code, name…" value={search} onChange={e => setSearch(e.target.value)} />
+        {searching && <span className={styles.searchSpin} />}
       </div>
 
       {showForm && (
-        <div className="pj-modal-bg" onClick={() => setShowForm(false)}>
-          <div className="pj-modal" onClick={e => e.stopPropagation()}>
-            <div className="pj-modal-header">
+        <div className={styles.modalBg} onClick={() => setShowForm(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
               <h2>{editId ? 'Edit Project' : 'New Project'}</h2>
-              <button className="pj-modal-close" onClick={() => setShowForm(false)}>&times;</button>
+              <button className={styles.modalClose} onClick={() => setShowForm(false)}>&times;</button>
             </div>
-            <form className="pj-form" onSubmit={handleSave}>
-              <div className="pj-form-row">
-                <div className="pj-field"><label>Project Code *</label><input value={form.projectCode} onChange={f('projectCode')} placeholder="e.g. PROJ-001" /></div>
-                <div className="pj-field"><label>Status</label><select value={form.status} onChange={f('status')}>{STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+            <form className={styles.form} onSubmit={handleSave}>
+              <div className={styles.formRow}>
+                <div className={styles.field}><label>Code *</label><input value={form.projectCode} onChange={f('projectCode')} /></div>
+                <div className={styles.field}><label>Status</label><select value={form.status} onChange={f('status')}>{STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
               </div>
-              <div className="pj-field pj-field--full"><label>Name *</label><input value={form.name} onChange={f('name')} placeholder="Project name" /></div>
-              <div className="pj-field pj-field--full"><label>Description</label><textarea value={form.description} onChange={f('description')} placeholder="Optional description…" rows={2} /></div>
-              <div className="pj-form-row">
-                <div className="pj-field"><label>Manager ID</label><input type="number" value={form.managerId} onChange={f('managerId')} placeholder="Optional" min="1" /></div>
-                <div className="pj-field">
-                  <label>Initial Progress — {form.progress}%</label>
-                  <input type="range" min="0" max="100" value={form.progress} onChange={f('progress')} className="pj-range" />
-                </div>
+              <div className={`${styles.field} ${styles.fieldFull}`}><label>Name *</label><input value={form.name} onChange={f('name')} /></div>
+              <div className={`${styles.field} ${styles.fieldFull}`}><label>Description</label><textarea value={form.description} onChange={f('description')} rows={2} /></div>
+              <div className={styles.formRow}>
+                <div className={styles.field}><label>Manager ID</label><input type="number" value={form.managerId} onChange={f('managerId')} /></div>
+                <div className={styles.field}><label>Progress — {form.progress}%</label><input type="range" min="0" max="100" value={form.progress} onChange={f('progress')} className={styles.range} /></div>
               </div>
-              <div className="pj-form-row">
-                <div className="pj-field"><label>Start Date</label><input type="date" value={form.startDate} onChange={f('startDate')} /></div>
-                <div className="pj-field"><label>End Date</label><input type="date" value={form.endDate} onChange={f('endDate')} /></div>
+              <div className={styles.formRow}>
+                <div className={styles.field}><label>Start Date</label><input type="date" value={form.startDate} onChange={f('startDate')} /></div>
+                <div className={styles.field}><label>End Date</label><input type="date" value={form.endDate} onChange={f('endDate')} /></div>
               </div>
-              {error && <div className="pj-form-error">{error}</div>}
-              <div className="pj-form-actions">
-                <button type="button" className="pj-btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="pj-btn-save" disabled={saving}>{saving ? 'Saving…' : editId ? 'Update' : 'Create'}</button>
+              {error && <div className={styles.formError}>{error}</div>}
+              <div className={styles.formActions}>
+                <button type="button" className={styles.btnCancel} onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className={styles.btnSave} disabled={saving}>{saving ? 'Saving…' : editId ? 'Update' : 'Create'}</button>
               </div>
             </form>
           </div>
@@ -242,79 +199,71 @@ const ProjectsPage = () => {
       )}
 
       {loading ? (
-        <div className="pj-loading"><div className="pj-spinner" /><p>Loading projects…</p></div>
+        <div className={styles.loading}><div className={styles.spinner} /><p>Loading projects…</p></div>
       ) : projects.length === 0 ? (
-        <div className="pj-empty">
-          <span>📋</span>
-          <h3>{search ? 'No results found' : 'No project tracker entries yet'}</h3>
-          <p>{search ? `No projects match "${search}"` : 'Click “+ New Project” above to add one'}</p>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>📋</span>
+          <h3>No projects found</h3>
         </div>
       ) : (
         <>
-          <div className="pj-grid">
+          <div className={styles.grid}>
             {projects.map(proj => {
-              const c = STATUS_COLORS[proj.status] || STATUS_COLORS.DRAFT;
               const pct = proj.progress ?? 0;
-              const bar = progressColor(pct);
               const isEditing = progEdit[proj.id] !== undefined;
               const editVal   = progEdit[proj.id] ?? pct;
               return (
-                <div className="pj-card" key={proj.id}>
-                  <div className="pj-card-top">
+                <div className={styles.card} key={proj.id}>
+                  <div className={styles.cardTop}>
                     <div>
-                      <div className="pj-card-code">{proj.projectCode}</div>
-                      <div className="pj-card-name">{proj.name || '—'}</div>
+                      <div className={styles.cardCode}>{proj.projectCode}</div>
+                      <div className={styles.cardName}>{proj.name || '—'}</div>
                     </div>
-                    <span className="pj-status-badge" style={{ background: c.bg, color: c.text }}>{proj.status}</span>
+                    <span className={styles.statusBadge}>{proj.status}</span>
                   </div>
 
-                  {proj.description && <p className="pj-card-desc">{proj.description}</p>}
+                  {proj.description && <p className={styles.cardDesc}>{proj.description}</p>}
 
-                  <div className="pj-prog-section">
-                    <div className="pj-prog-label">
+                  <div className={styles.progSection}>
+                    <div className={styles.progLabel}>
                       <span>Progress</span>
-                      <span style={{ color: bar, fontWeight: 700 }}>{pct}%</span>
+                      <span style={{ color: 'var(--wc-blue)', fontWeight: 800 }}>{pct}%</span>
                     </div>
-                    <div className="pj-prog-track">
-                      <div className="pj-prog-fill" style={{ width: `${pct}%`, background: bar }} />
+                    <div className={styles.progTrack}>
+                      <div className={styles.progFill} style={{ width: `${pct}%` }} />
                     </div>
                     {isEditing ? (
-                      <div className="pj-prog-edit-row">
+                      <div className={styles.progEditRow}>
                         <input
                           type="number" min="0" max="100"
                           value={editVal}
                           onChange={e => setProgEdit(s => ({ ...s, [proj.id]: Number(e.target.value) }))}
-                          className="pj-prog-input"
+                          className={styles.progInput}
                         />
-                        <span className="pj-prog-unit">%</span>
-                        <button className="pj-btn-save-prog" disabled={progSaving[proj.id]} onClick={() => handleProgressSave(proj.id, editVal)}>
+                        <button className={styles.btnSaveProg} disabled={progSaving[proj.id]} onClick={() => handleProgressSave(proj.id, editVal)}>
                           {progSaving[proj.id] ? '…' : 'Save'}
                         </button>
-                        <button className="pj-btn-cancel-prog" onClick={() => cancelProgEdit(proj.id)}>×</button>
+                        <button className={styles.btnCancelProg} onClick={() => cancelProgEdit(proj.id)}>×</button>
                       </div>
                     ) : (
-                      <button className="pj-btn-update-prog" onClick={() => setProgEdit(s => ({ ...s, [proj.id]: pct }))}>
-                        Update %
-                      </button>
+                      <button className={styles.btnUpdateProg} onClick={() => setProgEdit(s => ({ ...s, [proj.id]: pct }))}>Update %</button>
                     )}
                   </div>
 
-                  <div className="pj-card-meta">
+                  <div className={styles.cardMeta}>
                     {proj.managerId && <span>👤 Manager #{proj.managerId}</span>}
-                    {proj.startDate  && <span>▶ {proj.startDate.split('T')[0]}</span>}
-                    {proj.endDate    && <span>⏹ {proj.endDate.split('T')[0]}</span>}
                     <span>📅 {timeAgo(proj.createdAt)}</span>
                   </div>
 
-                  <div className="pj-card-actions">
-                    <button className="pj-btn-edit" onClick={() => openEdit(proj)}>Edit</button>
-                    <button className="pj-btn-del"  onClick={() => handleDelete(proj.id, proj.projectCode)}>Delete</button>
+                  <div className={styles.cardActions}>
+                    <button className={styles.btnEdit} onClick={() => openEdit(proj)}>Edit</button>
+                    <button className={styles.btnDel}  onClick={() => handleDelete(proj.id, proj.projectCode)}>Delete</button>
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="pj-count">{projects.length} project{projects.length !== 1 ? 's' : ''}</div>
+          <div className={styles.count}>{projects.length} project{projects.length !== 1 ? 's' : ''}</div>
         </>
       )}
     </div>

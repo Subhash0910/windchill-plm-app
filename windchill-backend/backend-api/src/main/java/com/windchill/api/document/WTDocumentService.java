@@ -1,5 +1,7 @@
 package com.windchill.api.document;
 
+import com.windchill.domain.entity.Part;
+
 import java.util.List;
 
 public interface WTDocumentService {
@@ -13,6 +15,7 @@ public interface WTDocumentService {
     WTDocumentDto       undoCheckOut(Long id, String username);
     void                delete(Long id, String username);
     List<WTDocumentDto> listByPart(Long partId);
+    List<Part>          listRelatedParts(Long docId);
     void                linkToPart(Long docId, Long partId);
     void                unlinkFromPart(Long docId, Long partId);
 }

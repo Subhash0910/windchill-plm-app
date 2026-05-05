@@ -1,5 +1,4 @@
 package com.windchill.api.document;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,6 +34,12 @@ public interface WTDocumentRepository extends JpaRepository<WTDocument, Long> {
         WHERE pd.part_id = :partId AND d.is_deleted = false
         """, nativeQuery = true)
     List<WTDocument> findByPartId(@Param("partId") Long partId);
+
+    @Query(value = """
+        SELECT pd.part_id FROM part_documents pd
+        WHERE pd.document_id = :docId
+        """, nativeQuery = true)
+    List<Long> findRelatedPartIds(@Param("docId") Long docId);
 
     Optional<WTDocument> findByIdAndIsDeletedFalse(Long id);
 

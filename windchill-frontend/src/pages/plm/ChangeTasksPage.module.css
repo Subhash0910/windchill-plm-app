@@ -1,0 +1,21 @@
+.page { padding: 10px 12px; background: var(--wc-page-bg); min-height: 100%; color: var(--wc-text-primary); font-family: var(--wc-font); }
+.head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.title { font-size: 20px; font-weight: 800; color: var(--wc-text-primary); letter-spacing: -0.02em; }
+.sub { margin-top: 4px; color: var(--wc-text-muted); font-size: 13px; }
+
+.card { background: var(--wc-content-bg); border: 1px solid var(--wc-border); border-radius: var(--wc-radius-lg); padding: 14px; box-shadow: var(--wc-shadow-sm); }
+.cardTitle { font-weight: 800; margin-bottom: 12px; color: var(--wc-text-primary); text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; border-bottom: 1px solid var(--wc-border-light); padding-bottom: 8px; }
+
+.actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 12px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { border-bottom: 1px solid var(--wc-border-light); padding: 10px 12px; text-align: left; font-size: 13px; vertical-align: middle; color: var(--wc-text-primary); }
+.table th { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--wc-text-secondary); background: var(--wc-sidebar-active); border-bottom: 1px solid var(--wc-border); }
+
+.comment { width: 100%; min-width: 240px; padding: 6px 10px; border: 1px solid var(--wc-border); border-radius: var(--wc-radius-sm); background: var(--wc-page-bg); color: var(--wc-text-primary); font-family: inherit; font-size: 13px; }
+.comment:focus { border-color: var(--wc-blue); outline: none; }
+
+.rowActive { background: var(--wc-sidebar-hover); }
+.btnSubmit { padding: 6px 14px; background: var(--wc-blue); color: #fff; border: none; border-radius: var(--wc-radius-sm); font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.btnSubmit:hover { background: var(--wc-blue-hover); transform: translateY(-1px); }
+.btnSubmit:disabled { opacity: 0.5; cursor: not-allowed; }

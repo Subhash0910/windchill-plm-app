@@ -50,6 +50,7 @@ export const documentApi = {
 
   // ---- part links -------------------------------------------------------
   byPart:      async (partId) => { const r = await api.get(`/api/v1/plm/documents/by-part/${partId}`); return r.data?.data ?? []; },
+  byDoc:       async (docId)  => { const r = await api.get(`/api/v1/plm/documents/by-doc/${docId}`); return r.data?.data ?? []; },
   linkPart:    async (docId, partId) => api.post(`/api/v1/plm/documents/${docId}/link-part/${partId}`),
   unlinkPart:  async (docId, partId) => api.delete(`/api/v1/plm/documents/${docId}/link-part/${partId}`),
 };

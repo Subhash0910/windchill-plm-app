@@ -1,0 +1,156 @@
+.docPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--wc-page-bg);
+  font-family: var(--wc-font);
+  color: var(--wc-text-primary);
+}
+
+/* Head */
+.docHead {
+  padding: 16px 20px;
+  background: var(--wc-content-bg);
+  border-bottom: 2px solid var(--wc-blue);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-radius: var(--wc-radius-md);
+  box-shadow: var(--wc-shadow-sm);
+  margin-bottom: 12px;
+}
+.docKicker {
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.docTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.docNumber {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.docVersion {
+  background: var(--wc-sidebar-active);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--wc-border);
+  color: var(--wc-blue);
+}
+.docTitle {
+  font-size: 14px;
+  color: var(--wc-text-secondary);
+  margin-top: 4px;
+  font-weight: 600;
+}
+.docActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tabs */
+.docTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--wc-border);
+  background: var(--wc-sidebar-active);
+  padding: 8px 16px;
+  border-radius: var(--wc-radius-md);
+  margin-bottom: 16px;
+}
+.docTab {
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--wc-text-secondary);
+  font-weight: 700;
+  border-radius: var(--wc-radius-sm);
+  transition: all .15s var(--wc-ease-out);
+}
+.docTabActive {
+  background: var(--wc-blue);
+  color: #fff !important;
+  border-color: var(--wc-blue);
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
+}
+
+/* Body */
+.docBody { flex: 1; padding: 0 4px; }
+
+/* Grid Cards */
+.docGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (max-width: 800px) { .docGrid { grid-template-columns: 1fr; } }
+
+.docCard {
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border-light);
+  border-radius: var(--wc-radius-md);
+  padding: 20px;
+  box-shadow: var(--wc-shadow-sm);
+}
+.docCardFull { grid-column: 1 / -1; }
+.docCardTitle {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--wc-text-muted);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wc-border-light);
+  letter-spacing: .05em;
+}
+
+/* KV */
+.docKv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  row-gap: 10px;
+  column-gap: 12px;
+}
+.docK { font-size: 11px; color: var(--wc-text-muted); font-weight: 700; text-transform: uppercase; }
+.docV { font-size: 13px; font-weight: 500; color: var(--wc-text-primary); }
+.docVMono { font-family: var(--wc-font-mono); font-size: 12px; font-weight: 600; color: var(--wc-blue); }
+
+.docDesc { font-size: 14px; line-height: 1.6; color: var(--wc-text-secondary); }
+
+/* File List */
+.docFiles { display: flex; flex-direction: column; gap: 8px; }
+.docFileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--wc-sidebar-active);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  transition: all .15s;
+}
+.docFileItem:hover { background: var(--wc-sidebar-hover); border-color: var(--wc-text-muted); }
+
+/* Misc */
+.docLoading { padding: 80px; text-align: center; color: var(--wc-text-muted); font-size: 14px; font-weight: 700; }
+.docError {
+  margin: 16px;
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  border-radius: var(--wc-radius-md);
+  padding: 12px 16px;
+  color: var(--wc-danger-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.muted { color: var(--wc-text-muted); font-size: 12px; }

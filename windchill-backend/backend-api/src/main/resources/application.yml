@@ -12,11 +12,11 @@ spring:
     include: ai
 
   datasource:
-    url: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
-    username: windchill
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8}
+    username: ${SPRING_DATASOURCE_USERNAME:windchill}
     # docker-compose overrides this via SPRING_DATASOURCE_PASSWORD.
     # The fallback below is for local bare-metal runs only — never use in prod.
-    password: ${SPRING_DATASOURCE_PASSWORD:windchill123}
+    password: ${SPRING_DATASOURCE_PASSWORD:change-me-for-local-dev}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -40,8 +40,8 @@ spring:
 
   # Spring Boot 3 Redis config
   redis:
-    host: redis
-    port: 6379
+    host: ${SPRING_DATA_REDIS_HOST:localhost}
+    port: ${SPRING_DATA_REDIS_PORT:6379}
     timeout: 2000
     connect-timeout: 2000
     jedis:
@@ -108,7 +108,7 @@ logging:
 # IMPORTANT: generate a strong secret for production:
 #   openssl rand -base64 64
 app:
-  jwtSecret: ${APP_JWTSECRET:windchill-dev-jwt-secret-key-please-change-this-to-a-64-bytes-minimum-value-1234567890}
+  jwtSecret: ${APP_JWTSECRET:replace-this-dev-secret-before-sharing-your-env}
   jwtExpirationInMs: 86400000
 
 # Change Impact routing config (CSV usernames)

@@ -24,7 +24,7 @@ const SEGMENT_LABELS = {
   notifications: 'Notifications',
   'audit-log':   'Audit Log',
   team:          'Team',
-  'ai-demo':     'AI Impact Engine',
+  'ai-demo':     'AI Change Intelligence',
   ecr:           'ECR',
   admin:         'Admin',
   users:         'Users',
@@ -55,7 +55,7 @@ const Breadcrumb = ({ extra = [] }) => {
     }, []);
 
   const crumbs = [
-    { label: 'Windchill', href: '/plm/parts' },
+    { label: 'Workspace', href: '/plm/parts' },
     ...segments,
     ...extra,
   ];

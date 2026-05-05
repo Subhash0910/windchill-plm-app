@@ -2,68 +2,80 @@
 .wc-state-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 9px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 9999px;
   font-size: 11px;
-  font-weight: 600;
-  border: 1px solid;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  border: 1px solid transparent;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
   user-select: none;
+  font-family: var(--wc-font-mono, monospace);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  transition: all 0.2s var(--wc-ease-out);
 }
-.wc-state-badge--sm  { font-size: 10px;  padding: 1px 6px;  }
-.wc-state-badge--md  { font-size: 11px;  padding: 2px 9px;  }
-.wc-state-badge--lg  { font-size: 12px;  padding: 3px 11px; }
+.wc-state-badge--sm  { font-size: 10px;  padding: 2px 8px;  }
+.wc-state-badge--md  { font-size: 11px;  padding: 4px 10px; }
+.wc-state-badge--lg  { font-size: 12px;  padding: 6px 14px; }
 
 /* ─── Part lifecycle ─────────────────────────────────────────────────────── */
 /* INWORK — neutral gray */
 .badge--inwork {
-  background: #f3f4f6;
-  color:       #374151;
-  border-color:#d1d5db;
+  background: var(--wc-state-inwork-bg);
+  color:      var(--wc-state-inwork-text);
+  border-color: var(--wc-state-inwork-border);
 }
 /* UNDERREVIEW — amber */
 .badge--underreview {
-  background: #fef3c7;
-  color:       #92400e;
-  border-color:#fcd34d;
+  background: var(--wc-state-underreview-bg);
+  color:      var(--wc-state-underreview-text);
+  border-color: var(--wc-state-underreview-border);
 }
 /* RELEASED — green */
 .badge--released {
-  background: #d1fae5;
-  color:       #065f46;
-  border-color:#6ee7b7;
+  background: var(--wc-state-released-bg);
+  color:      var(--wc-state-released-text);
+  border-color: var(--wc-state-released-border);
 }
 /* OBSOLETE — muted red */
 .badge--obsolete {
-  background: #fee2e2;
-  color:       #991b1b;
-  border-color:#fca5a5;
+  background: var(--wc-state-obsolete-bg);
+  color:      var(--wc-state-obsolete-text);
+  border-color: var(--wc-state-obsolete-border);
 }
 
 /* ─── Extra workflow / change states ─────────────────────────────────────── */
-/* PENDING — orange */
+/* PENDING — warning orange */
 .badge--pending {
-  background: #ffedd5;
-  color:       #9a3412;
-  border-color:#fdba74;
+  background: var(--wc-warning-bg);
+  color:      var(--wc-warning-text);
+  border-color: var(--wc-warning-border, transparent);
 }
-/* DRAFT — light blue-gray */
+/* DRAFT — info blue */
 .badge--draft {
-  background: #e0f2fe;
-  color:       #0c4a6e;
-  border-color:#7dd3fc;
+  background: var(--wc-info-bg);
+  color:      var(--wc-info-text);
+  border-color: var(--wc-info-border, transparent);
 }
-/* CRITICAL — deep red */
-.badge--critical {
-  background: #7f1d1d;
-  color:       #fef2f2;
-  border-color:#991b1b;
+/* CRITICAL / REJECTED — danger red */
+.badge--critical,
+.badge--rejected {
+  background: var(--wc-danger-bg);
+  color:      var(--wc-danger-text);
+  border-color: var(--wc-danger-border, transparent);
+}
+/* APPROVED — success green */
+.badge--approved,
+.badge--completed {
+  background: var(--wc-success-bg);
+  color:      var(--wc-success-text);
+  border-color: var(--wc-success-border, transparent);
 }
 
 /* ─── Fallback ───────────────────────────────────────────────────────────── */
 .badge--default {
-  background: #f3f4f6;
-  color:       #374151;
-  border-color:#d1d5db;
+  background: var(--wc-state-inwork-bg);
+  color:      var(--wc-state-inwork-text);
+  border-color: var(--wc-state-inwork-border);
 }

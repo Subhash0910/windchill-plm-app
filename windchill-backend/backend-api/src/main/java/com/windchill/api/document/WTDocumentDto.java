@@ -3,7 +3,7 @@ package com.windchill.api.document;
 import lombok.*;
 import java.time.LocalDateTime;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder(toBuilder = true)
 public class WTDocumentDto {
     private Long          id;
     private Long          contextId;

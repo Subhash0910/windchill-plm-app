@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
-import './LibraryPage.css';
+import styles from './LibraryPage.module.css';
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -31,21 +31,21 @@ const LibraryPage = () => {
   };
 
   return (
-    <div className="lb-page">
-      <div className="lb-header">
+    <div className={styles.page}>
+      <div className={styles.header}>
         <div>
-          <h1 className="lb-title">📚 Library</h1>
-          <p className="lb-sub">
+          <h1 className={styles.title}>📚 Library</h1>
+          <p className={styles.sub}>
             Shared PLM library contexts — reusable parts &amp; documents accessible across products
           </p>
         </div>
-        <button className="lb-btn-refresh" onClick={load} disabled={loading}>
+        <button className={styles.btnRefresh} onClick={load} disabled={loading}>
           {loading ? '↻…' : '↻ Refresh'}
         </button>
       </div>
 
-      <div className="lb-info-banner">
-        <span>ℹ️</span>
+      <div className={styles.infoBanner}>
+        <span className={styles.infoIcon}>ℹ️</span>
         <p>
           Libraries are shared repositories containing reusable parts, standard components, and documents.
           Create a <strong>LIBRARY</strong>-type context via{' '}
@@ -54,17 +54,17 @@ const LibraryPage = () => {
       </div>
 
       {error && (
-        <div className="lb-error">
+        <div className={styles.error}>
           <span>⚠️</span> {error}
           <button onClick={load}>Retry</button>
         </div>
       )}
 
       {loading ? (
-        <div className="lb-loading"><div className="lb-spinner" /><p>Loading libraries…</p></div>
+        <div className={styles.loading}><div className={styles.spinner} /><p>Loading libraries…</p></div>
       ) : libs.length === 0 ? (
-        <div className="lb-empty">
-          <span>📚</span>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>📚</span>
           <h3>No library contexts yet</h3>
           <p>
             Use <strong>Context → New</strong> on the left sidebar and choose
@@ -72,8 +72,8 @@ const LibraryPage = () => {
           </p>
         </div>
       ) : (
-        <div className="lb-table">
-          <div className="lb-table-head">
+        <div className={styles.table}>
+          <div className={styles.tableHead}>
             <span>Type</span>
             <span>Code</span>
             <span>Name</span>
@@ -81,11 +81,11 @@ const LibraryPage = () => {
             <span />
           </div>
           {libs.map(lib => (
-            <div className="lb-row" key={lib.id}>
-              <span className="lb-type-pill">LIBRARY</span>
-              <span className="lb-code">{lib.code}</span>
-              <span className="lb-name">{lib.name}</span>
-              <span className="lb-desc" title={lib.description}>
+            <div className={styles.row} key={lib.id}>
+              <span className={styles.typePill}>LIBRARY</span>
+              <span className={styles.code}>{lib.code}</span>
+              <span className={styles.name}>{lib.name}</span>
+              <span className={styles.desc} title={lib.description}>
                 {lib.description
                   ? lib.description.length > 60
                     ? lib.description.slice(0, 60) + '…'
@@ -93,7 +93,7 @@ const LibraryPage = () => {
                   : '—'}
               </span>
               <button
-                className="lb-open-btn"
+                className={styles.openBtn}
                 onClick={() => openLibrary(lib)}
                 title={`Open workspace for library: ${lib.name}`}
               >
@@ -105,7 +105,7 @@ const LibraryPage = () => {
       )}
 
       {!loading && !error && (
-        <div className="lb-count">
+        <div className={styles.count}>
           {libs.length} librar{libs.length !== 1 ? 'ies' : 'y'}
         </div>
       )}

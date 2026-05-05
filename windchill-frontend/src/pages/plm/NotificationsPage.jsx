@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { plmApi } from '../../services/plmApi';
-import './NotificationsPage.css';
+import styles from './NotificationsPage.module.css';
 
 const TYPE_ICON = {
   WORKLIST_ASSIGNED: '📋',
@@ -75,17 +75,14 @@ const NotificationsPage = () => {
   };
 
   return (
-    <div className="np-page">
-
-      {/* Page title — PlmLayout already renders the app header above */}
-      <div className="np-page-header">
-        <h1 className="np-page-title">🔔 Notifications</h1>
-        <p className="np-page-sub">Your activity feed &amp; alerts</p>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>🔔 Notifications</h1>
+        <p className={styles.pageSub}>Your activity feed &amp; alerts</p>
       </div>
 
-      {/* Toolbar */}
-      <div className="np-toolbar">
-        <div className="np-filters">
+      <div className={styles.toolbar}>
+        <div className={styles.filters}>
           {[
             { key: 'ALL',    label: `All (${notifications.length})` },
             { key: 'UNREAD', label: `Unread (${unreadCount})` },
@@ -93,7 +90,7 @@ const NotificationsPage = () => {
           ].map(f => (
             <button
               key={f.key}
-              className={`np-filter-btn${filter === f.key ? ' active' : ''}`}
+              className={`${styles.filterBtn} ${filter === f.key ? styles.active : ''}`}
               onClick={() => setFilter(f.key)}
             >
               {f.label}
@@ -101,21 +98,20 @@ const NotificationsPage = () => {
           ))}
         </div>
         {unreadCount > 0 && (
-          <button className="np-mark-all" onClick={markAllRead}>
+          <button className={styles.markAll} onClick={markAllRead}>
             ✓ Mark all read
           </button>
         )}
       </div>
 
-      {/* Content */}
       {loading ? (
-        <div className="np-loading">
-          <div className="np-spinner" />
+        <div className={styles.loading}>
+          <div className={styles.spinner} />
           <p>Loading notifications…</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="np-empty">
-          <span className="np-empty-icon">🎉</span>
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>🎉</span>
           <h3>All caught up!</h3>
           <p>
             {filter === 'UNREAD'
@@ -126,33 +122,33 @@ const NotificationsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="np-list">
+        <div className={styles.list}>
           {filtered.map(n => (
             <div
               key={n.id}
-              className={`np-item${!n.read ? ' np-item--unread' : ''}`}
+              className={`${styles.item} ${!n.read ? styles.itemUnread : ''}`}
             >
-              <div className="np-item-icon">
+              <div className={styles.itemIcon}>
                 {TYPE_ICON[n.type] || '🔔'}
               </div>
-              <div className="np-item-body">
-                <div className="np-item-header">
-                  <span className="np-item-title">{n.title}</span>
-                  <span className="np-item-time">{timeAgo(n.createdAt)}</span>
+              <div className={styles.itemBody}>
+                <div className={styles.itemHeader}>
+                  <span className={styles.itemTitle}>{n.title}</span>
+                  <span className={styles.itemTime}>{timeAgo(n.createdAt)}</span>
                 </div>
                 {n.message && (
-                  <p className="np-item-msg">{n.message}</p>
+                  <p className={styles.itemMsg}>{n.message}</p>
                 )}
                 {n.entityNumber && (
-                  <span className="np-entity-tag">
+                  <span className={styles.entityTag}>
                     {n.entityType} &middot; {n.entityNumber}
                   </span>
                 )}
               </div>
-              <div className="np-item-actions">
+              <div className={styles.itemActions}>
                 {!n.read && (
                   <button
-                    className="np-btn-read"
+                    className={styles.btnRead}
                     onClick={() => markRead(n.id)}
                     title="Mark as read"
                   >
@@ -160,7 +156,7 @@ const NotificationsPage = () => {
                   </button>
                 )}
                 <button
-                  className="np-btn-del"
+                  className={styles.btnDel}
                   onClick={() => deleteNotif(n.id)}
                   title="Delete"
                 >

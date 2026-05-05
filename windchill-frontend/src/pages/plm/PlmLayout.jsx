@@ -28,16 +28,16 @@ const PlmLayout = () => {
 
   const getCurrentPage = () => {
     const p = location.pathname;
-    if (p.startsWith('/plm/worklist'))    return 'worklist';
+    if (p.startsWith('/plm/worklist'))     return 'worklist';
     if (p.startsWith('/plm/changes/tasks')) return 'change-tasks';
-    if (p.startsWith('/plm/changes'))     return 'changes';
-    if (p.startsWith('/plm/ai-demo'))     return 'ai-demo';
+    if (p.startsWith('/plm/changes'))      return 'changes';
+    if (p.startsWith('/plm/ai-demo'))      return 'ai-demo';
     if (p.startsWith('/plm/notifications')) return 'notifications';
-    if (p.startsWith('/plm/documents'))   return 'documents';
-    if (p.startsWith('/plm/products'))    return 'products';
-    if (p.startsWith('/plm/projects'))    return 'projects';
-    if (p.startsWith('/plm/library'))     return 'library';
-    if (p.startsWith('/plm/audit-log'))   return 'audit-log';
+    if (p.startsWith('/plm/documents'))    return 'documents';
+    if (p.startsWith('/plm/products'))     return 'products';
+    if (p.startsWith('/plm/projects'))     return 'projects';
+    if (p.startsWith('/plm/library'))      return 'library';
+    if (p.startsWith('/plm/audit-log'))    return 'audit-log';
     return 'workspace';
   };
 
@@ -77,16 +77,27 @@ const PlmLayout = () => {
 
   return (
     <div className="wc-shell">
-      {/* ── Top bar (navy, 48px) ── */}
-      <Header title="Windchill PLM" />
+      {/* ── Top bar ── */}
+      <Header title="PLM Learning Workspace" />
 
       {/* ── Main body: Navigator + Content ── */}
       <div className="wc-shell__body">
+
         {/* ── Left Navigator ── */}
         <aside className={`wc-shell__nav ${navCollapsed ? 'collapsed' : ''}`}>
-          <ContextSwitcher />
-          <NavigatorPanel />
-          {!navCollapsed && isWorkspace && <FolderTree />}
+
+          {/* Context switcher: pinned at top, never scrolls */}
+          <div className="wc-shell__nav-header">
+            <ContextSwitcher />
+          </div>
+
+          {/* Navigator links + folder tree: scrollable */}
+          <div className="wc-shell__nav-scroll">
+            <NavigatorPanel />
+            {isWorkspace && <FolderTree />}
+          </div>
+
+          {/* Collapse / expand toggle */}
           <button
             className="wc-shell__nav-toggle"
             onClick={() => setNavCollapsed(c => !c)}

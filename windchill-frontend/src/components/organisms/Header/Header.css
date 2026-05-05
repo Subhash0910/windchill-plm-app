@@ -1,15 +1,18 @@
-/* ─── Windchill-style navy top bar (48px, #1B3A6B) ──────────────────── */
+/* ─── Premium Glass Top Bar ──────────────────── */
 .wc-header {
-  height: 48px;
-  background: #1B3A6B;
+  height: 56px;
+  background: rgba(15, 23, 42, 0.85); /* Slate 900 translucent */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px 0 12px;
+  padding: 0 16px 0 16px;
   position: sticky;
   top: 0;
   z-index: 200;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.30);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
   gap: 12px;
   font-family: var(--wc-font, 'Segoe UI', sans-serif);
 }
@@ -24,29 +27,31 @@
   text-decoration: none;
 }
 .wc-logo-mark {
-  width: 28px; height: 28px;
-  border-radius: 5px;
-  background: #2c5faa;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--wc-blue);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 15px; color: #fff;
+  font-weight: 700; font-size: 16px; color: #fff;
   flex-shrink: 0;
   letter-spacing: -0.5px;
-  font-family: Georgia, serif;
+  font-family: var(--wc-font-mono, monospace);
   border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 2px 10px rgba(14, 165, 233, 0.4);
 }
 .wc-logo-text {
-  font-size: 14px; font-weight: 700;
+  font-size: 15px; font-weight: 600;
   color: #fff; white-space: nowrap;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 .wc-header-sep {
   width: 1px; height: 18px;
-  background: rgba(255,255,255,0.22); flex-shrink: 0;
+  background: rgba(255,255,255,0.15); flex-shrink: 0;
 }
 .wc-header-context {
-  font-size: 12.5px; color: rgba(255,255,255,0.68);
+  font-size: 13px; color: rgba(255,255,255,0.68);
   white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; max-width: 220px;
+  font-family: var(--wc-font-mono, monospace);
 }
 
 /* ─── Centre breadcrumb slot ───────────────────────────────────────── */
@@ -61,62 +66,88 @@
 /* ─── Right controls ─────────────────────────────────────────────── */
 .wc-header-right {
   display: flex; align-items: center;
-  gap: 10px; flex-shrink: 0;
+  gap: 12px; flex-shrink: 0;
 }
 .wc-nav-chip {
   color: rgba(255,255,255,0.85);
   text-decoration: none; font-size: 12px; font-weight: 600;
-  padding: 4px 10px;
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 20px;
-  transition: background 0.12s;
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 9999px;
+  transition: all 0.2s;
   white-space: nowrap;
 }
-.wc-nav-chip:hover { background: rgba(255,255,255,0.12); }
+.wc-nav-chip:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
 
 /* ─── Avatar ────────────────────────────────────────────────────────── */
 .wc-avatar {
-  width: 30px; height: 30px;
+  width: 34px; height: 34px;
   border-radius: 50%;
-  background: #2c5faa;
-  border: 2px solid rgba(255,255,255,0.35);
-  color: #fff; font-size: 11px; font-weight: 800;
+  background: var(--wc-navy-light);
+  border: 2px solid rgba(255,255,255,0.15);
+  color: #fff; font-size: 12px; font-weight: 600;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: border-color 0.12s, background 0.12s;
+  transition: all 0.2s;
   line-height: 1; padding: 0;
 }
-.wc-avatar:hover { background: #3570c5; border-color: rgba(255,255,255,0.65); }
+.wc-avatar:hover { background: var(--wc-blue); border-color: rgba(255,255,255,0.4); transform: scale(1.05); }
 
 /* ─── User dropdown ─────────────────────────────────────────────────── */
 .wc-user-menu { position: relative; }
 .wc-user-dropdown {
   position: absolute; top: calc(100% + 8px); right: 0;
-  width: 220px; background: #fff;
-  border: 1px solid #dde3ec;
+  width: 220px; background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
   border-radius: 8px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.14);
   z-index: 300; overflow: hidden;
-  animation: wc-fade-in 0.1s ease;
+  animation: wc-dropdown-enter 0.15s var(--wc-ease-out, ease) both;
 }
-@keyframes wc-fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes wc-dropdown-enter {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .wc-user-info { padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 3px; }
-.wc-user-full  { font-size: 13px; font-weight: 700; color: #111827; }
-.wc-user-role  { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
-.wc-dropdown-sep { border: none; border-top: 1px solid #f1f5f9; margin: 4px 0; }
+.wc-user-full  { font-size: 13px; font-weight: 700; color: var(--wc-text-primary); }
+.wc-user-role  { font-size: 11px; color: var(--wc-text-muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+.wc-dropdown-sep { border: none; border-top: 1px solid var(--wc-border-light); margin: 4px 0; }
 .wc-dropdown-item {
   width: 100%; padding: 9px 14px;
   text-align: left; background: none; border: none;
-  font-size: 13px; color: #374151; cursor: pointer;
+  font-size: 13px; color: var(--wc-text-primary); cursor: pointer;
   font-weight: 500; transition: background 0.1s; display: block;
   font-family: inherit;
 }
-.wc-dropdown-item:hover { background: #f8fafc; }
+.wc-dropdown-item:hover { background: var(--wc-sidebar-hover); }
 .wc-dropdown-logout     { color: #dc2626; }
 .wc-dropdown-logout:hover { background: #fef2f2; }
+
+/* ─── Theme toggle (sun/moon) ────────────────────────────────────────── */
+.wc-theme-toggle {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s var(--wc-ease-spring, ease);
+  padding: 0;
+  flex-shrink: 0;
+}
+.wc-theme-toggle:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+  transform: rotate(15deg) scale(1.1);
+  box-shadow: 0 0 12px rgba(14,165,233,0.3);
+}
+.wc-theme-toggle svg {
+  transition: transform 0.3s var(--wc-ease-spring, ease);
+}
+.wc-theme-toggle:active svg {
+  transform: rotate(180deg);
+}
 
 /* ─── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
@@ -125,3 +156,4 @@
   .wc-header-sep      { display: none; }
   .wc-header-breadcrumb { display: none; }
 }
+

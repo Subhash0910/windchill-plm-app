@@ -1,0 +1,186 @@
+.ecoPage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--wc-page-bg);
+  font-family: var(--wc-font);
+  font-size: 13px;
+  color: var(--wc-text-primary);
+}
+
+/* Head */
+.ecoHead {
+  padding: 16px 20px;
+  background: var(--wc-content-bg);
+  border-bottom: 2px solid var(--wc-blue);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: var(--wc-radius-md);
+  box-shadow: var(--wc-shadow-sm);
+  margin-bottom: 12px;
+}
+.ecoKicker {
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+.ecoNumber {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--wc-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.02em;
+}
+.ecoSub {
+  font-size: 13px;
+  color: var(--wc-text-muted);
+  margin-top: 4px;
+}
+.ecoActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Tabs */
+.ecoTabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--wc-border);
+  background: var(--wc-sidebar-active);
+  padding: 8px 16px;
+  border-radius: var(--wc-radius-md);
+  margin-bottom: 16px;
+}
+.ecoTab {
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--wc-text-secondary);
+  font-weight: 700;
+  transition: all .15s var(--wc-ease-out);
+  border-radius: var(--wc-radius-sm);
+}
+.ecoTab:hover { 
+  background: var(--wc-sidebar-hover);
+  color: var(--wc-text-primary);
+  transform: translateY(-1px);
+}
+.ecoTabActive {
+  background: var(--wc-blue);
+  border-color: var(--wc-blue);
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.2);
+}
+
+/* Body */
+.ecoBody { flex: 1; }
+
+/* Grid cards */
+.ecoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 700px) { .ecoGrid { grid-template-columns: 1fr; } }
+
+.ecoCard {
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border-light);
+  border-radius: var(--wc-radius-md);
+  padding: 20px;
+  box-shadow: var(--wc-shadow-sm);
+}
+.ecoCardFull { grid-column: 1 / -1; }
+.ecoCardTitle {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--wc-text-muted);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wc-border-light);
+}
+
+/* KV pairs */
+.ecoKv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  row-gap: 8px;
+  column-gap: 12px;
+  align-items: center;
+}
+.ecoK { font-size: 11px; color: var(--wc-text-muted); font-weight: 700; text-transform: uppercase; }
+.ecoV { font-size: 13px; color: var(--wc-text-primary); font-weight: 500; }
+.ecoVMono { font-family: var(--wc-font-mono); font-size: 12px; font-weight: 600; color: var(--wc-blue); }
+
+/* AI metric cards */
+.ecoAiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 600px) { .ecoAiGrid { grid-template-columns: 1fr; } }
+.ecoAiCard {
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border-light);
+  border-radius: var(--wc-radius-md);
+  padding: 18px;
+  text-align: center;
+  border-top: 4px solid var(--wc-blue);
+  box-shadow: var(--wc-shadow-sm);
+  transition: transform 0.2s var(--wc-ease-out);
+}
+.ecoAiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--wc-shadow-md);
+}
+.ecoAiVal {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: var(--wc-blue);
+}
+.ecoAiLabel { font-size: 11px; color: var(--wc-text-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 800; }
+
+/* ECR linked card */
+.ecoLinkedEcr {
+  background: var(--wc-sidebar-active);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-left: 4px solid var(--wc-blue);
+}
+
+/* Misc */
+.ecoText { font-size: 13px; color: var(--wc-text-secondary); line-height: 1.6; }
+.ecoMuted { color: var(--wc-text-muted); font-size: 12px; }
+.ecoError {
+  margin: 10px 0;
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  border-radius: var(--wc-radius-sm);
+  padding: 10px 14px;
+  color: var(--wc-danger-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ecoLoading { padding: 40px; text-align: center; color: var(--wc-text-muted); font-size: 13px; }

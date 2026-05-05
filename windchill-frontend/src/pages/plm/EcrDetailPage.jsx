@@ -1,9 +1,12 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
+import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
+import StateBadge from '../../components/plm/StateBadge';
 import { plmApi } from '../../services/plmApi';
+import { aiService } from '../../services/aiService';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
-import './EcrDetailPage.css';
+import styles from './EcrDetailPage.module.css';
 
 const TAB = {
   DETAILS: 'DETAILS',
@@ -29,25 +32,17 @@ const safeJson = (raw) => {
 
 const Pill = ({ value, type }) => {
   const v = String(value || '').toUpperCase();
-  const base = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '2px 10px',
-    borderRadius: 999,
-    fontWeight: 900,
-    fontSize: 12,
-    border: '1px solid transparent',
-  };
-
+  
   if (type === 'risk') {
-    const bg = v.includes('HIGH') ? '#fee2e2' : v.includes('MED') ? '#ffedd5' : '#dcfce7';
-    const bd = v.includes('HIGH') ? '#fecaca' : v.includes('MED') ? '#fed7aa' : '#bbf7d0';
-    const tx = v.includes('HIGH') ? '#991b1b' : v.includes('MED') ? '#9a3412' : '#166534';
-    return <span style={{ ...base, background: bg, borderColor: bd, color: tx }}>{v || '-'}</span>;
+    let riskClass = styles.riskLow;
+    if (v.includes('HIGH')) riskClass = styles.riskHigh;
+    else if (v.includes('MED')) riskClass = styles.riskMed;
+    
+    return <span className={`wc-state-badge ${riskClass}`}>{v || '-'}</span>;
   }
 
-  // default: status
-  return <span style={{ ...base, background: '#e6f3fb', borderColor: '#b6d8ea', color: '#0f4d6d' }}>{v || '-'}</span>;
+  // Use StateBadge for status
+  return <StateBadge state={value} size="sm" />;
 };
 
 const isReleased = (rootState) => String(rootState || '').toUpperCase() === 'RELEASED';
@@ -64,6 +59,9 @@ const EcrDetailPage = () => {
 
   const [details, setDetails] = useState(null);
   const [insights, setInsights] = useState(null);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [reviewSummaryLoading, setReviewSummaryLoading] = useState(false);
+  const [reviewSummaryError, setReviewSummaryError] = useState('');
 
   const [recomputeLoading, setRecomputeLoading] = useState(false);
 
@@ -92,18 +90,24 @@ const EcrDetailPage = () => {
   const load = async () => {
     setLoading(true);
     setError('');
+    setReviewSummaryLoading(true);
     try {
-      const [d, i] = await Promise.all([
+      const [d, i, summary] = await Promise.all([
         plmApi.getEcrDetails(id),
         plmApi.getEcrInsights(id),
+        aiService.getEcrReviewSummary(id).catch(() => null),
       ]);
       setDetails(d || null);
       setInsights(i || null);
+      setReviewSummary(summary || i?.contextual || null);
+      setReviewSummaryError('');
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to load ECR');
       setDetails(null);
       setInsights(null);
+      setReviewSummary(null);
     } finally {
+      setReviewSummaryLoading(false);
       setLoading(false);
     }
   };
@@ -150,13 +154,20 @@ const EcrDetailPage = () => {
   const recompute = async () => {
     setRecomputeLoading(true);
     setError('');
+    setReviewSummaryLoading(true);
     try {
       await plmApi.analyzeEcr(id);
-      const i = await plmApi.getEcrInsights(id);
+      const [i, summary] = await Promise.all([
+        plmApi.getEcrInsights(id),
+        aiService.getEcrReviewSummary(id).catch(() => null),
+      ]);
       setInsights(i || null);
+      setReviewSummary(summary || i?.contextual || null);
+      setReviewSummaryError('');
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Recompute failed');
     } finally {
+      setReviewSummaryLoading(false);
       setRecomputeLoading(false);
     }
   };
@@ -280,7 +291,7 @@ const EcrDetailPage = () => {
   const TabBtn = ({ tab, children }) => (
     <button
       type="button"
-      className={activeTab === tab ? 'ecr-tab ecr-tab-active' : 'ecr-tab'}
+      className={activeTab === tab ? `${styles.ecrTab} ${styles.ecrTabActive}` : styles.ecrTab}
       onClick={() => setActiveTab(tab)}
     >
       {children}
@@ -307,18 +318,18 @@ const EcrDetailPage = () => {
   const unknownReviewersCount = reviewerPreview.filter((r) => !r.inTeam).length;
 
   return (
-    <div className="ecr-page">
-      <div className="ecr-head">
+    <div className={styles.ecrPage}>
+      <div className={styles.ecrHead}>
         <div>
-          <div className="ecr-kicker">Engineering Change Request</div>
-          <div className="ecr-title-row">
-            <div className="ecr-title">{ecr.number || `ECR-${String(ecr.id).padStart(6, '0')}`}</div>
+          <div className={styles.ecrKicker}>Engineering Change Request</div>
+          <div className={styles.ecrTitleRow}>
+            <div className={styles.ecrTitle}>{ecr.changeNumber || ecr.number || `ECR-${String(ecr.id).padStart(6, '0')}`}</div>
             <Pill value={ecr.status} />
           </div>
-          <div className="ecr-sub">{title}</div>
+          <div className={styles.ecrSub}>{title}</div>
         </div>
 
-        <div className="ecr-actions">
+        <div className={styles.ecrActions}>
           <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes')}>Back</Button>
           <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>My change tasks</Button>
           <Button variant="secondary" size="sm" onClick={load} disabled={loading}>Refresh</Button>
@@ -330,45 +341,45 @@ const EcrDetailPage = () => {
 
       {error ? <div className="plm-error">{error}</div> : null}
 
-      <div className="ecr-tabs">
+      <div className={styles.ecrTabs}>
         <TabBtn tab={TAB.DETAILS}>Details</TabBtn>
         <TabBtn tab={TAB.TASKS}>Tasks</TabBtn>
         <TabBtn tab={TAB.INSIGHTS}>Insights</TabBtn>
       </div>
 
       {activeTab === TAB.DETAILS && (
-        <div className="ecr-grid">
-          <div className="ecr-card">
-            <div className="ecr-card-title">Summary</div>
-            <div className="ecr-kv">
-              <div className="ecr-k">Created by</div>
-              <div className="ecr-v mono">{ecr.createdBy || '-'}</div>
-              <div className="ecr-k">Context</div>
-              <div className="ecr-v mono">{ecr.contextType || '-'} {ecr.contextId ? `(${ecr.contextId})` : ''}</div>
-              <div className="ecr-k">Updated</div>
-              <div className="ecr-v mono">{ecr.updatedAt ? String(ecr.updatedAt) : '-'}</div>
+        <div className={styles.ecrGrid}>
+          <div className={styles.ecrCard}>
+            <div className={styles.ecrCardTitle}>Summary</div>
+            <div className={styles.ecrKv}>
+              <div className={styles.ecrK}>Created by</div>
+              <div className={`${styles.ecrV} mono`}>{ecr.createdBy || '-'}</div>
+              <div className={styles.ecrK}>Context</div>
+              <div className={`${styles.ecrV} mono`}>{ecr.contextType || '-'} {ecr.contextId ? `(${ecr.contextId})` : ''}</div>
+              <div className={styles.ecrK}>Updated</div>
+              <div className={`${styles.ecrV} mono`}>{ecr.updatedAt ? String(ecr.updatedAt) : '-'}</div>
             </div>
           </div>
 
-          <div className="ecr-card">
-            <div className="ecr-card-title">Description</div>
-            <div className="ecr-text">{ecr.description || <span className="plm-muted">No description.</span>}</div>
+          <div className={styles.ecrCard}>
+            <div className={styles.ecrCardTitle}>Description</div>
+            <div className={styles.ecrText}>{ecr.description || <span className="plm-muted">No description.</span>}</div>
           </div>
 
           {isDraft ? (
-            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
-              <div className="ecr-card-title">Submit for review</div>
+            <div className={styles.ecrCard} style={{ gridColumn: '1 / -1' }}>
+              <div className={styles.ecrCardTitle}>Submit for review</div>
               <div className="plm-muted" style={{ marginBottom: 10 }}>
                 Pick reviewers from the context team (search by name/username/email), then submit.
               </div>
 
-              <div className="rvp" ref={dropdownRef}>
-                <div className="rvp-top">
-                  <div className="rvp-label">Reviewers</div>
-                  <div className="rvp-filter">
+              <div className={styles.rvp} ref={dropdownRef}>
+                <div className={styles.rvpTop}>
+                  <div className={styles.rvpLabel}>Reviewers</div>
+                  <div className={styles.rvpFilter}>
                     <button
                       type="button"
-                      className={roleMode === ROLE_MODE.APPROVERS ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
+                      className={roleMode === ROLE_MODE.APPROVERS ? `${styles.rvpPill} ${styles.rvpPillOn}` : styles.rvpPill}
                       onClick={() => setRoleMode(ROLE_MODE.APPROVERS)}
                       title="Recommended: pick only roles that typically approve changes"
                     >
@@ -376,7 +387,7 @@ const EcrDetailPage = () => {
                     </button>
                     <button
                       type="button"
-                      className={roleMode === ROLE_MODE.ALL ? 'rvp-pill rvp-pill-on' : 'rvp-pill'}
+                      className={roleMode === ROLE_MODE.ALL ? `${styles.rvpPill} ${styles.rvpPillOn}` : styles.rvpPill}
                       onClick={() => setRoleMode(ROLE_MODE.ALL)}
                     >
                       All team
@@ -384,11 +395,11 @@ const EcrDetailPage = () => {
                   </div>
                 </div>
 
-                <div className="rvp-chips">
+                <div className={styles.rvpChips}>
                   {normalizedReviewers.map((r) => (
-                    <button key={r} type="button" className="rvp-chip" onClick={() => removeReviewer(r)} title="Remove">
+                    <button key={r} type="button" className={styles.rvpChip} onClick={() => removeReviewer(r)} title="Remove">
                       <span className="mono">{r}</span>
-                      <span className="rvp-x">×</span>
+                      <span className={styles.rvpX}>×</span>
                     </button>
                   ))}
                   {normalizedReviewers.length === 0 ? (
@@ -396,7 +407,7 @@ const EcrDetailPage = () => {
                   ) : null}
                 </div>
 
-                <div className="rvp-inputRow">
+                <div className={styles.rvpInputRow}>
                   <input
                     className="plm-input"
                     value={reviewerQuery}
@@ -410,71 +421,71 @@ const EcrDetailPage = () => {
                 </div>
 
                 {showDropdown ? (
-                  <div className="rvp-dd">
+                  <div className={styles.rvpDd}>
                     {filteredMembers.map((m) => (
                       <button
                         key={m.userId || m.username}
                         type="button"
-                        className="rvp-item"
+                        className={styles.rvpItem}
                         onClick={() => addReviewer(m.username)}
                       >
-                        <div className="rvp-main">
-                          <div className="rvp-u mono">{m.username}</div>
-                          <div className="rvp-sub">{m.fullName || m.email || ''}</div>
+                        <div className={styles.rvpMain}>
+                          <div className={`${styles.rvpU} mono`}>{m.username}</div>
+                          <div className={styles.rvpSub}>{m.fullName || m.email || ''}</div>
                         </div>
-                        <div className="rvp-tag">{m.role || 'VIEWER'}</div>
+                        <div className={styles.rvpTag}>{m.role || 'VIEWER'}</div>
                       </button>
                     ))}
 
                     {canAddFreeText ? (
                       <button
                         type="button"
-                        className="rvp-item rvp-item-add"
+                        className={`${styles.rvpItem} ${styles.rvpItemAdd}`}
                         onClick={() => addReviewer(reviewerQuery.trim())}
                       >
-                        <div className="rvp-main">
-                          <div className="rvp-u mono">Add “{reviewerQuery.trim()}”</div>
-                          <div className="rvp-sub">Not found in team list (still allowed)</div>
+                        <div className={styles.rvpMain}>
+                          <div className={`${styles.rvpU} mono`}>Add “{reviewerQuery.trim()}”</div>
+                          <div className={styles.rvpSub}>Not found in team list (still allowed)</div>
                         </div>
-                        <div className="rvp-tag">Manual</div>
+                        <div className={styles.rvpTag}>Manual</div>
                       </button>
                     ) : null}
                   </div>
                 ) : null}
 
-                <div className="rvp-preview">
-                  <div className="rvp-preview-head">
-                    <div className="rvp-preview-title">Selected ({normalizedReviewers.length})</div>
+                <div className={styles.rvpPreview}>
+                  <div className={styles.rvpPreviewHead}>
+                    <div className={styles.rvpPreviewTitle}>Selected ({normalizedReviewers.length})</div>
                     {unknownReviewersCount > 0 ? (
-                      <div className="rvp-warn">{unknownReviewersCount} not in team</div>
+                      <div className={styles.rvpWarn}>{unknownReviewersCount} not in team</div>
                     ) : null}
                   </div>
 
                   {normalizedReviewers.length === 0 ? (
                     <div className="plm-muted">Add reviewers to see a preview.</div>
                   ) : (
-                    <div className="rvp-preview-list">
+                    <div className={styles.rvpPreviewList}>
                       {reviewerPreview.map((r) => (
-                        <div key={r.username} className={r.inTeam ? 'rvp-prev-row' : 'rvp-prev-row rvp-prev-row-warn'}>
-                          <div className="rvp-prev-main">
-                            <div className="mono" style={{ fontWeight: 950 }}>{r.username}</div>
-                            <div className="rvp-prev-sub">{r.fullName || r.email || (r.inTeam ? '' : 'Not found in current team')}</div>
+                        <div key={r.username} className={r.inTeam ? styles.rvpPrevRow : `${styles.rvpPrevRow} ${styles.rvpPrevRowWarn}`}>
+                          <div className={styles.rvpPrevMain}>
+                            <div className="mono" style={{ fontWeight: 800 }}>{r.username}</div>
+                            <div className={styles.rvpPrevSub}>{r.fullName || r.email || (r.inTeam ? '' : 'Not found in current team')}</div>
                           </div>
-                          <div className="rvp-tag">{r.role || (r.inTeam ? 'VIEWER' : 'Manual')}</div>
+                          <div className={styles.rvpTag}>{r.role || (r.inTeam ? 'VIEWER' : 'Manual')}</div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="rvp-advRow">
-                  <button type="button" className="rvp-link" onClick={() => setShowAdvanced((v) => !v)}>
+                <div className={styles.rvpAdvRow}>
+                  <button type="button" className={styles.rvpLink} onClick={() => setShowAdvanced((v) => !v)}>
                     {showAdvanced ? 'Hide advanced CSV' : 'Advanced: paste CSV'}
                   </button>
                 </div>
 
                 {showAdvanced ? (
-                  <div className="rvp-adv">
+                  <div className={styles.rvpAdv}>
                     <textarea
                       className="plm-input"
                       rows={3}
@@ -485,7 +496,7 @@ const EcrDetailPage = () => {
                   </div>
                 ) : null}
 
-                <div className="ecr-submit-actions" style={{ marginTop: 10 }}>
+                <div className={styles.ecrSubmitActions} style={{ marginTop: 10 }}>
                   <Button variant="primary" size="sm" onClick={submit} disabled={submitLoading}>
                     {submitLoading ? 'Submitting…' : 'Submit ECR'}
                   </Button>
@@ -499,15 +510,15 @@ const EcrDetailPage = () => {
           ) : null}
 
           {ecn ? (
-            <div className="ecr-card" style={{ gridColumn: '1 / -1' }}>
-              <div className="ecr-card-title">Resulting ECN</div>
-              <div className="ecr-kv">
-                <div className="ecr-k">ECN</div>
-                <div className="ecr-v mono">{ecn.number || `ECN-${String(ecn.id).padStart(6, '0')}`}</div>
-                <div className="ecr-k">Status</div>
-                <div className="ecr-v"><Pill value={ecn.status} /></div>
-                <div className="ecr-k">Created by</div>
-                <div className="ecr-v mono">{ecn.createdBy || '-'}</div>
+            <div className={styles.ecrCard} style={{ gridColumn: '1 / -1' }}>
+              <div className={styles.ecrCardTitle}>Resulting ECN</div>
+              <div className={styles.ecrKv}>
+                <div className={styles.ecrK}>ECN</div>
+                <div className={`${styles.ecrV} mono`}>{ecn.number || `ECN-${String(ecn.id).padStart(6, '0')}`}</div>
+                <div className={styles.ecrK}>Status</div>
+                <div className={styles.ecrV}><Pill value={ecn.status} /></div>
+                <div className={styles.ecrK}>Created by</div>
+                <div className={`${styles.ecrV} mono`}>{ecn.createdBy || '-'}</div>
               </div>
               <div className="plm-muted" style={{ marginTop: 8 }}>Implementation task will appear in “My change tasks”.</div>
             </div>
@@ -516,17 +527,17 @@ const EcrDetailPage = () => {
       )}
 
       {activeTab === TAB.TASKS && (
-        <div className="ecr-card">
+        <div className={styles.ecrCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
             <div>
-              <div className="ecr-card-title">Review tasks</div>
+              <div className={styles.ecrCardTitle}>Review tasks</div>
               <div className="plm-muted" style={{ marginBottom: 10 }}>Reviewer tasks created on submit (and auto-routing if risk is high).</div>
             </div>
             <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes/tasks')}>Open my tasks</Button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table className="ecr-table">
+            <table className={styles.ecrTable}>
               <thead>
                 <tr>
                   <th>ID</th>
@@ -560,40 +571,58 @@ const EcrDetailPage = () => {
       )}
 
       {activeTab === TAB.INSIGHTS && (
-        <div className="ecr-insights">
-          <div className="ecr-grid">
-            <div className="ecr-card">
-              <div className="ecr-card-title">Impact</div>
+        <div className={styles.ecrInsights}>
+          <ContextualInsightPanel
+            title="AI change review"
+            subtitle="Separate computed scope signals from reviewer-facing guidance before you approve or redirect a change."
+            insight={reviewSummary}
+            loading={reviewSummaryLoading}
+            error={reviewSummaryError}
+            footer={(
+              <>
+                <Button variant="secondary" size="sm" onClick={recompute} disabled={recomputeLoading}>
+                  {recomputeLoading ? 'Refreshing...' : 'Refresh review summary'}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setActiveTab(TAB.TASKS)}>
+                  Open review tasks
+                </Button>
+              </>
+            )}
+          />
+
+          <div className={styles.ecrGrid}>
+            <div className={styles.ecrCard}>
+              <div className={styles.ecrCardTitle}>Impact</div>
               {!report ? (
                 <div className="plm-muted">No impact report available yet. Click “Recompute impact” or submit the ECR.</div>
               ) : (
                 <>
-                  <div className="ecr-impact-top">
+                  <div className={styles.ecrImpactTop}>
                     <div>
                       <div className="plm-muted">Risk</div>
                       <div style={{ marginTop: 4 }}><Pill value={report.riskLevel} type="risk" /></div>
                     </div>
                     <div>
                       <div className="plm-muted">Score</div>
-                      <div className="ecr-score">{report.score}</div>
+                      <div className={styles.ecrScore}>{report.score}</div>
                     </div>
                   </div>
 
-                  <div className="ecr-mini">
-                    <div className="ecr-mini-k">Impacted parents</div>
-                    <div className="ecr-mini-v mono">{factors?.impactedParentsCount ?? '-'}</div>
-                    <div className="ecr-mini-k">Released parents</div>
-                    <div className="ecr-mini-v mono">{factors?.releasedParentsCount ?? '-'}</div>
-                    <div className="ecr-mini-k">Max depth</div>
-                    <div className="ecr-mini-v mono">{factors?.maxDepth ?? '-'}</div>
-                    <div className="ecr-mini-k">Root state</div>
-                    <div className="ecr-mini-v mono">{factors?.rootLifecycleState ?? '-'}</div>
+                  <div className={styles.ecrMini}>
+                    <div className={styles.ecrMiniK}>Impacted parents</div>
+                    <div className={styles.ecrMiniV}>{factors?.impactedParentsCount ?? '-'}</div>
+                    <div className={styles.ecrMiniK}>Released parents</div>
+                    <div className={styles.ecrMiniV}>{factors?.releasedParentsCount ?? '-'}</div>
+                    <div className={styles.ecrMiniK}>Max depth</div>
+                    <div className={styles.ecrMiniV}>{factors?.maxDepth ?? '-'}</div>
+                    <div className={styles.ecrMiniK}>Root state</div>
+                    <div className={styles.ecrMiniV}>{factors?.rootLifecycleState ?? '-'}</div>
                   </div>
 
-                  <div className="ecr-explain">
-                    <div className="ecr-explain-title">How the score is calculated</div>
+                  <div className={styles.ecrExplain}>
+                    <div className={styles.ecrExplainTitle}>How the score is calculated</div>
                     <div className="plm-muted" style={{ marginBottom: 8 }}>Simple heuristic (0–100) to estimate blast radius + release risk.</div>
-                    <div className="ecr-explain-row">
+                    <div className={styles.ecrExplainRow}>
                       <div className="plm-muted">Structural impact</div>
                       <div className="mono">{impactedParents}×4 + {maxDepth}×8 = {structural}</div>
                       <div className="plm-muted">Released parents penalty</div>
@@ -608,7 +637,7 @@ const EcrDetailPage = () => {
                   <div style={{ marginTop: 10 }}>
                     <div className="plm-muted" style={{ marginBottom: 6 }}>Impacted objects (where-used parents)</div>
                     <div style={{ overflowX: 'auto' }}>
-                      <table className="ecr-table">
+                      <table className={styles.ecrTable}>
                         <thead>
                           <tr>
                             <th>Object</th>
@@ -641,35 +670,35 @@ const EcrDetailPage = () => {
               )}
             </div>
 
-            <div className="ecr-card">
-              <div className="ecr-card-title">Routing decision</div>
+            <div className={styles.ecrCard}>
+              <div className={styles.ecrCardTitle}>Routing decision</div>
               {!insights?.route ? (
                 <div className="plm-muted">No route decision recorded for this report.</div>
               ) : (
                 <>
-                  <div className="ecr-kv">
-                    <div className="ecr-k">Risk</div>
-                    <div className="ecr-v"><Pill value={insights.route.riskLevel} type="risk" /></div>
-                    <div className="ecr-k">Added reviewers</div>
-                    <div className="ecr-v mono">{insights.route.addedReviewersCsv || '-'}</div>
-                    <div className="ecr-k">Rules</div>
-                    <div className="ecr-v mono">{insights.route.appliedRulesJson || '-'}</div>
+                  <div className={styles.ecrKv}>
+                    <div className={styles.ecrK}>Risk</div>
+                    <div className={styles.ecrV}><Pill value={insights.route.riskLevel} type="risk" /></div>
+                    <div className={styles.ecrK}>Added reviewers</div>
+                    <div className={`${styles.ecrV} mono`}>{insights.route.addedReviewersCsv || '-'}</div>
+                    <div className={styles.ecrK}>Rules</div>
+                    <div className={`${styles.ecrV} mono`}>{insights.route.appliedRulesJson || '-'}</div>
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <div className="plm-muted" style={{ marginBottom: 6 }}>Explanation</div>
-                    <div className="ecr-text">{insights.route.explanation || '-'}</div>
+                    <div className={styles.ecrText}>{insights.route.explanation || '-'}</div>
                   </div>
                 </>
               )}
             </div>
           </div>
 
-          <div className="ecr-card">
-            <div className="ecr-card-title">Similar changes</div>
+          <div className={styles.ecrCard}>
+            <div className={styles.ecrCardTitle}>Similar changes</div>
             <div className="plm-muted" style={{ marginBottom: 10 }}>Based on overlap between impacted parent sets (graph similarity).</div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table className="ecr-table">
+              <table className={styles.ecrTable}>
                 <thead>
                   <tr>
                     <th>Similar ECR</th>

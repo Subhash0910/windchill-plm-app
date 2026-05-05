@@ -7,28 +7,49 @@ import { plmApi } from '../../services/plmApi';
 import './DashboardPage.css';
 
 const S_COLOR = {
-  INWORK:      { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
-  UNDERREVIEW: { bg: '#dbeafe', text: '#1e40af', dot: '#3b82f6' },
-  RELEASED:    { bg: '#dcfce7', text: '#166534', dot: '#22c55e' },
-  OBSOLETE:    { bg: '#f1f5f9', text: '#475569', dot: '#94a3b8' },
+  INWORK:      { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-state-inwork-text)', dot: 'var(--wc-text-muted)' },
+  UNDERREVIEW: { bg: 'var(--wc-state-underreview-bg)', text: 'var(--wc-state-underreview-text)', dot: '#f59e0b' },
+  RELEASED:    { bg: 'var(--wc-state-released-bg)', text: 'var(--wc-state-released-text)', dot: '#10b981' },
+  OBSOLETE:    { bg: 'var(--wc-state-obsolete-bg)', text: 'var(--wc-state-obsolete-text)', dot: '#ef4444' },
 };
 const S_ICON = { INWORK: '🔧', UNDERREVIEW: '🔍', RELEASED: '✅', OBSOLETE: '🚫' };
 
 const ECR_STATUS_COLOR = {
-  DRAFT:     { bg: '#f3f4f6', text: '#374151', dot: '#9ca3af',  label: 'Draft'      },
-  SUBMITTED: { bg: '#dbeafe', text: '#1d4ed8', dot: '#3b82f6',  label: 'Submitted'  },
-  IN_REVIEW: { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b',  label: 'In Review'  },
-  APPROVED:  { bg: '#dcfce7', text: '#166534', dot: '#22c55e',  label: 'Approved'   },
-  REJECTED:  { bg: '#fee2e2', text: '#991b1b', dot: '#ef4444',  label: 'Rejected'   },
-  CLOSED:    { bg: '#e5e7eb', text: '#6b7280', dot: '#d1d5db',  label: 'Closed'     },
+  DRAFT:     { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-state-inwork-text)', dot: 'var(--wc-text-muted)',  label: 'Draft'      },
+  SUBMITTED: { bg: 'var(--wc-state-underreview-bg)', text: 'var(--wc-state-underreview-text)', dot: '#3b82f6',  label: 'Submitted'  },
+  IN_REVIEW: { bg: 'var(--wc-state-underreview-bg)', text: 'var(--wc-state-underreview-text)', dot: '#f59e0b',  label: 'In Review'  },
+  APPROVED:  { bg: 'var(--wc-state-released-bg)', text: 'var(--wc-state-released-text)', dot: '#22c55e',  label: 'Approved'   },
+  REJECTED:  { bg: 'var(--wc-state-obsolete-bg)', text: 'var(--wc-state-obsolete-text)', dot: '#ef4444',  label: 'Rejected'   },
+  CLOSED:    { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-state-inwork-text)', dot: '#d1d5db',  label: 'Closed'     },
 };
 
 const PRIORITY_META = {
-  CRITICAL: { bg: '#fee2e2', text: '#991b1b' },
-  HIGH:     { bg: '#ffedd5', text: '#9a3412' },
-  NORMAL:   { bg: '#e0f2fe', text: '#075985' },
-  LOW:      { bg: '#f3f4f6', text: '#6b7280' },
+  CRITICAL: { bg: 'var(--wc-state-obsolete-bg)', text: 'var(--wc-state-obsolete-text)' },
+  HIGH:     { bg: 'var(--wc-state-underreview-bg)', text: 'var(--wc-state-underreview-text)' },
+  NORMAL:   { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-state-inwork-text)' },
+  LOW:      { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-text-muted)' },
 };
+
+const SHOWCASE_PILLARS = [
+  {
+    title: 'What this workspace teaches',
+    text: 'Explore realistic parts, BOM, lifecycle, review, and change flows in a Windchill-inspired PLM environment.',
+  },
+  {
+    title: 'Where AI helps',
+    text: 'Use contextual guidance on parts, changes, and review work so AI supports decisions instead of narrating the whole screen.',
+  },
+  {
+    title: 'What workflows are available',
+    text: 'Browse contexts, inspect structures, review ECRs, and work through approval tasks with seeded demo data.',
+  },
+];
+
+const AUDIENCE_TRACKS = [
+  { title: 'First-time learner', text: 'Start with contexts, parts, lifecycle, and guided change flows.', to: '/plm/parts' },
+  { title: 'Hiring manager', text: 'See the shell, workflow coverage, and how AI is embedded into PLM decisions.', to: '/plm/changes' },
+  { title: 'Reviewer', text: 'Inspect how AI supports explainability, risk framing, and structured review decisions.', to: '/plm/ai-demo' },
+];
 
 const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
   const navigate = useNavigate();
@@ -127,10 +148,10 @@ const DashboardPage = () => {
             <p>
               {selectedContextId
                 ? <>
-                    Active context: <strong>{selectedContextName || selectedContextId}</strong>
-                    &nbsp;&middot;&nbsp;{parts.length} part(s) &middot; {ecrs.length} ECR(s)
+                    Public alpha focus: <strong>Windchill-inspired learning workflows with embedded AI</strong>
+                    &nbsp;&middot;&nbsp;Active context: <strong>{selectedContextName || selectedContextId}</strong>
                   </>
-                : 'Select a context from the PLM workspace to see live data.'}
+                : 'This workspace is built to teach PLM concepts, guide structured review work, and feel like a coherent enterprise system.'}
             </p>
           </div>
           <div className="welcome-actions">
@@ -140,6 +161,32 @@ const DashboardPage = () => {
         </div>
 
         {/* KPI Row 1 — Parts */}
+        <section className="dashboard-story">
+          <div className="dashboard-story__intro">
+            <span className="dashboard-story__eyebrow">Public Alpha</span>
+            <h2>Windchill-inspired workflows for learning and experimentation</h2>
+            <p>
+              This workspace is designed to feel operational, teach core PLM habits, and show where AI adds value in review-heavy workflows.
+            </p>
+          </div>
+          <div className="dashboard-story__pillars">
+            {SHOWCASE_PILLARS.map((item) => (
+              <article key={item.title} className="story-card">
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+          <div className="dashboard-story__tracks">
+            {AUDIENCE_TRACKS.map((track) => (
+              <button key={track.title} className="track-card" onClick={() => navigate(track.to)}>
+                <strong>{track.title}</strong>
+                <span>{track.text}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
         <div className="kpi-grid">
           <KPICard icon="⚙️"  label="Total Parts"    value={parts.length}  sub={selectedContextId ? selectedContextName : 'No context'} color="blue"   to="/plm/parts"   loading={loading} />
           <KPICard icon="🔍"  label="Under Review"   value={underRev}      sub={underRev > 0 ? 'Parts awaiting approval' : 'All clear ✓'}  color="amber"  to="/plm/parts"   loading={loading} />
@@ -248,7 +295,7 @@ const DashboardPage = () => {
                 <h2 className="section-title">🔍 ECRs Need Review</h2>
                 <p className="alert-text" style={{ color: '#4c1d95' }}>
                   <strong>{inReviewEcrs}</strong> ECR{inReviewEcrs !== 1 ? 's are' : ' is'} IN REVIEW awaiting a decision.
-                  {criticalEcrs > 0 && <> &nbsp;<strong style={{ color: '#991b1b' }}>({criticalEcrs} Critical)</strong></>}
+                  {criticalEcrs > 0 && <> &nbsp;<strong style={{ color: 'var(--wc-state-obsolete-text)' }}>({criticalEcrs} Critical)</strong></>}
                 </p>
                 <button className="btn-purple btn-sm" onClick={() => navigate('/plm/changes')}>Review ECRs &rarr;</button>
               </div>

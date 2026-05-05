@@ -90,7 +90,7 @@ export const plmApi = {
   },
   getEcr:          async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}`);                    return r.data?.data ?? r.data; },
   createEcr:       async (body)          => { const r = await api.post('/api/v1/plm/changes', body);                    return r.data?.data ?? r.data; },
-  submitEcr:       async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/submit`);             return r.data?.data ?? r.data; },
+  submitEcr:       async (id, body)      => { const r = await api.post(`/api/v1/plm/changes/${id}/submit`, body ?? null); return r.data?.data ?? r.data; },
   startEcrReview:  async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/start-review`);      return r.data?.data ?? r.data; },
   approveEcr:      async (id, comment)   => { const r = await api.post(`/api/v1/plm/changes/${id}/approve`,  { comment: comment || '' }); return r.data?.data ?? r.data; },
   rejectEcr:       async (id, comment)   => { const r = await api.post(`/api/v1/plm/changes/${id}/reject`,   { comment: comment || '' }); return r.data?.data ?? r.data; },
@@ -103,6 +103,38 @@ export const plmApi = {
     return r.data?.data ?? [];
   },
   releaseEcn:      async (noticeId)      => { const r = await api.post(`/api/v1/plm/changes/notices/${noticeId}/release`); return r.data?.data ?? r.data; },
+
+  getEcrDetails: async (id) => {
+    const [ecr, ecn] = await Promise.all([
+      plmApi.getEcr(id),
+      plmApi.getEcrNotice(id),
+    ]);
+    return {
+      ecr,
+      ecn,
+      tasks: [],
+    };
+  },
+
+  getEcrInsights: async (id) => {
+    try {
+      const contextual = await api.get(`/api/v1/ai/contextual/ecrs/${id}`);
+      return {
+        impact: null,
+        contextual: contextual.data?.data ?? null,
+      };
+    } catch (error) {
+      return {
+        impact: null,
+        contextual: null,
+      };
+    }
+  },
+
+  analyzeEcr: async (id) => {
+    const insights = await plmApi.getEcrInsights(id);
+    return insights?.contextual ?? null;
+  },
 
   // ── Change Tasks (legacy alias → ECN list) ────────────────────────────
   getMyChangeTasks:  async ()             => { const r = await api.get('/api/v1/plm/workitems/my'); return r.data.data ?? []; },

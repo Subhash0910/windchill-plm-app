@@ -1,12 +1,17 @@
 .wc-navigator {
-  width: var(--wc-nav-w);
-  height: 100%;
-  background: var(--wc-sidebar-bg);
-  border-right: 1px solid var(--wc-border);
-  overflow-y: auto;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  background: transparent;
+  /* Scroll handled by parent wc-shell__nav-scroll */
+}
+
+/* ── Section label ── */
+.wc-navigator__section-label {
+  padding: 8px 14px 4px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--wc-text-muted);
 }
 
 .wc-navigator__header {
@@ -76,19 +81,29 @@
 }
 .wc-nav__item.active {
   background: var(--wc-sidebar-active);
-  border-left-color: var(--wc-navy);
-  color: var(--wc-navy);
-  font-weight: 600;
+  border-left-color: var(--wc-blue);
+  color: var(--wc-blue);
+  font-weight: 700;
 }
-.wc-nav__item-icon { font-size: 12px; flex-shrink: 0; opacity: 0.7; }
+/* Design spell: active item left border glows */
+@keyframes wc-nav-active-glow {
+  0%, 100% { box-shadow: -2px 0 8px rgba(14,165,233,0.3); }
+  50%       { box-shadow: -2px 0 14px rgba(14,165,233,0.6); }
+}
+.wc-nav__item.active {
+  animation: wc-nav-active-glow 2.5s ease-in-out infinite;
+}
+
+.wc-nav__item-icon { font-size: 13px; flex-shrink: 0; opacity: 0.8; }
 .wc-nav__item-label { flex: 1; }
 .wc-nav__item-badge {
   background: var(--wc-blue);
   color: white;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: 999px;
   min-width: 18px;
   text-align: center;
+  letter-spacing: 0.02em;
 }

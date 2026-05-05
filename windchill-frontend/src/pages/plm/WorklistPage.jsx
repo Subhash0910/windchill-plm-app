@@ -1,96 +1,151 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
+import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
+import { plmApi } from '../../services/plmApi';
+import { aiService } from '../../services/aiService';
 import styles from './WorklistPage.module.css';
-
-const API = import.meta.env.VITE_API_URL ?? '';
 
 const TABS = ['All', 'Pending', 'Completed'];
 
 export default function WorklistPage() {
-  const navigate   = useNavigate();
-  const [items,   setItems]   = useState([]);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [tab,     setTab]     = useState('All');
-  const [acting,  setActing]  = useState(null);
+  const [error, setError] = useState(null);
+  const [tab, setTab] = useState('All');
+  const [acting, setActing] = useState(null);
   const [comment, setComment] = useState('');
   const [confirmItem, setConfirmItem] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
 
-  const token   = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const load = async () => {
+    try {
+      setLoading(true);
+      const data = await plmApi.listMyWorkItems();
+      const nextItems = Array.isArray(data) ? data : [];
+      setItems(nextItems);
+      setError(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    fetch(`${API}/api/v1/plm/worklist`, { headers })
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => { setItems(Array.isArray(data) ? data : (data.data ?? [])); setError(null); })
-      .catch(e  => setError(e.message))
-      .finally(() => setLoading(false));
+      const requestedId = searchParams.get('workItemId');
+      const requestedExists = requestedId && nextItems.some((item) => String(item.id) === String(requestedId));
+      if (requestedExists) {
+        setSelectedId(Number(requestedId));
+      } else if (!nextItems.some((item) => String(item.id) === String(selectedId))) {
+        setSelectedId(nextItems[0]?.id ?? null);
+      }
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || 'Failed to load worklist');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!selectedId) {
+      setSummary(null);
+      return;
+    }
+
+    let active = true;
+    setSummaryLoading(true);
+    setSummaryError('');
+    aiService.getWorkItemSummary(selectedId)
+      .then((data) => {
+        if (!active) return;
+        setSummary(data || null);
+      })
+      .catch((e) => {
+        if (!active) return;
+        setSummary(null);
+        setSummaryError(e.response?.data?.message || e.message || 'Failed to load AI review summary');
+      })
+      .finally(() => {
+        if (active) setSummaryLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedId]);
 
   const openConfirm = (item, action) => {
-    setConfirmItem(item); setConfirmAction(action); setComment('');
+    setConfirmItem(item);
+    setConfirmAction(action);
+    setComment('');
   };
-  const closeConfirm = () => { setConfirmItem(null); setConfirmAction(null); };
+
+  const closeConfirm = () => {
+    setConfirmItem(null);
+    setConfirmAction(null);
+  };
 
   const submitAction = async () => {
     if (!confirmItem || !confirmAction) return;
     setActing(confirmItem.id);
-    const url = confirmAction === 'approve'
-      ? `${API}/api/v1/plm/worklist/${confirmItem.id}/approve`
-      : `${API}/api/v1/plm/worklist/${confirmItem.id}/reject`;
     try {
-      const res = await fetch(url, {
-        method: 'POST', headers,
-        body: JSON.stringify({ comment }),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      if (confirmAction === 'approve') {
+        await plmApi.approveWorkItem(confirmItem.id, comment);
+      } else {
+        await plmApi.rejectWorkItem(confirmItem.id, comment);
+      }
       closeConfirm();
-      load();
-    } catch (e) { alert(e.message); }
-    finally { setActing(null); }
+      await load();
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || 'Action failed');
+    } finally {
+      setActing(null);
+    }
   };
 
-  const statusFilter = item => {
-    if (tab === 'Pending')   return item.status === 'PENDING'   || item.status === 'IN_REVIEW';
-    if (tab === 'Completed') return item.status === 'APPROVED'  || item.status === 'REJECTED';
+  const statusFilter = (item) => {
+    if (tab === 'Pending') return item.status === 'PENDING' || item.status === 'IN_REVIEW';
+    if (tab === 'Completed') return item.status === 'APPROVED' || item.status === 'REJECTED';
     return true;
   };
 
-  const filtered = items.filter(statusFilter);
-  const pending  = items.filter(i => i.status === 'PENDING' || i.status === 'IN_REVIEW').length;
-
-  const fmtDate = s => s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const filtered = useMemo(() => items.filter(statusFilter), [items, tab]);
+  const pending = items.filter((item) => item.status === 'PENDING' || item.status === 'IN_REVIEW').length;
+  const selectedItem = items.find((item) => String(item.id) === String(selectedId)) ?? null;
+  const fmtDate = (value) => (value
+    ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '-');
 
   return (
     <div className={styles.page}>
-      {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleRow}>
           <div className={styles.pageTitle}>
             <span className={styles.typeIcon}>📋</span>
             <div>
               <h1>My Worklist</h1>
-              <p className={styles.subtitle}>Pending approvals and review tasks</p>
+              <p className={styles.subtitle}>Review tasks, approvals, and AI-assisted decision support.</p>
             </div>
           </div>
           {pending > 0 && <span className={styles.pendingBadge}>{pending} pending</span>}
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.tabs}>
-          {TABS.map(t => (
+          {TABS.map((item) => (
             <button
-              key={t}
-              className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`}
-              onClick={() => setTab(t)}
-            >{t}</button>
+              key={item}
+              className={`${styles.tab} ${tab === item ? styles.tabActive : ''}`}
+              onClick={() => setTab(item)}
+            >
+              {item}
+            </button>
           ))}
         </div>
         <div className={styles.toolbarRight}>
@@ -98,22 +153,21 @@ export default function WorklistPage() {
         </div>
       </div>
 
-      {/* Confirm dialog */}
       {confirmItem && (
         <div className={styles.dialogOverlay}>
           <div className={styles.dialog}>
             <div className={`${styles.dialogHeader} ${confirmAction === 'approve' ? styles.approveHeader : styles.rejectHeader}`}>
-              {confirmAction === 'approve' ? '✔ Approve Task' : '✖ Reject Task'}
+              {confirmAction === 'approve' ? 'Approve Task' : 'Reject Task'}
             </div>
             <div className={styles.dialogBody}>
               <p className={styles.dialogDesc}>
-                <strong>{confirmItem.title}</strong>
+                <strong>{confirmItem.partNumber || `Work item #${confirmItem.id}`}</strong>
               </p>
               <label>Comment (optional)
                 <textarea
                   value={comment}
-                  onChange={e => setComment(e.target.value)}
-                  placeholder="Add a comment…"
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a review comment..."
                   rows={3}
                 />
               </label>
@@ -123,7 +177,7 @@ export default function WorklistPage() {
                   onClick={submitAction}
                   disabled={!!acting}
                 >
-                  {acting ? 'Processing…' : (confirmAction === 'approve' ? 'Approve' : 'Reject')}
+                  {acting ? 'Processing...' : (confirmAction === 'approve' ? 'Approve' : 'Reject')}
                 </button>
                 <button className={styles.btnCancel} onClick={closeConfirm}>Cancel</button>
               </div>
@@ -132,70 +186,109 @@ export default function WorklistPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className={styles.tableWrap}>
-        {loading && <div className={styles.loading}>Loading worklist…</div>}
-        {error   && <div className={styles.errorBanner}>Error: {error} <button onClick={load}>Retry</button></div>}
-        {!loading && !error && (
-          <table className={styles.wcTable}>
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Object</th>
-                <th>Type</th>
-                <th>Target State</th>
-                <th>Assigned By</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th className={styles.actionsCol}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={8} className={styles.emptyRow}>No tasks in this view.</td></tr>
-              )}
-              {filtered.map(item => (
-                <tr key={item.id} className={styles.row}>
-                  <td className={styles.taskCell}>
-                    <span className={styles.taskTitle}>{item.title ?? `Task #${item.id}`}</span>
-                    {item.description && <span className={styles.taskDesc}>{item.description}</span>}
-                  </td>
-                  <td>
-                    <span
-                      className={styles.objLink}
-                      onClick={() => item.partId && navigate(`/plm/parts/${item.partId}`)}
-                    >
-                      {item.partNumber ?? item.objectRef ?? `#${item.relatedObjectId}`}
-                    </span>
-                  </td>
-                  <td><span className={styles.typePill}>{item.workItemType ?? 'REVIEW'}</span></td>
-                  <td><StateBadge state={item.targetState} /></td>
-                  <td className={styles.dimCell}>{item.assignedBy ?? '—'}</td>
-                  <td className={styles.dimCell}>{fmtDate(item.dueDate)}</td>
-                  <td><StateBadge state={item.status} /></td>
-                  <td className={styles.actionsCell}>
-                    {(item.status === 'PENDING' || item.status === 'IN_REVIEW') && (
-                      <>
-                        <button
-                          className={styles.btnApproveSmall}
-                          onClick={() => openConfirm(item, 'approve')}
-                          disabled={acting === item.id}
-                        >Approve</button>
-                        <button
-                          className={styles.btnRejectSmall}
-                          onClick={() => openConfirm(item, 'reject')}
-                          disabled={acting === item.id}
-                        >Reject</button>
-                      </>
-                    )}
-                    {item.status === 'APPROVED' && <span className={styles.completedLabel}>✔ Approved</span>}
-                    {item.status === 'REJECTED' && <span className={styles.rejectedLabel}>✖ Rejected</span>}
-                  </td>
+      <div className={styles.contentGrid}>
+        <div className={styles.tableWrap}>
+          {loading && <div className={styles.loading}>Loading worklist...</div>}
+          {error && <div className={styles.errorBanner}>Error: {error} <button onClick={load}>Retry</button></div>}
+          {!loading && !error && (
+            <table className={styles.wcTable}>
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Part</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th className={styles.actionsCol}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr><td colSpan={5} className={styles.emptyRow}>No tasks in this view.</td></tr>
+                )}
+                {filtered.map((item) => {
+                  const selected = String(item.id) === String(selectedId);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`${styles.row} ${selected ? styles.rowSelected : ''}`}
+                      onClick={() => setSelectedId(item.id)}
+                    >
+                      <td className={styles.taskCell}>
+                        <span className={styles.taskTitle}>Promotion review</span>
+                        <span className={styles.taskDesc}>Task #{item.id}</span>
+                      </td>
+                      <td>
+                        <div className={styles.objBlock}>
+                          <span
+                            className={styles.objLink}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (item.partId) navigate(`/plm/parts/${item.partId}`);
+                            }}
+                          >
+                            {item.partNumber ?? `Part #${item.partId}`}
+                          </span>
+                          {item.partName ? <span className={styles.objSub}>{item.partName}</span> : null}
+                        </div>
+                      </td>
+                      <td className={styles.dimCell}>{fmtDate(item.dueAt)}</td>
+                      <td><StateBadge state={item.status} /></td>
+                      <td className={styles.actionsCell}>
+                        {(item.status === 'PENDING' || item.status === 'IN_REVIEW') ? (
+                          <>
+                            <button
+                              className={styles.btnApproveSmall}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openConfirm(item, 'approve');
+                              }}
+                              disabled={acting === item.id}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className={styles.btnRejectSmall}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openConfirm(item, 'reject');
+                              }}
+                              disabled={acting === item.id}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : null}
+                        {item.status === 'APPROVED' && <span className={styles.completedLabel}>Approved</span>}
+                        {item.status === 'REJECTED' && <span className={styles.rejectedLabel}>Rejected</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <aside className={styles.sidePanel}>
+          <ContextualInsightPanel
+            title="AI review summary"
+            subtitle="Use this as reviewer guidance, not an automatic decision."
+            insight={summary}
+            loading={summaryLoading}
+            error={summaryError}
+            emptyMessage={selectedItem ? 'No summary is available for this review item yet.' : 'Select a work item to see guidance.'}
+            footer={selectedItem ? (
+              <>
+                <button className={styles.panelButton} onClick={() => navigate(`/plm/parts/${selectedItem.partId}`)}>
+                  Open part
+                </button>
+                <button className={styles.panelButton} onClick={() => setSelectedId(selectedItem.id)}>
+                  Keep focused
+                </button>
+              </>
+            ) : null}
+          />
+        </aside>
       </div>
 
       <div className={styles.statusBar}>

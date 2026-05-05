@@ -1,24 +1,149 @@
-.folder-list{
-  margin-top:8px;
-  border:1px solid #eef0f7;
-  border-radius:8px;
-  overflow:hidden;
+/* ═══════════════════════════════════════════════════════
+   Folder Tree — Sidebar Section
+═══════════════════════════════════════════════════════ */
+
+/* Section header matches NavigatorPanel style */
+.ft-header {
+  padding: 10px 14px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--wc-text-muted);
+  border-top: 1px solid var(--wc-border);
 }
-.folder-row{
-  width:100%;
-  text-align:left;
-  border:0;
-  background:#fff;
-  padding:8px 10px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  cursor:pointer;
-  border-bottom:1px solid #f2f4fb;
+
+.ft-list {
+  padding: 2px 0 4px;
 }
-.folder-row:last-child{border-bottom:none;}
-.folder-row:hover{background:#f7f8ff;}
-.folder-row.active{background:#eef2ff;}
-.folder-icon{color:#6b7280;font-size:12px;}
-.folder-name{font-size:13px;color:#111827;font-weight:700;}
-.folder-create{display:flex;gap:8px;align-items:center;margin-top:10px;}
+
+/* Each folder row */
+.ft-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.15s;
+  padding: 0;
+  margin: 1px 0;
+}
+.ft-row:hover { background: var(--wc-sidebar-hover); }
+.ft-row.active {
+  background: var(--wc-sidebar-active);
+  border-left-color: var(--wc-blue);
+}
+
+.ft-row__btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  padding: 6px 12px 6px 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+}
+
+.ft-expand {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--wc-text-muted);
+  user-select: none;
+  transition: transform 0.15s;
+  width: 14px;
+  text-align: center;
+}
+
+.ft-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.ft-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wc-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.ft-row.active .ft-name {
+  color: var(--wc-blue);
+}
+
+/* Delete button */
+.ft-delete-btn {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: #dc2626;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 3px;
+}
+.ft-row:hover .ft-delete-btn { opacity: 0.6; }
+.ft-delete-btn:hover { opacity: 1 !important; background: #fee2e2; }
+
+/* Create folder row */
+.ft-create {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px;
+  border-top: 1px solid var(--wc-border-light);
+}
+.ft-create__input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: var(--wc-page-bg);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  color: var(--wc-text-primary);
+  transition: border-color 0.15s;
+}
+.ft-create__input:focus {
+  outline: none;
+  border-color: var(--wc-blue);
+}
+.ft-create__btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  background: var(--wc-blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--wc-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.ft-create__btn:disabled { opacity: 0.4; cursor: default; }
+.ft-create__btn:hover:not(:disabled) { opacity: 0.85; }
+
+.ft-muted {
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--wc-text-muted);
+}
+.ft-error {
+  padding: 6px 12px;
+  font-size: 10px;
+  color: #dc2626;
+  background: #fee2e2;
+  margin: 4px 8px;
+  border-radius: var(--wc-radius-sm);
+}

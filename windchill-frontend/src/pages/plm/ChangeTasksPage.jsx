@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import { plmApi } from '../../services/plmApi';
-import './ChangeTasksPage.css';
+import styles from './ChangeTasksPage.module.css';
 
 const ChangeTasksPage = () => {
   const navigate = useNavigate();
@@ -70,14 +70,14 @@ const ChangeTasksPage = () => {
   };
 
   return (
-    <div className="ct-page">
-      <div className="ct-head">
+    <div className={styles.page}>
+      <div className={styles.head}>
         <div>
-          <div className="ct-title">Change Tasks</div>
-          <div className="ct-sub">Your assigned review/implementation tasks for ECR/ECN.</div>
+          <div className={styles.title}>Change Tasks</div>
+          <div className={styles.sub}>Your assigned review/implementation tasks for ECR/ECN.</div>
         </div>
 
-        <div className="ct-actions">
+        <div className={styles.actions}>
           <Button variant="secondary" size="sm" onClick={() => navigate('/plm/changes')}>Back to Changes</Button>
           <Button variant="secondary" size="sm" onClick={load} disabled={loading}>Refresh</Button>
         </div>
@@ -85,22 +85,22 @@ const ChangeTasksPage = () => {
 
       {error ? <div className="plm-error">{error}</div> : null}
 
-      <div className="ct-card">
-        <div className="ct-card-title">My tasks ({pendingCount} pending)</div>
+      <div className={styles.card}>
+        <div className={styles.cardTitle}>My tasks ({pendingCount} pending)</div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
             <input type="checkbox" checked={pendingOnly} onChange={(e) => setPendingOnly(e.target.checked)} />
             Pending only
           </label>
-          <div className="plm-muted">Approve all review tasks to auto-create ECN + implementation task.</div>
+          <div className="plm-muted" style={{ fontSize: '12px' }}>Approve all review tasks to auto-create ECN + implementation task.</div>
         </div>
 
         {loading ? (
           <div className="plm-muted">Loading tasks…</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="ct-table">
+            <table className={styles.table}>
               <thead>
                 <tr>
                   <th>ID</th>
@@ -108,7 +108,7 @@ const ChangeTasksPage = () => {
                   <th>For</th>
                   <th>Decision</th>
                   <th>Comment</th>
-                  <th></th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,21 +122,21 @@ const ChangeTasksPage = () => {
                   const canAct = t.decision === 'PENDING' && !actionLoading[t.id];
 
                   return (
-                    <tr key={t.id}>
-                      <td className="mono">{t.id}</td>
+                    <tr key={t.id} className={canAct ? styles.rowActive : ''}>
+                      <td className="mono" style={{ fontWeight: 700 }}>{t.id}</td>
                       <td>{t.type}</td>
                       <td className="mono">
                         {forText}
                         {t.changeRequestId ? (
-                          <span style={{ marginLeft: 8 }}>
-                            <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/changes/ecr/${t.changeRequestId}`)}>Open</Button>
+                          <span style={{ marginLeft: 10 }}>
+                            <Button variant="secondary" size="xs" onClick={() => navigate(`/plm/changes/ecr/${t.changeRequestId}`)}>Open</Button>
                           </span>
                         ) : null}
                       </td>
                       <td>{t.decision}</td>
                       <td>
                         <textarea
-                          className="plm-input ct-comment"
+                          className={styles.comment}
                           rows={2}
                           value={comments[t.id] ?? (t.comment || '')}
                           onChange={(e) => setComments((m) => ({ ...m, [t.id]: e.target.value }))}
@@ -145,9 +145,9 @@ const ChangeTasksPage = () => {
                         />
                       </td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <Button variant="primary" size="sm" onClick={() => approve(t)} disabled={!canAct}>
+                        <button className={styles.btnSubmit} onClick={() => approve(t)} disabled={!canAct}>
                           {actionLoading[t.id] ? 'Working…' : 'Approve'}
-                        </Button>
+                        </button>
                         <span style={{ display: 'inline-block', width: 8 }} />
                         <Button variant="secondary" size="sm" onClick={() => reject(t)} disabled={!canAct}>Reject</Button>
                       </td>
@@ -157,7 +157,7 @@ const ChangeTasksPage = () => {
 
                 {tasks.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="plm-muted" style={{ padding: 12 }}>No tasks found.</td>
+                    <td colSpan={6} className="plm-muted" style={{ padding: 16, textAlign: 'center' }}>No tasks found.</td>
                   </tr>
                 ) : null}
               </tbody>

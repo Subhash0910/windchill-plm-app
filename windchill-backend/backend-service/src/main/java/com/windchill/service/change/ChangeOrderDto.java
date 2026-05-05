@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Data @Builder
+@Data @Builder(toBuilder = true)
 public class ChangeOrderDto {
     private Long id;
     private String ecoNumber;
