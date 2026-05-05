@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an improvement for the learning workspace or AI experience
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What learning gap, workflow gap, or usability issue are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the desired behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Parts / BOM
+        - Documents
+        - Change Management
+        - AI Copilot
+        - Navigation / UX
+        - Setup / Docs
+        - Testing / Developer Experience
+    validations:
+      required: true
