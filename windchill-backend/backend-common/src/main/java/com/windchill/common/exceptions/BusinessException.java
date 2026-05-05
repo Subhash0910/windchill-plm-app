@@ -1,6 +1,11 @@
 package com.windchill.common.exceptions;
 
-public class BusinessException extends RuntimeException {
+/**
+ * Extends the canonical BusinessException so GlobalExceptionHandler (which
+ * handles common.exception.BusinessException) catches this subtype too.
+ * This resolves the two-package split without touching 12 callers.
+ */
+public class BusinessException extends com.windchill.common.exception.BusinessException {
     private String errorCode;
 
     public BusinessException(String message) {
