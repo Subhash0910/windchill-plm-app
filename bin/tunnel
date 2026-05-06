@@ -1,0 +1,16 @@
+#!/bin/bash
+# Windchill PLM - Internet Tunnel (serveo.net)
+# Auto-reconnects if tunnel drops. Run: bin/tunnel &
+TUNNEL_URL_FILE="$HOME/.windchill-tunnel-url"
+
+while true; do
+    echo "Starting serveo tunnel..."
+    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:80 serveo.net 2>&1 | while read line; do
+        if [[ "$line" =~ https://([a-zA-Z0-9.-]+\.serveousercontent\.com) ]]; then
+            echo "$BASH_REMATCH" > "$TUNNEL_URL_FILE"
+            echo "Tunnel active: $BASH_REMATCH"
+        fi
+    done
+    echo "Tunnel dropped. Reconnecting in 5s..."
+    sleep 5
+done
