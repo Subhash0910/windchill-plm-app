@@ -1,4 +1,4 @@
-﻿package com.windchill.api.controller;
+package com.windchill.api.controller;
 
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.common.enums.ChangeNoticeStatus;
