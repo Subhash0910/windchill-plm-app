@@ -1,16 +1,21 @@
-# ── Build Frontend ─────────────────────────────────────────────
-FROM node:18-alpine AS frontend-build
+# ── Build Backend ────────────────────────────────────────
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY windchill-frontend/package*.json ./
-RUN npm ci --silent
-COPY windchill-frontend/ ./
-RUN npm run build
+COPY windchill-backend/pom.xml .
+COPY windchill-backend/backend-common/pom.xml backend-common/
+COPY windchill-backend/backend-domain/pom.xml backend-domain/
+COPY windchill-backend/backend-repository/pom.xml backend-repository/
+COPY windchill-backend/backend-service/pom.xml backend-service/
+COPY windchill-backend/backend-api/pom.xml backend-api/
+RUN mvn dependency:go-offline -B -q
+COPY windchill-backend/ .
+RUN mvn package -DskipTests -q
 
-# ── Production Nginx ───────────────────────────────────────────
-FROM nginx:alpine
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY --from=frontend-build /app/dist /usr/share/nginx/html
-EXPOSE 80 443
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
-CMD ["nginx", "-g", "daemon off;"]
+# ── Runtime ──────────────────────────────────────────────
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+RUN mkdir -p /app/data
+COPY --from=build /app/backend-api/target/backend-api-1.0.0-SNAPSHOT.jar app.jar
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["java","-jar","-Xms256m","-Xmx1g","app.jar"]
