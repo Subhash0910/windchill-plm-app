@@ -1,4 +1,4 @@
-package com.windchill.api.controller;
+﻿package com.windchill.api.controller;
 
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.common.exception.ResourceNotFoundException;
@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.windchill.api.security.AuthenticatedUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -39,7 +39,7 @@ public class ChangeActivityController {
     public ResponseEntity<ChangeActivity> create(
             @PathVariable Long ecoId,
             @Valid @RequestBody CreateRequest req,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         ChangeActivity a = new ChangeActivity();
         a.setEcoId(ecoId);
         a.setTitle(req.getTitle());
@@ -69,7 +69,7 @@ public class ChangeActivityController {
             @PathVariable Long ecoId,
             @PathVariable Long id,
             @RequestParam String status,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         ChangeActivity a = repo.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Activity not found"));
         a.setStatus(status.toUpperCase());

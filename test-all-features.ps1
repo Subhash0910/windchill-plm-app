@@ -110,7 +110,7 @@ if ($validate.ok) {
 Write-Host ""
 Write-Host "3. Dashboard" -ForegroundColor Yellow
 
-$stats = Invoke-API -Method GET -Path "/api/v1/plm/dashboard/stats"
+$stats = Invoke-API -Method GET -Path "/api/v1/plm/dashboard/stats?contextId=$($script:contextId)"
 if ($stats.ok) {
     Write-Pass "GET /plm/dashboard/stats - Dashboard stats loaded"
 } else {
@@ -196,8 +196,7 @@ $rnd2 = Get-Random -Maximum 9999
 $newEcr = Invoke-API -Method POST -Path "/api/v1/plm/changes" -Body @{
     title       = "Test ECR $rnd2"
     description = "Automated test change request"
-    priority    = "MEDIUM"
-    category    = "DESIGN"
+    priority    = "NORMAL"
     contextId   = $script:contextId
 }
 if ($newEcr.ok) {
@@ -225,11 +224,11 @@ if ($newEcr.ok) {
 Write-Host ""
 Write-Host "7. Change Notices (ECN)" -ForegroundColor Yellow
 
-$ecns = Invoke-API -Method GET -Path "/api/v1/plm/changes/ecn"
+$ecns = Invoke-API -Method GET -Path "/api/v1/plm/changes/notices"
 if ($ecns.ok) {
-    Write-Pass "GET /plm/changes/ecn - $(CountOf $ecns.data.data) ECNs"
+    Write-Pass "GET /plm/changes/notices - $(CountOf $ecns.data.data) ECNs"
 } else {
-    Write-Fail "GET /plm/changes/ecn failed ($($ecns.status))"
+    Write-Fail "GET /plm/changes/notices failed ($($ecns.status))"
 }
 
 # ---- 8. Documents ------------------------------------------------------------

@@ -1,4 +1,4 @@
-package com.windchill.api.controller;
+﻿package com.windchill.api.controller;
 
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.domain.entity.FileAttachment;
@@ -9,7 +9,7 @@ import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.windchill.api.security.AuthenticatedUser;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +38,7 @@ public class FileController {
             @RequestParam("entityType") String entityType,
             @RequestParam("entityId")   Long entityId,
             @RequestParam(value = "category", required = false) String category,
-            @AuthenticationPrincipal UserDetails principal) throws IOException {
+            @AuthenticationPrincipal AuthenticatedUser principal) throws IOException {
 
         String username = principal != null ? principal.getUsername() : "system";
         FileAttachment saved = fileService.store(file, entityType, entityId, username, category);
@@ -66,7 +66,7 @@ public class FileController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         String username = principal != null ? principal.getUsername() : "system";
         fileService.delete(id, username);
         return ResponseEntity.noContent().build();

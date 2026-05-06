@@ -1,4 +1,4 @@
-package com.windchill.ai.controller;
+﻿package com.windchill.ai.controller;
 
 import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.ChangeRequest;
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.windchill.api.security.AuthenticatedUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class ImpactAnalysisController {
     )
     public ResponseEntity<ImpactAnalysisResponse> analyzeChange(
             @Valid @RequestBody ImpactAnalysisRequest request,
-            @AuthenticationPrincipal UserDetails user) {
+            @AuthenticationPrincipal AuthenticatedUser user) {
 
         log.info("Impact analysis request: partId={}, changeType={}, requestedBy={}",
                 request.getPartId(),
@@ -67,7 +67,7 @@ public class ImpactAnalysisController {
     @Operation(summary = "Analyze all impacted parts for an ECR")
     public ResponseEntity<EcrImpactSummary> analyzeEcr(
             @PathVariable Long ecrId,
-            @AuthenticationPrincipal UserDetails user) {
+            @AuthenticationPrincipal AuthenticatedUser user) {
 
         ChangeRequest ecr = changeRequestRepo.findById(ecrId)
             .orElseThrow(() -> new ResourceNotFoundException("ECR not found: " + ecrId));

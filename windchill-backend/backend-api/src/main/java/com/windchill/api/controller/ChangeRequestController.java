@@ -1,4 +1,4 @@
-package com.windchill.api.controller;
+﻿package com.windchill.api.controller;
 
 import com.windchill.api.dto.change.*;
 import com.windchill.common.enums.ChangeRequestStatus;
@@ -11,7 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.windchill.api.security.AuthenticatedUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -123,7 +123,7 @@ public class ChangeRequestController {
     @PostMapping
     public ResponseEntity<ApiResponse<ChangeRequestDto>> create(
             @Valid @RequestBody CreateChangeRequestRequest req,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         ChangeRequest cr = changeService.create(
             req.getContextId(), req.getTitle(), req.getDescription(),
             req.getReason(), req.getPriority(),
@@ -164,7 +164,7 @@ public class ChangeRequestController {
     @PostMapping("/{id}/submit")
     public ResponseEntity<ApiResponse<ChangeRequestDto>> submit(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.submit(id, principal.getUsername()))));
     }
@@ -173,7 +173,7 @@ public class ChangeRequestController {
     @PostMapping("/{id}/start-review")
     public ResponseEntity<ApiResponse<ChangeRequestDto>> startReview(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.startReview(id, principal.getUsername()))));
     }
@@ -183,7 +183,7 @@ public class ChangeRequestController {
     public ResponseEntity<ApiResponse<ChangeRequestDto>> approve(
             @PathVariable Long id,
             @RequestBody(required = false) ReviewChangeRequestRequest req,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         String comment = req != null ? req.getComment() : null;
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.approve(id, principal.getUsername(), comment))));
@@ -194,7 +194,7 @@ public class ChangeRequestController {
     public ResponseEntity<ApiResponse<ChangeRequestDto>> reject(
             @PathVariable Long id,
             @RequestBody(required = false) ReviewChangeRequestRequest req,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         String comment = req != null ? req.getComment() : "";
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.reject(id, principal.getUsername(), comment))));
@@ -204,7 +204,7 @@ public class ChangeRequestController {
     @PostMapping("/{id}/close")
     public ResponseEntity<ApiResponse<ChangeRequestDto>> close(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.close(id, principal.getUsername()))));
     }
@@ -213,7 +213,7 @@ public class ChangeRequestController {
     @PostMapping("/{id}/reopen")
     public ResponseEntity<ApiResponse<ChangeRequestDto>> reopen(
             @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         return ResponseEntity.ok(ApiResponse.success(
             toDto(changeService.reopen(id, principal.getUsername()))));
     }
@@ -260,7 +260,7 @@ public class ChangeRequestController {
     @PostMapping("/notices/{noticeId}/release")
     public ResponseEntity<ApiResponse<ChangeNoticeDto>> releaseNotice(
             @PathVariable Long noticeId,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
         ChangeNotice released = changeService.releaseNotice(noticeId, principal.getUsername());
         ChangeRequest cr = changeService.getById(released.getChangeRequestId());
         return ResponseEntity.ok(ApiResponse.success(

@@ -1,4 +1,4 @@
-package com.windchill.api.controller;
+﻿package com.windchill.api.controller;
 
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.common.enums.ChangeNoticeStatus;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import com.windchill.api.security.AuthenticatedUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -49,7 +49,7 @@ public class ChangeNoticeController {
     @PostMapping
     public ResponseEntity<ApiResponse<?>> create(
             @Valid @RequestBody CreateRequest req,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
 
         ChangeNotice ecn = new ChangeNotice();
         ecn.setContextId(req.getContextId());
@@ -68,7 +68,7 @@ public class ChangeNoticeController {
     public ResponseEntity<ApiResponse<?>> promote(
             @PathVariable Long id,
             @RequestParam String target,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal AuthenticatedUser principal) {
 
         ChangeNotice ecn = repo.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("ECN not found: " + id));
