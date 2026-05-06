@@ -1,0 +1,55 @@
+# Render.com Blueprint — Permanent Free Deployment
+# 1. Create free account at https://render.com
+# 2. Push this repo to GitHub
+# 3. Connect GitHub repo in Render dashboard
+# 4. Render auto-deploys everything from this file
+
+services:
+  # ── Backend API ──────────────────────────────────────
+  - type: web
+    name: windchill-backend
+    runtime: docker
+    repo: https://github.com/YOUR_USER/windchill-plm
+    dockerfilePath: ./Dockerfile.backend
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromService:
+          name: windchill-mysql
+          type: pserv
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        value: windchill
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: windchill123
+      - key: APP_JWTSECRET
+        generateValue: true
+      - key: APP_BASE_URL
+        value: https://windchill-frontend.vercel.app
+    healthCheckPath: /actuator/health
+
+  # ── MySQL Database ───────────────────────────────────
+  - type: pserv
+    name: windchill-mysql
+    runtime: docker
+    repo: https://github.com/YOUR_USER/windchill-plm
+    dockerfilePath: ./Dockerfile.mysql
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        value: rootpassword
+      - key: MYSQL_DATABASE
+        value: windchill_db
+      - key: MYSQL_USER
+        value: windchill
+      - key: MYSQL_PASSWORD
+        value: windchill123
+
+  # ── Redis Cache ──────────────────────────────────────
+  - type: redis
+    name: windchill-redis
+    plan: free

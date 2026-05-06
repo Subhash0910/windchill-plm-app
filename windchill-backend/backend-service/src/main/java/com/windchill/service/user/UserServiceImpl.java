@@ -166,8 +166,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public User updateLastLogin(Long userId) {
         log.debug("Updating last login for user: {}", userId);
-        String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
-        userRepository.updateLastLoginAt(userId, now);
+        userRepository.updateLastLoginAt(userId, LocalDateTime.now());
         return getUserById(userId);
     }
 

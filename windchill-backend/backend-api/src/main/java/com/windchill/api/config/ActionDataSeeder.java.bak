@@ -1,0 +1,93 @@
+package com.windchill.api.config;
+
+import com.windchill.domain.entity.RegisteredAction;
+import com.windchill.repository.RegisteredActionRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+/**
+ * ActionDataSeeder — seeds the RegisteredAction table with Windchill-default
+ * toolbar, menu, and context-menu actions on startup.
+ *
+ * All inserts are idempotent: if an action with the same name already exists,
+ * it is skipped. This ensures safe restarts and re-deployments.
+ */
+@Slf4j
+@Configuration
+@RequiredArgsConstructor
+public class ActionDataSeeder {
+
+    private final RegisteredActionRepository actionRepo;
+
+    @Bean
+    public ApplicationRunner seedDefaultActions() {
+        return args -> {
+            // ── Part Actions ───────────────────────────────────────────────
+            seed("PART_CREATE",      "Create Part",        "Create a new part",              "TOOLBAR",       "PART",  "fa-plus",         null,                             null,                                       1,  "create");
+            seed("PART_PROMOTE",     "Promote",            "Promote to next lifecycle state","TOOLBAR",       "PART",  "fa-arrow-up",     "part.lifecycleState != 'OBSOLETE' and part.checkedOutBy == null", "part.lifecycleState != 'OBSOLETE'",  2,  "lifecycle");
+            seed("PART_REVISE",      "Revise",             "Create new revision",            "TOOLBAR",       "PART",  "fa-copy",         "part.lifecycleState == 'RELEASED'", "part.lifecycleState == 'RELEASED'", 3,  "lifecycle");
+            seed("PART_CHECKOUT",    "Check Out",          "Check out for editing",          "TOOLBAR",       "PART",  "fa-lock",         "part.checkedOutBy == null",        null,                                    4,  "edit");
+            seed("PART_CHECKIN",     "Check In",           "Check in changes",               "TOOLBAR",       "PART",  "fa-unlock",       "part.checkedOutBy == currentUser",  null,                                    5,  "edit");
+            seed("PART_UNDO_CHECKOUT","Undo Checkout",     "Discard checkout changes",       "TOOLBAR",       "PART",  "fa-undo",         "part.checkedOutBy == currentUser",  null,                                    6,  "edit");
+            seed("PART_DELETE",      "Delete",             "Delete this part",               "TOOLBAR",       "PART",  "fa-trash",        null,                             null,                                   99,  "danger");
+            seed("PART_WHERE_USED",  "Where Used",         "Show where-used report",         "MENU",          "PART",  "fa-sitemap",      null,                             null,                                  10,  "reports");
+
+            // ── ECR Actions ───────────────────────────────────────────────
+            seed("ECR_CREATE",       "Create ECR",         "Create a new change request",    "TOOLBAR",       "ECR",   "fa-plus",         null,                             null,                                    1,  "create");
+            seed("ECR_SUBMIT",       "Submit",             "Submit for review",              "TOOLBAR",       "ECR",   "fa-paper-plane",  "ecr.status == 'DRAFT'",          "ecr.status == 'DRAFT'",               2,  "lifecycle");
+            seed("ECR_APPROVE",      "Approve",            "Approve this change request",    "TOOLBAR",       "ECR",   "fa-check",        "ecr.status == 'IN_REVIEW'",      "ecr.status == 'IN_REVIEW'",           3,  "lifecycle");
+            seed("ECR_REJECT",       "Reject",             "Reject this change request",     "TOOLBAR",       "ECR",   "fa-times",        "ecr.status == 'IN_REVIEW'",      "ecr.status == 'IN_REVIEW'",           4,  "lifecycle");
+            seed("ECR_REOPEN",       "Reopen",             "Reopen for rework",              "TOOLBAR",       "ECR",   "fa-redo",         "ecr.status == 'REJECTED'",       "ecr.status == 'REJECTED'",            5,  "lifecycle");
+            seed("ECR_CLOSE",        "Close",              "Close this change request",      "TOOLBAR",       "ECR",   "fa-archive",      "ecr.status == 'APPROVED' or ecr.status == 'REJECTED'", null,    6,  "lifecycle");
+
+            // ── ECO / ECN Actions ─────────────────────────────────────────
+            seed("ECO_CREATE",       "Create ECO",         "Create a new change order",      "TOOLBAR",       "ECO",   "fa-plus",         null,                             null,                                    1,  "create");
+            seed("ECN_RELEASE",      "Release Notice",     "Release change notice",          "TOOLBAR",       "ECO",   "fa-check-circle", null,                             null,                                    2,  "lifecycle");
+
+            // ── Document Actions ──────────────────────────────────────────
+            seed("DOC_CREATE",       "Upload Document",    "Upload a new document",          "TOOLBAR",       "DOCUMENT","fa-upload",      null,                             null,                                    1,  "create");
+            seed("DOC_DOWNLOAD",     "Download",           "Download this document",         "CONTEXT_MENU", "DOCUMENT","fa-download",    null,                             null,                                    2,  "download");
+            seed("DOC_DELETE",       "Delete",             "Delete this document",           "CONTEXT_MENU", "DOCUMENT","fa-trash",       null,                             null,                                   99,  "danger");
+
+            // ── BOM Actions ───────────────────────────────────────────────
+            seed("BOM_ADD_LINE",     "Add BOM Line",       "Add a component to BOM",         "TOOLBAR",       "BOM",   "fa-plus",         null,                             null,                                    1,  "edit");
+            seed("BOM_REMOVE_LINE",  "Remove BOM Line",    "Remove a component from BOM",    "CONTEXT_MENU", "BOM",   "fa-minus",        null,                             null,                                    2,  "edit");
+
+            // ── Global Actions ────────────────────────────────────────────
+            seed("GLOBAL_SEARCH",    "Search",             "Search across all entities",     "TOOLBAR",       "GLOBAL","fa-search",       null,                             null,                                    1,  "navigation");
+            seed("GLOBAL_HELP",      "Help",               "Open help documentation",        "MENU",          "GLOBAL","fa-question",     null,                             null,                                  99,  "help");
+
+            log.info("ActionDataSeeder: default actions seeded ({} total)", actionRepo.count());
+        };
+    }
+
+    private void seed(String actionName, String displayName, String description,
+                      String actionType, String targetType, String icon,
+                      String enabledExpr, String visibleExpr,
+                      int sortOrder, String category) {
+
+        if (actionRepo.findByActionName(actionName).isPresent()) {
+            return; // already exists, idempotent skip
+        }
+
+        var action = new RegisteredAction();
+        action.setActionName(actionName);
+        action.setDisplayName(displayName);
+        action.setDescription(description);
+        action.setActionType(actionType);
+        action.setTargetType(targetType);
+        action.setIcon(icon);
+        action.setEnabledExpression(enabledExpr);
+        action.setVisibleExpression(visibleExpr);
+        action.setSortOrder(sortOrder);
+        action.setCategory(category);
+        actionRepo.save(action);
+
+        log.debug("Seeded action: {}", actionName);
+    }
+}

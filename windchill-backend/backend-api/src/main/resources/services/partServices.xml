@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services>
+    <service name="PartService"
+             interface="com.windchill.service.plm.IPartService"
+             impl="com.windchill.service.plm.PartServiceImpl"
+             singleton="true"/>
+    <service name="BomService"
+             interface="com.windchill.service.plm.IBomService"
+             impl="com.windchill.service.plm.BomServiceImpl"
+             singleton="true"/>
+    <service name="PromotionService"
+             impl="com.windchill.service.workflow.PromotionWorkflowService"
+             singleton="true"/>
+    <service name="StateHistoryService"
+             impl="com.windchill.service.plm.StateHistoryService"
+             singleton="true"/>
+</services>

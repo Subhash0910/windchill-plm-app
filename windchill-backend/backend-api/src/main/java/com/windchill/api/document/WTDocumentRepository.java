@@ -1,4 +1,6 @@
 package com.windchill.api.document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +17,9 @@ public interface WTDocumentRepository extends JpaRepository<WTDocument, Long> {
 
     // All latest by context + type
     List<WTDocument> findByContextIdAndDocTypeAndIsLatestTrueAndIsDeletedFalse(Long contextId, String docType);
+
+    // Paginated listing — latest, non-deleted, within a context
+    Page<WTDocument> findByContextIdAndIsLatestTrueAndIsDeletedFalse(Long contextId, Pageable pageable);
 
     // Search by keyword
     @Query("""
@@ -45,4 +50,13 @@ public interface WTDocumentRepository extends JpaRepository<WTDocument, Long> {
 
     boolean existsByContextIdAndDocNumberAndRevisionAndIteration(
         Long contextId, String docNumber, String revision, int iteration);
+
+    // Global keyword search (no context filter)
+    @Query("""
+        SELECT d FROM WTDocument d
+        WHERE d.isDeleted = false AND d.isLatest = true
+          AND (LOWER(d.docNumber) LIKE LOWER(CONCAT('%', :kw, '%'))
+            OR LOWER(d.name)      LIKE LOWER(CONCAT('%', :kw, '%')))
+        """)
+    List<WTDocument> searchAll(@Param("kw") String keyword);
 }

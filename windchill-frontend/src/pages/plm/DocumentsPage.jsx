@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
+import Pagination from '../../components/plm/Pagination';
 import { documentApi } from '../../services/documentApi';
 import styles from './DocumentsPage.module.css';
 
@@ -14,6 +15,12 @@ const DocumentsPage = () => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(new Set());
 
+  // Pagination
+  const [page,          setPage]          = useState(0);
+  const [pageSize,      setPageSize]      = useState(20);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages,    setTotalPages]    = useState(0);
+
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ docNumber: '', name: '', description: '', docType: 'SPEC' });
   const [saving, setSaving] = useState(false);
@@ -22,11 +29,19 @@ const DocumentsPage = () => {
 
   const load = useCallback(() => {
     setLoading(true);
-    documentApi.list(contextId)
-      .then(data => { setDocs(Array.isArray(data) ? data : []); setError(null); })
+    setError(null);
+    documentApi.listPaginated(contextId, page, pageSize, 'id', 'desc')
+      .then(data => {
+        setDocs(data?.content || []);
+        setTotalElements(data?.totalElements || 0);
+        setTotalPages(data?.totalPages || 0);
+      })
       .catch(e => setError(e.response?.data?.message || e.message))
       .finally(() => setLoading(false));
-  }, [contextId]);
+  }, [contextId, page, pageSize]);
+
+  const handlePageChange = useCallback((newPage) => setPage(newPage), []);
+  const handleSizeChange = useCallback((newSize) => { setPageSize(newSize); setPage(0); }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -155,9 +170,14 @@ const DocumentsPage = () => {
         </table>
       </div>
 
-      <footer className={styles.statusBar}>
-        Showing {filtered.length} documents • Last updated {new Date().toLocaleTimeString()}
-      </footer>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        size={pageSize}
+        totalElements={totalElements}
+        onPageChange={handlePageChange}
+        onSizeChange={handleSizeChange}
+      />
     </div>
   );
 };

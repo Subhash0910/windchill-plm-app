@@ -1,0 +1,166 @@
+# ============================================================
+# Windchill PLM - Production Docker Compose
+# ============================================================
+# Usage:
+#   cp .env.template .env          # then edit .env with real secrets
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml logs -f
+#   docker compose -f docker-compose.prod.yml down
+# ============================================================
+
+services:
+
+  # ── MySQL 8 Database ────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: windchill-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: windchill_db
+      MYSQL_USER: windchill
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - windchill-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "windchill", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 512m
+
+  # ── Redis 7 with persistence ───────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: windchill-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 128m
+
+  # ── Spring Boot Backend ────────────────────────────────────────
+  backend:
+    build:
+      context: ./windchill-backend
+      dockerfile: Dockerfile
+    container_name: windchill-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # ── Spring profile ──
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      # ── Database ──
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/windchill_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=utf-8
+      SPRING_DATASOURCE_USERNAME: windchill
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+
+      # ── JPA / Hibernate ──
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${JPA_DDL_AUTO:-validate}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_SHOW_SQL: "false"
+
+      # ── Redis ──
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+
+      # ── JWT ──
+      APP_JWTSECRET: ${JWT_SECRET}
+      APP_JWTEXPIRATIONINMS: "86400000"
+
+      # ── File storage ──
+      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH:-/opt/windchill/files}
+
+      # ── Email (optional) ──
+      EMAIL_USERNAME: ${EMAIL_USERNAME:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@windchill-plm.com}
+
+      # ── App URL (CORS) ──
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
+
+      # ── JVM tuning ──
+      JAVA_TOOL_OPTIONS: -Xms512m -Xmx2g
+
+    volumes:
+      - windchill_files:${FILE_STORAGE_PATH:-/opt/windchill/files}
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+        reservations:
+          memory: 512m
+
+  # ── Nginx Frontend (production reverse proxy) ───────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: windchill-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  windchill_files:
+    driver: local
+
+networks:
+  windchill-network:
+    driver: bridge

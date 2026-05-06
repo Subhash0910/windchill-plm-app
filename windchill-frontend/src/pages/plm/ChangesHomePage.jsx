@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import Pagination from '../../components/plm/Pagination';
 import {
-  getEcrsByContext, createEcr,
+  getEcrsByContext, getEcrsPaginated, createEcr,
   submitEcr, startEcrReview, approveEcr, rejectEcr, closeEcr, reopenEcr,
 } from '../../services/changeApi';
-import { getEcosByContext, createEco, promoteEco } from '../../services/changeApi';
+import { getEcosByContext, getEcosPaginated, createEco, promoteEco } from '../../services/changeApi';
 import styles from './ChangesHomePage.module.css';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -49,22 +50,50 @@ export default function ChangesHomePage() {
   const [ecrForm, setEcrForm] = useState({ title: '', description: '', priority: 'MEDIUM' });
   const [ecoForm, setEcoForm] = useState({ title: '', description: '', priority: 'MEDIUM', ecrId: '' });
 
+  // Pagination — ECR tab
+  const [ecrPage,          setEcrPage]          = useState(0);
+  const [ecrPageSize,      setEcrPageSize]      = useState(20);
+  const [ecrTotalElements, setEcrTotalElements] = useState(0);
+  const [ecrTotalPages,    setEcrTotalPages]    = useState(0);
+
+  // Pagination — ECO tab
+  const [ecoPage,          setEcoPage]          = useState(0);
+  const [ecoPageSize,      setEcoPageSize]      = useState(20);
+  const [ecoTotalElements, setEcoTotalElements] = useState(0);
+  const [ecoTotalPages,    setEcoTotalPages]    = useState(0);
+
   const contextId = user?.contextId || 1;
 
-  const loadAll = useCallback(async () => {
+  // ── paginated loaders (one per tab) ─────────────────────────────────────
+  const loadEcrs = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [ecrRes, ecoRes] = await Promise.all([
-        getEcrsByContext(contextId),
-        getEcosByContext(contextId),
-      ]);
-      setEcrs(ecrRes.data?.data ?? ecrRes.data ?? []);
-      setEcos(Array.isArray(ecoRes.data) ? ecoRes.data : (ecoRes.data?.data ?? []));
-    } catch { setError('Failed to load change management data.'); }
+      const res = await getEcrsPaginated(contextId, ecrPage, ecrPageSize);
+      const data = res.data?.data ?? {};
+      setEcrs(data.content ?? []);
+      setEcrTotalElements(data.totalElements || 0);
+      setEcrTotalPages(data.totalPages || 0);
+    } catch { setError('Failed to load ECRs.'); }
     finally { setLoading(false); }
-  }, [contextId]);
+  }, [contextId, ecrPage, ecrPageSize]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  const loadEcos = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const res = await getEcosPaginated(contextId, ecoPage, ecoPageSize);
+      const data = res.data?.data ?? {};
+      setEcos(data.content ?? []);
+      setEcoTotalElements(data.totalElements || 0);
+      setEcoTotalPages(data.totalPages || 0);
+    } catch { setError('Failed to load ECOs.'); }
+    finally { setLoading(false); }
+  }, [contextId, ecoPage, ecoPageSize]);
+
+  // Reload when tab or pagination changes
+  useEffect(() => {
+    if (activeTab === 'ecr') loadEcrs();
+    else loadEcos();
+  }, [activeTab, loadEcrs, loadEcos]);
 
   async function handleCreateEcr(e) {
     e.preventDefault();
@@ -72,7 +101,7 @@ export default function ChangesHomePage() {
       await createEcr({ ...ecrForm, contextId });
       setShowCreateEcr(false);
       setEcrForm({ title: '', description: '', priority: 'MEDIUM' });
-      loadAll();
+      setEcrPage(0);
     } catch (ex) { setError(ex?.response?.data?.message || 'Failed to create ECR.'); }
   }
 
@@ -82,30 +111,30 @@ export default function ChangesHomePage() {
       await createEco({ ...ecoForm, contextId, ecrId: ecoForm.ecrId ? Number(ecoForm.ecrId) : null });
       setShowCreateEco(false);
       setEcoForm({ title: '', description: '', priority: 'MEDIUM', ecrId: '' });
-      loadAll();
+      setEcoPage(0);
     } catch (ex) { setError(ex?.response?.data?.message || 'Failed to create ECO.'); }
   }
 
   async function handleEcrAction(actionFn, id, e) {
     e.stopPropagation();
-    try { await actionFn(id); loadAll(); }
+    try { await actionFn(id); setEcrPage(0); }
     catch (ex) { setError(ex?.response?.data?.message || 'Action failed.'); }
   }
 
   async function handlePromoteEco(id, state, e) {
     e.stopPropagation();
-    try { await promoteEco(id, state); loadAll(); }
+    try { await promoteEco(id, state); setEcoPage(0); }
     catch (ex) { setError(ex?.response?.data?.message || 'Promote failed.'); }
   }
 
   // ── stats ─────────────────────────────────────────────
   const ecrStats = {
-    total:   ecrs.length,
+    total:   ecrTotalElements,
     open:    ecrs.filter(r => !['CLOSED','REJECTED'].includes(r.status)).length,
     pending: ecrs.filter(r => ['SUBMITTED','IN_REVIEW'].includes(r.status)).length,
   };
   const ecoStats = {
-    total:  ecos.length,
+    total:  ecoTotalElements,
     active: ecos.filter(o => !['COMPLETED','CANCELLED'].includes(o.status ?? o.state)).length,
   };
 
@@ -143,7 +172,7 @@ export default function ChangesHomePage() {
           </button>
         </div>
         <div className={styles.toolbarRight}>
-          <button className={styles.btnIcon} onClick={loadAll} title="Refresh">↻</button>
+          <button className={styles.btnIcon} onClick={activeTab === 'ecr' ? loadEcrs : loadEcos} title="Refresh">↻</button>
           {activeTab === 'ecr'
             ? <button className={styles.btnPrimary} onClick={() => setShowCreateEcr(true)}>+ New ECR</button>
             : <button className={styles.btnPrimary} onClick={() => setShowCreateEco(true)}>+ New ECO</button>
@@ -212,108 +241,125 @@ export default function ChangesHomePage() {
 
             {/* ECR Table */}
             {activeTab === 'ecr' && (
-              <table className={styles.wcTable}>
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Title</th>
-                    <th>Priority</th>
-                    <th>State</th>
-                    <th>Parts</th>
-                    <th>Created by</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ecrs.length === 0 && (
-                    <tr><td colSpan={8} className={styles.emptyRow}>No ECRs found. Create one with + New ECR.</td></tr>
-                  )}
-                  {ecrs.map(r => (
-                    <tr key={r.id} className={styles.tableRow} onClick={() => navigate(`/plm/changes/ecr/${r.id}`)}>
-                      <td><span className={styles.ecrLink}>{r.changeNumber || `ECR-${String(r.id).padStart(5,'0')}`}</span></td>
-                      <td className={styles.titleCell}>{r.title}</td>
-                      <td><span className={`${styles.priPill} ${PRI_CLASS[r.priority] || ''}`}>{r.priority}</span></td>
-                      <td><StateBadge state={r.status} /></td>
-                      <td><span className={styles.partsBadge}>{r.impactedPartCount ?? 0}</span></td>
-                      <td className={styles.monoCell}>{r.createdBy || '—'}</td>
-                      <td className={styles.dimCell}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
-                      <td>
-                        <div className={styles.actionBar}>
-                          {(ECR_ACTIONS[r.status] || []).map(t => (
-                            <button
-                              key={t.label}
-                              className={`${styles.actBtn} ${t.danger ? styles.actBtnDanger : ''}`}
-                              onClick={(e) => handleEcrAction(t.fn, r.id, e)}
-                            >{t.label}</button>
-                          ))}
-                        </div>
-                      </td>
+              <>
+                <table className={styles.wcTable}>
+                  <thead>
+                    <tr>
+                      <th>Number</th>
+                      <th>Title</th>
+                      <th>Priority</th>
+                      <th>State</th>
+                      <th>Parts</th>
+                      <th>Created by</th>
+                      <th>Date</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {/* ECO Table */}
-            {activeTab === 'eco' && (
-              <table className={styles.wcTable}>
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Title</th>
-                    <th>Priority</th>
-                    <th>State</th>
-                    <th>Linked ECR</th>
-                    <th>Created by</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ecos.length === 0 && (
-                    <tr><td colSpan={8} className={styles.emptyRow}>No ECOs found. Create one with + New ECO.</td></tr>
-                  )}
-                  {ecos.map(o => {
-                    const st = o.status ?? o.state;
-                    return (
-                      <tr key={o.id} className={styles.tableRow} onClick={() => navigate(`/plm/changes/eco/${o.id}`)}>
-                        <td><span className={styles.ecrLink}>{o.ecoNumber || `ECO-${String(o.id).padStart(5,'0')}`}</span></td>
-                        <td className={styles.titleCell}>{o.title}</td>
-                        <td><span className={`${styles.priPill} ${PRI_CLASS[o.priority] || ''}`}>{o.priority}</span></td>
-                        <td><StateBadge state={st} /></td>
-                        <td>
-                          {o.ecrId
-                            ? <span className={styles.ecrLink} onClick={e => { e.stopPropagation(); navigate(`/plm/changes/ecr/${o.ecrId}`); }}>ECR #{o.ecrId}</span>
-                            : <span className={styles.dimCell}>—</span>
-                          }
-                        </td>
-                        <td className={styles.monoCell}>{o.createdBy || '—'}</td>
-                        <td className={styles.dimCell}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</td>
+                  </thead>
+                  <tbody>
+                    {ecrs.length === 0 && (
+                      <tr><td colSpan={8} className={styles.emptyRow}>No ECRs found. Create one with + New ECR.</td></tr>
+                    )}
+                    {ecrs.map(r => (
+                      <tr key={r.id} className={styles.tableRow} onClick={() => navigate(`/plm/changes/ecr/${r.id}`)}>
+                        <td><span className={styles.ecrLink}>{r.changeNumber || `ECR-${String(r.id).padStart(5,'0')}`}</span></td>
+                        <td className={styles.titleCell}>{r.title}</td>
+                        <td><span className={`${styles.priPill} ${PRI_CLASS[r.priority] || ''}`}>{r.priority}</span></td>
+                        <td><StateBadge state={r.status} /></td>
+                        <td><span className={styles.partsBadge}>{r.impactedPartCount ?? 0}</span></td>
+                        <td className={styles.monoCell}>{r.createdBy || '—'}</td>
+                        <td className={styles.dimCell}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
                         <td>
                           <div className={styles.actionBar}>
-                            {(ECO_TRANSITIONS[st] || []).map(t => (
+                            {(ECR_ACTIONS[r.status] || []).map(t => (
                               <button
                                 key={t.label}
                                 className={`${styles.actBtn} ${t.danger ? styles.actBtnDanger : ''}`}
-                                onClick={(e) => handlePromoteEco(o.id, t.state, e)}
+                                onClick={(e) => handleEcrAction(t.fn, r.id, e)}
                               >{t.label}</button>
                             ))}
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+                <Pagination
+                  page={ecrPage}
+                  totalPages={ecrTotalPages}
+                  size={ecrPageSize}
+                  totalElements={ecrTotalElements}
+                  onPageChange={setEcrPage}
+                  onSizeChange={(s) => { setEcrPageSize(s); setEcrPage(0); }}
+                />
+              </>
+            )}
+
+            {/* ECO Table */}
+            {activeTab === 'eco' && (
+              <>
+                <table className={styles.wcTable}>
+                  <thead>
+                    <tr>
+                      <th>Number</th>
+                      <th>Title</th>
+                      <th>Priority</th>
+                      <th>State</th>
+                      <th>Linked ECR</th>
+                      <th>Created by</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ecos.length === 0 && (
+                      <tr><td colSpan={8} className={styles.emptyRow}>No ECOs found. Create one with + New ECO.</td></tr>
+                    )}
+                    {ecos.map(o => {
+                      const st = o.status ?? o.state;
+                      return (
+                        <tr key={o.id} className={styles.tableRow} onClick={() => navigate(`/plm/changes/eco/${o.id}`)}>
+                          <td><span className={styles.ecrLink}>{o.ecoNumber || `ECO-${String(o.id).padStart(5,'0')}`}</span></td>
+                          <td className={styles.titleCell}>{o.title}</td>
+                          <td><span className={`${styles.priPill} ${PRI_CLASS[o.priority] || ''}`}>{o.priority}</span></td>
+                          <td><StateBadge state={st} /></td>
+                          <td>
+                            {o.ecrId
+                              ? <span className={styles.ecrLink} onClick={e => { e.stopPropagation(); navigate(`/plm/changes/ecr/${o.ecrId}`); }}>ECR #{o.ecrId}</span>
+                              : <span className={styles.dimCell}>—</span>
+                            }
+                          </td>
+                          <td className={styles.monoCell}>{o.createdBy || '—'}</td>
+                          <td className={styles.dimCell}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</td>
+                          <td>
+                            <div className={styles.actionBar}>
+                              {(ECO_TRANSITIONS[st] || []).map(t => (
+                                <button
+                                  key={t.label}
+                                  className={`${styles.actBtn} ${t.danger ? styles.actBtnDanger : ''}`}
+                                  onClick={(e) => handlePromoteEco(o.id, t.state, e)}
+                                >{t.label}</button>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <Pagination
+                  page={ecoPage}
+                  totalPages={ecoTotalPages}
+                  size={ecoPageSize}
+                  totalElements={ecoTotalElements}
+                  onPageChange={setEcoPage}
+                  onSizeChange={(s) => { setEcoPageSize(s); setEcoPage(0); }}
+                />
+              </>
             )}
           </div>
         )
       }
 
-      <div className={styles.statusBar}>
-        {activeTab === 'ecr' ? `${ecrs.length} ECR(s)` : `${ecos.length} ECO(s)`} · Context #{contextId}
-      </div>
     </div>
   );
 }

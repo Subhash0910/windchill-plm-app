@@ -40,6 +40,10 @@ public class ChangeRequest extends BaseEntity {
     @Column(name = "change_number", nullable = false, unique = true, length = 30)
     private String changeNumber;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "context_id", insertable = false, updatable = false)
+    private PlmContext context;
+
     @Column(name = "context_id", nullable = false)
     private Long contextId;
 

@@ -4,6 +4,7 @@ import { getEcoById, promoteEco, linkEcoAiResult } from '../../services/changeAp
 import { getEcrById } from '../../services/changeApi';
 import styles from './ChangeOrderDetailPage.module.css';
 import Button from '../../components/atoms/Button/Button';
+import ChangeTaskPanel from '../../components/plm/ChangeTaskPanel';
 
 // ── state helpers ──────────────────────────────────────────────────────────
 const STATE_CLASSES = {
@@ -136,7 +137,7 @@ export default function ChangeOrderDetailPage() {
       {error && <div className={styles.error}>{error}</div>}
 
       <div className={styles.tabs}>
-        {[['details','Details'],['linked-ecr','Linked ECR'],['ai-analysis','AI Analysis']].map(([key,label]) => (
+        {[['details','Details'],['linked-ecr','Linked ECR'],['tasks','Tasks'],['ai-analysis','AI Analysis']].map(([key,label]) => (
           <button
             key={key}
             className={`${styles.tab} ${activeTab === key ? styles.tabActive : ''}`}
@@ -240,6 +241,12 @@ export default function ChangeOrderDetailPage() {
                 Uses the Random Forest model (87% accuracy, 19 features) to estimate blast radius risk and cost.
               </p>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'tasks' && (
+          <div className={styles.card}>
+            <ChangeTaskPanel changeOrderId={eco.id} />
           </div>
         )}
       </div>

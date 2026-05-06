@@ -2,19 +2,17 @@ package com.windchill.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Notification {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@EqualsAndHashCode(callSuper = true)
+public class Notification extends BaseEntity {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -40,27 +38,15 @@ public class Notification {
     @Column(name = "entity_number", length = 100)
     private String entityNumber;
 
-    /**
-     * @Builder.Default is required here.
-     * Without it, Lombok's builder ignores the `= false` initialiser
-     * entirely and the field is set to Java's primitive default (false),
-     * which happens to be the same value BUT only by coincidence.
-     * Adding @Builder.Default makes the intent explicit and eliminates
-     * the Lombok compiler warning seen in Docker build output.
-     */
     @Builder.Default
     @Column(name = "is_read", nullable = false)
     private boolean read = false;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (type == null)      type      = "INFO";
+        if (type == null) type = "INFO";
     }
 }

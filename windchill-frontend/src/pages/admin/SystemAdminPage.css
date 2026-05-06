@@ -1,0 +1,359 @@
+.sa-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 20px;
+}
+
+/* ── Actions row ─────────────────────────────────────────────────────── */
+.sa-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────── */
+.sa-card {
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.sa-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #1a1f36;
+}
+
+[data-theme="dark"] .sa-card-title {
+  color: #e4e7f0;
+}
+
+.sa-desc {
+  color: #5b657a;
+  font-size: 13px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+/* ── Grid ─────────────────────────────────────────────────────────────── */
+.sa-grid--4col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1000px) {
+  .sa-grid--4col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .sa-grid--4col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Stat box ─────────────────────────────────────────────────────────── */
+.sa-stat {
+  background: #f8f9fc;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e7e9f0;
+}
+
+[data-theme="dark"] .sa-stat {
+  background: #1e2130;
+  border-color: #2e3148;
+}
+
+.sa-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8288a1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.sa-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1f36;
+}
+
+[data-theme="dark"] .sa-stat-value {
+  color: #e4e7f0;
+}
+
+.sa-stat-sub {
+  font-size: 12px;
+  color: #8288a1;
+  margin-top: 4px;
+}
+
+/* ── Status badge ──────────────────────────────────────────────────────── */
+.sa-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.sa-badge--ok {
+  background: #e3f5e8;
+  color: #1b7f3a;
+}
+
+[data-theme="dark"] .sa-badge--ok {
+  background: #1a4a2a;
+  color: #4eda7c;
+}
+
+.sa-badge--err {
+  background: #fde4e4;
+  color: #b00020;
+}
+
+[data-theme="dark"] .sa-badge--err {
+  background: #3d1518;
+  color: #ef5350;
+}
+
+/* ── Health checks ─────────────────────────────────────────────────────── */
+.sa-health-checks {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e7e9f0;
+}
+
+[data-theme="dark"] .sa-health-checks {
+  border-top-color: #2e3148;
+}
+
+.sa-health-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #1a1f36;
+}
+
+[data-theme="dark"] .sa-health-row {
+  color: #c5c9d8;
+}
+
+.sa-health-row > span:first-child {
+  min-width: 180px;
+  font-weight: 600;
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────── */
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sa-table th,
+.sa-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e7e9f0;
+}
+
+[data-theme="dark"] .sa-table th,
+[data-theme="dark"] .sa-table td {
+  border-bottom-color: #2e3148;
+}
+
+.sa-table th {
+  font-size: 11px;
+  color: #8288a1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.sa-table td {
+  color: #1a1f36;
+}
+
+[data-theme="dark"] .sa-table td {
+  color: #e4e7f0;
+}
+
+/* ── DB total ──────────────────────────────────────────────────────────── */
+.sa-db-total {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #1a1f36;
+}
+
+[data-theme="dark"] .sa-db-total {
+  color: #e4e7f0;
+}
+
+/* ── Cache section ─────────────────────────────────────────────────────── */
+.sa-cache-section {
+  font-size: 13px;
+}
+
+.sa-cache-info {
+  color: #5b657a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Seed controls ─────────────────────────────────────────────────────── */
+.sa-seed-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sa-seed-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1f36;
+  display: flex;
+  align-items: center;
+}
+
+[data-theme="dark"] .sa-seed-label {
+  color: #c5c9d8;
+}
+
+.sa-seed-result {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.sa-seed-result--ok {
+  background: #e3f5e8;
+  color: #1b7f3a;
+}
+
+[data-theme="dark"] .sa-seed-result--ok {
+  background: #1a4a2a;
+  color: #4eda7c;
+}
+
+.sa-seed-result--skip {
+  background: #fff7e0;
+  color: #996a00;
+}
+
+[data-theme="dark"] .sa-seed-result--skip {
+  background: #3d3010;
+  color: #f0c840;
+}
+
+/* ── Log box ───────────────────────────────────────────────────────────── */
+.sa-log-box {
+  background: #0d1117;
+  color: #c9d1d9;
+  border-radius: 6px;
+  padding: 14px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.sa-log-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Template Grid ────────────────────────────────────────────────────── */
+.sa-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.sa-template-card {
+  display: flex;
+  align-items: flex-start;
+  background: #f8f9fc;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #e7e9f0;
+  gap: 12px;
+}
+
+[data-theme="dark"] .sa-template-card {
+  background: #1e2130;
+  border-color: #2e3148;
+}
+
+.sa-template-icon {
+  font-size: 24px;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  border-radius: 8px;
+  color: #4f46e5;
+}
+
+[data-theme="dark"] .sa-template-icon {
+  background: #1e2540;
+  color: #818cf8;
+}
+
+.sa-template-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sa-template-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a1f36;
+  margin-bottom: 6px;
+}
+
+[data-theme="dark"] .sa-template-name {
+  color: #e4e7f0;
+}
+
+.sa-template-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.sa-template-desc {
+  font-size: 12px;
+  color: #8288a1;
+  line-height: 1.4;
+}
+
+.sa-template-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: fit-content;
+}
+
+/* ── Utility ───────────────────────────────────────────────────────────── */
+.mono {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}

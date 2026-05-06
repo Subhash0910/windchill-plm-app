@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Header from '../../components/organisms/Header/Header';
@@ -12,7 +12,7 @@ const S_COLOR = {
   RELEASED:    { bg: 'var(--wc-state-released-bg)', text: 'var(--wc-state-released-text)', dot: '#10b981' },
   OBSOLETE:    { bg: 'var(--wc-state-obsolete-bg)', text: 'var(--wc-state-obsolete-text)', dot: '#ef4444' },
 };
-const S_ICON = { INWORK: '🔧', UNDERREVIEW: '🔍', RELEASED: '✅', OBSOLETE: '🚫' };
+const S_ICON = { INWORK: String.fromCodePoint(0x1F527), UNDERREVIEW: String.fromCodePoint(0x1F50D), RELEASED: '✅', OBSOLETE: String.fromCodePoint(0x1F6AB) };
 
 const ECR_STATUS_COLOR = {
   DRAFT:     { bg: 'var(--wc-state-inwork-bg)', text: 'var(--wc-state-inwork-text)', dot: 'var(--wc-text-muted)',  label: 'Draft'      },
@@ -51,6 +51,41 @@ const AUDIENCE_TRACKS = [
   { title: 'Reviewer', text: 'Inspect how AI supports explainability, risk framing, and structured review decisions.', to: '/plm/ai-demo' },
 ];
 
+// ── CountUp animation hook ─────────────────────────────────────────────────
+const useCountUp = (target, duration = 800, start = true) => {
+  const [value, setValue] = useState(0);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    if (!start || target === undefined || target === null) {
+      setValue(target ?? 0);
+      return;
+    }
+    const num = Number(target) || 0;
+    if (num === 0) { setValue(0); return; }
+    const startTime = performance.now();
+    const tick = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out quad
+      const eased = 1 - (1 - progress) * (1 - progress);
+      setValue(Math.round(eased * num));
+      if (progress < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [target, duration, start]);
+
+  return value;
+};
+
+const CountUp = ({ target, loading }) => {
+  const animated = useCountUp(target, 800, !loading);
+  if (loading) return <span className="kpi-skeleton" />;
+  return <>{animated}</>;
+};
+
+// ── KPI Card ────────────────────────────────────────────────────────────────
 const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
   const navigate = useNavigate();
   return (
@@ -62,7 +97,7 @@ const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
       <div className="kpi-icon">{icon}</div>
       <div className="kpi-body">
         <div className="kpi-value">
-          {loading ? <span className="kpi-skeleton" /> : value}
+          <CountUp target={value} loading={loading} />
         </div>
         <div className="kpi-label">{label}</div>
         {sub && <div className="kpi-sub">{sub}</div>}
@@ -72,51 +107,46 @@ const KPICard = ({ icon, label, value, sub, color, to, loading }) => {
   );
 };
 
+// ── Dashboard ───────────────────────────────────────────────────────────────
 const DashboardPage = () => {
   const { user } = useAuth();
   const { selectedContextId, selectedContextName } = useContext(PlmWorkspaceContext);
   const navigate = useNavigate();
 
-  const [parts,       setParts]       = useState([]);
-  const [workItems,   setWorkItems]   = useState([]);
-  const [ecrs,        setEcrs]        = useState([]);
-  const [recentParts, setRecentParts] = useState([]);
-  const [loading,     setLoading]     = useState(true);
+  const [stats,    setStats]    = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
 
   useEffect(() => {
-    if (!selectedContextId) { setLoading(false); return; }
+    if (!selectedContextId) {
+      setLoading(false);
+      setStats(null);
+      return;
+    }
     setLoading(true);
-    Promise.allSettled([
-      plmApi.listParts(selectedContextId),
-      plmApi.listMyWorkItems(),
-      plmApi.listEcrs(selectedContextId, undefined),
-    ]).then(([pR, wR, eR]) => {
-      const p    = pR.status === 'fulfilled' ? (Array.isArray(pR.value) ? pR.value : []) : [];
-      const w    = wR.status === 'fulfilled' ? (Array.isArray(wR.value) ? wR.value : []) : [];
-      const rawE = eR.status === 'fulfilled' ? (Array.isArray(eR.value) ? eR.value : (eR.value?.data ?? [])) : [];
-      const e    = Array.isArray(rawE) ? rawE : [];
-      setParts(p);
-      setWorkItems(w);
-      setEcrs(e);
-      setRecentParts([...p].sort((x, y) => (y.id || 0) - (x.id || 0)).slice(0, 5));
-    }).finally(() => setLoading(false));
+    setError(null);
+    plmApi.getDashboardStats(selectedContextId)
+      .then((data) => setStats(data))
+      .catch((err) => { console.error('Dashboard stats error', err); setError(err); })
+      .finally(() => setLoading(false));
   }, [selectedContextId]);
 
-  // ── Part lifecycle counts ──
-  const counts      = parts.reduce((acc, p) => ({ ...acc, [p.lifecycleState]: (acc[p.lifecycleState] || 0) + 1 }), {});
-  const underRev    = counts['UNDERREVIEW'] || 0;
-  const released    = counts['RELEASED']    || 0;
-  const inwork      = counts['INWORK']      || 0;
-
-  // ── ECR derived counts ──
-  const ecrByStatus     = ecrs.reduce((acc, e) => ({ ...acc, [e.status]: (acc[e.status] || 0) + 1 }), {});
-  const openEcrs        = ecrs.filter(e => !['CLOSED', 'REJECTED'].includes(e.status)).length;
-  const inReviewEcrs    = ecrByStatus['IN_REVIEW']  || 0;
-  const submittedEcrs   = ecrByStatus['SUBMITTED']  || 0;
-  const criticalEcrs    = ecrs.filter(e => e.priority === 'CRITICAL' && !['CLOSED','REJECTED'].includes(e.status)).length;
-  const oneWeekAgo      = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const approvedThisWeek= ecrs.filter(e => e.status === 'APPROVED' && e.reviewedAt && new Date(e.reviewedAt).getTime() > oneWeekAgo).length;
-  const recentEcrs      = [...ecrs].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 5);
+  // Destructure with defaults for safety
+  const totalParts    = stats?.totalParts    ?? 0;
+  const inWork        = stats?.inWork        ?? 0;
+  const underReview   = stats?.underReview   ?? 0;
+  const released      = stats?.released      ?? 0;
+  const obsolete      = stats?.obsolete      ?? 0;
+  const totalDocuments = stats?.totalDocuments ?? 0;
+  const openEcrs      = stats?.openEcrs      ?? 0;
+  const openEcos      = stats?.openEcos      ?? 0;
+  const submittedEcrs = stats?.submittedEcrs ?? 0;
+  const inReviewEcrs  = stats?.inReviewEcrs  ?? 0;
+  const approvedThisWeek = stats?.approvedThisWeek ?? 0;
+  const criticalOpen  = stats?.criticalOpen  ?? 0;
+  const pendingWorkItems = stats?.pendingWorkItems ?? 0;
+  const recentParts   = stats?.recentParts   ?? [];
+  const recentEcrs    = stats?.recentEcrs    ?? [];
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -126,12 +156,104 @@ const DashboardPage = () => {
   };
 
   const quickActions = [
-    { icon: '⚙️',  label: 'Parts',          sub: `${parts.length} total`,           to: '/plm/parts',    color: 'blue'   },
-    { icon: '📋',  label: 'Worklist',        sub: `${workItems.length} pending`,      to: '/plm/worklist', color: 'amber'  },
-    { icon: '📝',  label: 'Changes',         sub: `${ecrs.length} ECRs`,              to: '/plm/changes',  color: 'purple' },
+    { icon: '⚙️',  label: 'Parts',          sub: `${totalParts} total`,            to: '/plm/parts',    color: 'blue'   },
+    { icon: String.fromCodePoint(0x1F4CB),  label: 'Worklist',        sub: `${pendingWorkItems} pending`,      to: '/plm/worklist', color: 'amber'  },
+    { icon: String.fromCodePoint(0x1F4DD),  label: 'Changes',         sub: `${openEcrs} open ECRs`,            to: '/plm/changes',  color: 'purple' },
     { icon: '⚡',  label: 'Impact Analysis', sub: 'AI-powered',                       to: '/plm/ai-demo',  color: 'green'  },
   ];
 
+  // ── No context selected ──────────────────────────────────────────────────
+  if (!selectedContextId) {
+    return (
+      <div className="dashboard-page">
+        <Header title="Dashboard" />
+        <main className="dashboard-main">
+          <div className="dashboard-welcome">
+            <div className="welcome-text">
+              <h1>
+                {greeting()},{' '}
+                <span>{user?.fullName || user?.username || 'Engineer'}</span>
+                {' '}👋
+              </h1>
+              <p>
+                This workspace is built to teach PLM concepts, guide structured review work, and feel like a coherent enterprise system.
+              </p>
+            </div>
+            <div className="welcome-actions">
+              <span className="role-badge">{user?.role || 'VIEWER'}</span>
+              <button className="btn-ghost" onClick={() => navigate('/plm/parts')}>Open Workspace &rarr;</button>
+            </div>
+          </div>
+
+          <section className="dashboard-story">
+            <div className="dashboard-story__intro">
+              <span className="dashboard-story__eyebrow">Public Alpha</span>
+              <h2>Windchill-inspired workflows for learning and experimentation</h2>
+              <p>
+                This workspace is designed to feel operational, teach core PLM habits, and show where AI adds value in review-heavy workflows.
+              </p>
+            </div>
+            <div className="dashboard-story__pillars">
+              {SHOWCASE_PILLARS.map((item) => (
+                <article key={item.title} className="story-card">
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              ))}
+            </div>
+            <div className="dashboard-story__tracks">
+              {AUDIENCE_TRACKS.map((track) => (
+                <button key={track.title} className="track-card" onClick={() => navigate(track.to)}>
+                  <strong>{track.title}</strong>
+                  <span>{track.text}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div className="empty-state" style={{ marginTop: 48, textAlign: 'center', padding: 64 }}>
+            <span style={{ fontSize: 48 }}>{String.fromCodePoint(0x1F4CA)}</span>
+            <h2 style={{ margin: '16px 0 8px', color: 'var(--wc-text-primary)' }}>Select a workspace to see your data</h2>
+            <p style={{ color: 'var(--wc-text-secondary)', marginBottom: 24 }}>
+              Choose a context from the sidebar to load your dashboard KPIs.
+            </p>
+            <button className="btn-primary" onClick={() => navigate('/plm/parts')}>
+              Open Workspace &rarr;
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Error state ──────────────────────────────────────────────────────────
+  if (error && !loading && totalParts === 0 && totalDocuments === 0) {
+    return (
+      <div className="dashboard-page">
+        <Header title="Dashboard" />
+        <main className="dashboard-main">
+          <div className="dashboard-welcome">
+            <div className="welcome-text">
+              <h1>{greeting()}, <span>{user?.fullName || user?.username || 'Engineer'}</span> {String.fromCodePoint(0x1F44B)}</h1>
+              <p>Active context: <strong>{selectedContextName || selectedContextId}</strong></p>
+            </div>
+          </div>
+          <div className="empty-state" style={{ textAlign: 'center', padding: 64 }}>
+            <span style={{ fontSize: 48 }}>{'⚠️'}</span>
+            <h2 style={{ margin: '16px 0 8px', color: 'var(--wc-text-primary)' }}>Could not load dashboard data</h2>
+            <p style={{ color: 'var(--wc-text-secondary)', marginBottom: 24 }}>
+              {error?.message || 'An unexpected error occurred.'}
+            </p>
+            <button className="btn-primary" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // ── Main dashboard with data ─────────────────────────────────────────────
   return (
     <div className="dashboard-page">
       <Header title="Dashboard" />
@@ -146,12 +268,8 @@ const DashboardPage = () => {
               {' '}👋
             </h1>
             <p>
-              {selectedContextId
-                ? <>
-                    Public alpha focus: <strong>Windchill-inspired learning workflows with embedded AI</strong>
-                    &nbsp;&middot;&nbsp;Active context: <strong>{selectedContextName || selectedContextId}</strong>
-                  </>
-                : 'This workspace is built to teach PLM concepts, guide structured review work, and feel like a coherent enterprise system.'}
+              Public alpha focus: <strong>Windchill-inspired learning workflows with embedded AI</strong>
+              &nbsp;&middot;&nbsp;Active context: <strong>{selectedContextName || selectedContextId}</strong>
             </p>
           </div>
           <div className="welcome-actions">
@@ -160,7 +278,7 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* KPI Row 1 — Parts */}
+        {/* KPI Row 1 — Parts + Documents + ECRs */}
         <section className="dashboard-story">
           <div className="dashboard-story__intro">
             <span className="dashboard-story__eyebrow">Public Alpha</span>
@@ -188,26 +306,26 @@ const DashboardPage = () => {
         </section>
 
         <div className="kpi-grid">
-          <KPICard icon="⚙️"  label="Total Parts"    value={parts.length}  sub={selectedContextId ? selectedContextName : 'No context'} color="blue"   to="/plm/parts"   loading={loading} />
-          <KPICard icon="🔍"  label="Under Review"   value={underRev}      sub={underRev > 0 ? 'Parts awaiting approval' : 'All clear ✓'}  color="amber"  to="/plm/parts"   loading={loading} />
-          <KPICard icon="✅"  label="Released Parts" value={released}      sub={`${inwork} in work`}                                        color="green"                    loading={loading} />
-          <KPICard icon="📝"  label="Open ECRs"      value={openEcrs}      sub={`${ecrs.length} total in context`}                          color="purple" to="/plm/changes" loading={loading} />
+          <KPICard icon={'⚙️'}  label="Total Parts"    value={totalParts}  sub={selectedContextName || 'Context'} color="blue"   to="/plm/parts"   loading={loading} />
+          <KPICard icon={'\u{1F50D}'}  label="Under Review"   value={underReview}      sub={underReview > 0 ? 'Parts awaiting approval' : 'All clear ✓'}  color="amber"  to="/plm/parts"   loading={loading} />
+          <KPICard icon={'✅'}  label="Released Parts" value={released}      sub={`${inWork} in work · ${totalDocuments} docs`}                                        color="green"                    loading={loading} />
+          <KPICard icon={'\u{1F4DD}'}  label="Open ECRs"      value={openEcrs}      sub={`${submittedEcrs} submitted · ${openEcos} open ECOs`}                          color="purple" to="/plm/changes" loading={loading} />
         </div>
 
         {/* KPI Row 2 — ECR breakdown */}
         <div className="kpi-grid" style={{ marginBottom: 24 }}>
-          <KPICard icon="🔄" label="Submitted / Pending" value={submittedEcrs + inReviewEcrs}
+          <KPICard icon={'\u{1F504}'} label="Submitted / Pending" value={submittedEcrs + inReviewEcrs}
             sub={`${submittedEcrs} submitted · ${inReviewEcrs} in review`}
             color="amber" to="/plm/changes" loading={loading} />
-          <KPICard icon="🔍" label="In Review"       value={inReviewEcrs}
+          <KPICard icon={'\u{1F50D}'} label="In Review"       value={inReviewEcrs}
             sub={inReviewEcrs > 0 ? 'Needs reviewer action' : 'None active'}
             color="amber" to="/plm/changes" loading={loading} />
-          <KPICard icon="✅" label="Approved This Week" value={approvedThisWeek}
+          <KPICard icon={'✅'} label="Approved This Week" value={approvedThisWeek}
             sub="Last 7 days"
             color="green" to="/plm/changes" loading={loading} />
-          <KPICard icon="🔴" label="Critical Open ECRs" value={criticalEcrs}
-            sub={criticalEcrs > 0 ? 'Needs immediate attention' : 'None ✓'}
-            color={criticalEcrs > 0 ? 'red' : 'green'} to="/plm/changes" loading={loading} />
+          <KPICard icon={'\u{1F534}'} label="Critical Open ECRs" value={criticalOpen}
+            sub={criticalOpen > 0 ? 'Needs immediate attention' : 'None ✓'}
+            color={criticalOpen > 0 ? 'red' : 'green'} to="/plm/changes" loading={loading} />
         </div>
 
         {/* Body */}
@@ -218,19 +336,19 @@ const DashboardPage = () => {
             {/* Part Lifecycle Breakdown */}
             <div className="dash-section">
               <h2 className="section-title">Part Lifecycle Breakdown</h2>
-              {!selectedContextId ? (
-                <div className="empty-state"><span>🗂️</span><p>Select a context to see part distribution</p>
-                  <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Open Workspace</button></div>
-              ) : loading ? (
+              {loading ? (
                 <div className="skeleton-list">{[1,2,3,4].map(i => <div key={i} className="skeleton-row" />)}</div>
-              ) : parts.length === 0 ? (
-                <div className="empty-state"><span>📦</span><p>No parts in this context yet</p>
+              ) : totalParts === 0 ? (
+                <div className="empty-state"><span>{'\u{1F4E6}'}</span><p>No parts in this context yet</p>
                   <button className="btn-primary" onClick={() => navigate('/plm/parts')}>Create First Part</button></div>
               ) : (
                 <div className="lifecycle-bars">
                   {['INWORK','UNDERREVIEW','RELEASED','OBSOLETE'].map(state => {
-                    const count = counts[state] || 0;
-                    const pct   = parts.length > 0 ? Math.round((count / parts.length) * 100) : 0;
+                    const count = state === 'INWORK' ? inWork
+                                : state === 'UNDERREVIEW' ? underReview
+                                : state === 'RELEASED' ? released
+                                : obsolete;
+                    const pct   = totalParts > 0 ? Math.round((count / totalParts) * 100) : 0;
                     const c     = S_COLOR[state];
                     return (
                       <div key={state} className="lc-bar-row">
@@ -249,15 +367,19 @@ const DashboardPage = () => {
               <h2 className="section-title">ECR Status Breakdown</h2>
               {loading ? (
                 <div className="skeleton-list">{[1,2,3,4].map(i => <div key={i} className="skeleton-row" />)}</div>
-              ) : ecrs.length === 0 ? (
-                <div className="empty-state"><span>📝</span><p>No ECRs yet in this context</p>
+              ) : openEcrs === 0 && submittedEcrs === 0 && inReviewEcrs === 0 && approvedThisWeek === 0 ? (
+                <div className="empty-state"><span>{'\u{1F4DD}'}</span><p>No ECRs yet in this context</p>
                   <button className="btn-primary" onClick={() => navigate('/plm/changes')}>Create First ECR</button></div>
               ) : (
                 <div className="lifecycle-bars">
                   {['DRAFT','SUBMITTED','IN_REVIEW','APPROVED','REJECTED','CLOSED'].map(status => {
-                    const count = ecrByStatus[status] || 0;
-                    if (count === 0) return null;
-                    const pct = ecrs.length > 0 ? Math.round((count / ecrs.length) * 100) : 0;
+                    // We don't have per-status counts from stats endpoint, but we can compute approximations
+                    const count = status === 'SUBMITTED' ? submittedEcrs
+                                : status === 'IN_REVIEW' ? inReviewEcrs
+                                : 0; // DRAFT/APPROVED/REJECTED/CLOSED not separately counted in backend currently
+                    if (count === 0 && !['SUBMITTED','IN_REVIEW'].includes(status)) return null;
+                    const totalEcrRef = submittedEcrs + inReviewEcrs + (openEcrs || 0);
+                    const pct = totalEcrRef > 0 ? Math.round((count / totalEcrRef) * 100) : 0;
                     const c   = ECR_STATUS_COLOR[status];
                     return (
                       <div key={status} className="lc-bar-row">
@@ -292,20 +414,20 @@ const DashboardPage = () => {
             {/* In-Review ECR Alert */}
             {!loading && inReviewEcrs > 0 && (
               <div className="dash-section dash-section--ecr-alert">
-                <h2 className="section-title">🔍 ECRs Need Review</h2>
+                <h2 className="section-title">{'\u{1F50D}'} ECRs Need Review</h2>
                 <p className="alert-text" style={{ color: '#4c1d95' }}>
                   <strong>{inReviewEcrs}</strong> ECR{inReviewEcrs !== 1 ? 's are' : ' is'} IN REVIEW awaiting a decision.
-                  {criticalEcrs > 0 && <> &nbsp;<strong style={{ color: 'var(--wc-state-obsolete-text)' }}>({criticalEcrs} Critical)</strong></>}
+                  {criticalOpen > 0 && <> &nbsp;<strong style={{ color: 'var(--wc-state-obsolete-text)' }}>({criticalOpen} Critical)</strong></>}
                 </p>
                 <button className="btn-purple btn-sm" onClick={() => navigate('/plm/changes')}>Review ECRs &rarr;</button>
               </div>
             )}
 
             {/* Worklist Alert */}
-            {!loading && workItems.length > 0 && (
+            {!loading && pendingWorkItems > 0 && (
               <div className="dash-section dash-section--alert">
-                <h2 className="section-title">⚠️ Pending Your Action</h2>
-                <p className="alert-text">You have <strong>{workItems.length}</strong> item(s) waiting for your approval.</p>
+                <h2 className="section-title">{'⚠️'} Pending Your Action</h2>
+                <p className="alert-text">You have <strong>{pendingWorkItems}</strong> item(s) waiting for your approval.</p>
                 <button className="btn-amber btn-sm" onClick={() => navigate('/plm/worklist')}>Go to Worklist &rarr;</button>
               </div>
             )}

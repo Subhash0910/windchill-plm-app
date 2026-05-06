@@ -8,5 +8,16 @@ public enum PlmEntityTypeEnum {
     FOLDER,
     PART,
     BOM_LINE,
-    DOCUMENT
+    DOCUMENT,
+    CHANGE_REQUEST,
+    CHANGE_NOTICE,
+    CHANGE_ORDER,
+    CHANGE_ORDER_ITEM,
+    USER,
+    WORK_ITEM,
+    PROMOTION_REQUEST,
+    NOTIFICATION,
+    PRODUCT,
+    PROJECT,
+    PLM_CONTEXT
 }

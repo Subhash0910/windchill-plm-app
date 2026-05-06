@@ -1,0 +1,235 @@
+/* ═══════════════════════════════════════════════════════════════
+   GlobalSearch  —  Command-palette style search bar + dropdown
+   Lives in the dark header, so the input itself is dark-themed.
+   The dropdown floats and uses page-surface tokens.
+   ═══════════════════════════════════════════════════════════════ */
+
+.gs-container {
+  position: relative;
+  flex: 0 1 380px;
+  min-width: 200px;
+}
+
+/* ─── Input ──────────────────────────────────────────────────── */
+.gs-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  transition: all 0.25s var(--wc-ease-out, ease);
+  cursor: text;
+}
+.gs-input-wrap:focus-within {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--wc-blue);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+.gs-search-icon {
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.gs-input-wrap:focus-within .gs-search-icon {
+  color: var(--wc-blue);
+}
+.gs-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-family: var(--wc-font, sans-serif);
+  min-width: 0;
+}
+.gs-input::placeholder {
+  color: rgba(255, 255, 255, 0.40);
+}
+.gs-kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--wc-font-mono, monospace);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.40);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* ─── Dropdown ───────────────────────────────────────────────── */
+.gs-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
+  border-radius: 10px;
+  box-shadow: var(--wc-shadow-lg);
+  z-index: 400;
+  animation: gs-dropdown-enter 0.15s var(--wc-ease-out, ease) both;
+}
+@keyframes gs-dropdown-enter {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Group ──────────────────────────────────────────────────── */
+.gs-group {
+  padding: 4px 0;
+}
+.gs-group + .gs-group {
+  border-top: 1px solid var(--wc-border-light);
+}
+.gs-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wc-text-muted);
+}
+.gs-group-icon {
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+.gs-group-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--wc-text-muted);
+  opacity: 0.6;
+}
+
+/* ─── Item ───────────────────────────────────────────────────── */
+.gs-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--wc-text-primary);
+  font-size: 13px;
+  font-family: var(--wc-font, sans-serif);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.gs-item:hover,
+.gs-item-active {
+  background: var(--wc-sidebar-hover);
+}
+.gs-item-icon {
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+  flex-shrink: 0;
+  color: var(--wc-text-muted);
+}
+.gs-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.gs-item-primary {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--wc-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gs-item-secondary {
+  font-size: 11px;
+  color: var(--wc-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Highlight ──────────────────────────────────────────────── */
+.gs-highlight {
+  background: rgba(14, 165, 233, 0.2);
+  color: var(--wc-blue);
+  font-weight: 700;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+[data-theme="dark"] .gs-highlight {
+  background: rgba(56, 189, 248, 0.25);
+  color: var(--wc-accent);
+}
+
+/* ─── Loading ────────────────────────────────────────────────── */
+.gs-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--wc-text-muted);
+  font-size: 13px;
+}
+
+/* ─── Empty ──────────────────────────────────────────────────── */
+.gs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  color: var(--wc-text-muted);
+  text-align: center;
+}
+.gs-empty-icon {
+  margin-bottom: 10px;
+  opacity: 0.4;
+}
+.gs-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wc-text-secondary);
+  margin-bottom: 4px;
+}
+.gs-empty-sub {
+  font-size: 11px;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+.gs-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.gs-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0 10px 10px 0;
+}
+.gs-dropdown::-webkit-scrollbar-thumb {
+  background: var(--wc-text-muted);
+  border-radius: 3px;
+  opacity: 0.3;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .gs-container {
+    flex: 0 1 180px;
+    min-width: 120px;
+  }
+  .gs-kbd { display: none; }
+}

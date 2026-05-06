@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<type-definitions objectType="DOCUMENT">
+    <type name="StandardDocument" extends="DOCUMENT">
+        <attribute name="documentType" type="STRING" displayName="Document Type"/>
+        <attribute name="author" type="STRING" displayName="Author"/>
+        <attribute name="department" type="STRING" displayName="Department"/>
+    </type>
+    <type name="TechnicalDrawing" extends="DOCUMENT">
+        <attribute name="drawingNumber" type="STRING" displayName="Drawing Number"/>
+        <attribute name="scale" type="STRING" displayName="Scale"/>
+        <attribute name="sheetSize" type="STRING" displayName="Sheet Size"/>
+    </type>
+    <type name="Specification" extends="DOCUMENT">
+        <attribute name="specVersion" type="STRING" displayName="Version"/>
+        <attribute name="standardBody" type="STRING" displayName="Standards Body"/>
+    </type>
+</type-definitions>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services>
+    <service name="DocumentService"
+             interface="com.windchill.service.document.IDocumentService"
+             impl="com.windchill.service.document.DocumentServiceImpl"
+             singleton="true"/>
+</services>

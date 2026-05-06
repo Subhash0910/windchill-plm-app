@@ -252,6 +252,105 @@
 .ecr-recent-pills { display: flex; gap: 6px; flex-shrink: 0; }
 .ecr-recent-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
 
+/* ── Empty State ─────────────────────────────────────── */
+.empty-state { text-align: center; padding: 48px 24px; }
+.empty-state span { font-size: 40px; display: block; margin-bottom: 12px; }
+.empty-state p { color: var(--wc-text-secondary); margin: 0 0 20px 0; }
+.empty-state-sm { text-align: left; padding: 16px 0; color: var(--wc-text-muted); font-size: 13px; }
+
+/* ── Skeletons ───────────────────────────────────────── */
+.skeleton-list { display: flex; flex-direction: column; gap: 12px; }
+.skeleton-row { height: 16px; border-radius: 8px; background: linear-gradient(90deg, var(--wc-page-bg) 25%, var(--wc-border-light) 50%, var(--wc-page-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.kpi-skeleton { display: inline-block; width: 48px; height: 32px; border-radius: 6px; background: linear-gradient(90deg, var(--wc-page-bg) 25%, var(--wc-border-light) 50%, var(--wc-page-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; vertical-align: middle; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn-ghost {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--wc-ease-out);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.35); }
+
+.btn-primary {
+  background: var(--wc-blue);
+  border: none;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--wc-ease-out);
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-amber {
+  background: #f59e0b;
+  border: none;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--wc-ease-out);
+}
+.btn-amber:hover { filter: brightness(1.1); }
+
+.btn-purple {
+  background: #8b5cf6;
+  border: none;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--wc-ease-out);
+}
+.btn-purple:hover { filter: brightness(1.1); }
+
+.btn-sm { padding: 6px 16px; font-size: 12px; }
+
+.link-btn {
+  background: none; border: none; color: var(--wc-blue); font-size: 13px; font-weight: 600;
+  cursor: pointer; padding: 4px 0; transition: color 0.2s;
+}
+.link-btn:hover { color: var(--wc-blue-dark, #0284c7); text-decoration: underline; }
+
+.view-all { margin-top: 12px; }
+
+/* ── Alerts ──────────────────────────────────────────── */
+.alert-text { font-size: 14px; line-height: 1.6; margin: 0 0 16px 0; }
+
+.dash-section--alert {
+  border-left: 4px solid #f59e0b;
+}
+.dash-section--ecr-alert {
+  border-left: 4px solid #8b5cf6;
+}
+
+/* ── Parts badge ─────────────────────────────────────── */
+.rp-badge {
+  font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── KPI arrow ───────────────────────────────────────── */
+.kpi-arrow { font-size: 20px; color: var(--wc-text-muted); opacity: 0; transition: opacity 0.2s, transform 0.2s; }
+.kpi-card:hover .kpi-arrow { opacity: 1; transform: translateX(4px); }
+
+/* ── Mono font ───────────────────────────────────────── */
+.mono { font-family: var(--wc-font-mono); }
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 1200px) {
   .dashboard-body { grid-template-columns: 1fr; }

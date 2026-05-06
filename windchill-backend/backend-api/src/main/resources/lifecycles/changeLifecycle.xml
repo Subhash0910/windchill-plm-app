@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lifecycle-template name="BasicChangeLifecycle" objectType="CHANGE_REQUEST">
+    <state name="DRAFT" displayName="Draft" isInitial="true">
+        <transition name="SUBMIT" to="SUBMITTED"/>
+    </state>
+    <state name="SUBMITTED" displayName="Submitted">
+        <transition name="REVIEW" to="IN_REVIEW"/>
+    </state>
+    <state name="IN_REVIEW" displayName="In Review">
+        <transition name="APPROVE" to="APPROVED"/>
+        <transition name="REJECT" to="REJECTED"/>
+    </state>
+    <state name="APPROVED" displayName="Approved" isTerminal="false">
+        <transition name="CLOSE" to="CLOSED"/>
+    </state>
+    <state name="REJECTED" displayName="Rejected">
+        <transition name="CLOSE" to="CLOSED"/>
+        <transition name="REOPEN" to="DRAFT"/>
+    </state>
+    <state name="CLOSED" displayName="Closed" isTerminal="true"/>
+</lifecycle-template>

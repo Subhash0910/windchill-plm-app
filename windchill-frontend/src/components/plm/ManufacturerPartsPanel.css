@@ -1,0 +1,271 @@
+/* ═══════════════════════════════════════════════════════
+   ManufacturerPartsPanel (AML)
+═══════════════════════════════════════════════════════ */
+
+.mfr-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ─ Header ─ */
+.mfr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mfr-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wc-text-secondary);
+}
+.mfr-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─ Add form ─ */
+.mfr-add-form {
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md);
+  padding: 16px;
+  background: var(--wc-page-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.mfr-add-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mfr-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mfr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mfr-field--toggle {
+  flex-direction: column;
+}
+.mfr-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wc-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Toggle switch */
+.mfr-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mfr-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.mfr-toggle-track {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--wc-border);
+  position: relative;
+  transition: background 0.2s var(--wc-ease-out);
+  flex-shrink: 0;
+}
+.mfr-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s var(--wc-ease-out);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.mfr-toggle input:checked + .mfr-toggle-track {
+  background: var(--wc-blue);
+}
+.mfr-toggle input:checked + .mfr-toggle-track::after {
+  transform: translateX(18px);
+}
+.mfr-toggle-text {
+  font-size: 12px;
+  color: var(--wc-text-secondary);
+}
+
+/* Form actions */
+.mfr-form-error {
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  color: var(--wc-danger-text);
+  border-radius: var(--wc-radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.mfr-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ─ Error ─ */
+.mfr-error {
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  border-radius: var(--wc-radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--wc-danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mfr-error button {
+  background: none;
+  border: none;
+  color: var(--wc-danger-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+}
+
+/* ─ Empty ─ */
+.mfr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 0;
+  text-align: center;
+}
+.mfr-empty-icon {
+  font-size: 36px;
+  opacity: 0.5;
+}
+.mfr-empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wc-text-secondary);
+}
+.mfr-empty-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--wc-text-muted);
+}
+
+/* ─ Table ─ */
+.mfr-table-wrap {
+  overflow-x: auto;
+}
+.mfr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mfr-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--wc-sidebar-active);
+  color: var(--wc-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--wc-border);
+  white-space: nowrap;
+}
+.mfr-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wc-border-light);
+  color: var(--wc-text-primary);
+  vertical-align: middle;
+}
+.mfr-table tbody tr:hover td {
+  background: var(--wc-sidebar-hover);
+}
+.mfr-table tbody tr.mfr-row--preferred td {
+  background: rgba(14, 165, 233, 0.03);
+}
+
+/* Star */
+.mfr-star {
+  color: var(--wc-warning);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Name cell */
+.mfr-name-cell {
+  font-weight: 600;
+}
+
+/* Qualification status badges */
+.mfr-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mfr-status--pending {
+  background: var(--wc-warning-bg);
+  color: var(--wc-warning-text);
+}
+.mfr-status--approved {
+  background: var(--wc-success-bg);
+  color: var(--wc-success-text);
+}
+.mfr-status--rejected {
+  background: var(--wc-danger-bg);
+  color: var(--wc-danger-text);
+}
+
+/* Action buttons */
+.mfr-action-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: var(--wc-radius-sm);
+  transition: background 0.15s;
+  margin-left: 4px;
+}
+.mfr-action-btn--prefer {
+  color: var(--wc-warning-text);
+}
+.mfr-action-btn--prefer:hover:not(:disabled) {
+  background: var(--wc-warning-bg);
+}
+.mfr-action-btn--delete {
+  color: var(--wc-danger);
+}
+.mfr-action-btn--delete:hover:not(:disabled) {
+  background: var(--wc-danger-bg);
+}
+.mfr-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

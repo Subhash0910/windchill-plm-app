@@ -1,5 +1,7 @@
 package com.windchill.service.plm;
 
+import com.windchill.common.dto.PaginationRequest;
+import com.windchill.common.dto.PaginatedResponse;
 import com.windchill.common.exceptions.BusinessException;
 import com.windchill.common.exceptions.ResourceNotFoundException;
 import com.windchill.common.enums.LifecycleStateEnum;
@@ -12,6 +14,9 @@ import com.windchill.service.plm.security.PlmAclService;
 import com.windchill.service.workflow.PromotionWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +36,7 @@ public class PartServiceImpl implements IPartService {
     private final IAuditService auditService;
     private final PlmAclService acl;
     private final PromotionWorkflowService promotionWorkflowService;
+    private final StateHistoryService stateHistoryService;
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
@@ -165,6 +171,10 @@ public class PartServiceImpl implements IPartService {
         part.setLifecycleState(target);
         Part saved = partRepository.save(part);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "PROMOTE", from + " -> " + target);
+        stateHistoryService.recordTransition(
+                PlmEntityTypeEnum.PART.name(), saved.getId(),
+                from.name(), target.name(),
+                "PROMOTE", currentUsername(), "Promoted from " + from + " to " + target);
         return saved;
     }
 
@@ -194,6 +204,10 @@ public class PartServiceImpl implements IPartService {
 
         Part saved = partRepository.save(newRev);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "REVISE", "New revision from partId=" + released.getId());
+        stateHistoryService.recordTransition(
+                PlmEntityTypeEnum.PART.name(), saved.getId(),
+                LifecycleStateEnum.RELEASED.name(), LifecycleStateEnum.INWORK.name(),
+                "REVISE", currentUsername(), "New revision from partId=" + released.getId());
         return saved;
     }
 
@@ -329,6 +343,32 @@ public class PartServiceImpl implements IPartService {
 
         return partRepository.findByMasterIdAndRevisionAndIteration(working.getMasterId(), working.getRevision(), previousIter)
                 .orElseThrow(() -> new ResourceNotFoundException("Part", "previousIteration", previousIter));
+    }
+
+    // ─── Paginated listing ─────────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<Part> listPartsPaginated(Long contextId, PaginationRequest pagination) {
+        if (contextId == null) throw new BusinessException("contextId is required");
+        acl.requireContextMember(contextId);
+
+        Sort.Direction direction = "asc".equalsIgnoreCase(pagination.getSortDir())
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(
+                pagination.getPage(),
+                pagination.getSize(),
+                Sort.by(direction, pagination.getSortBy())
+        );
+
+        Page<Part> page = partRepository.findByContextIdAndIsDeletedFalse(contextId, pageRequest);
+
+        return new PaginatedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements()
+        );
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

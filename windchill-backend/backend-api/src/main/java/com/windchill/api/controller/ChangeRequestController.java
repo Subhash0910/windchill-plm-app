@@ -1,6 +1,8 @@
 package com.windchill.api.controller;
 
 import com.windchill.api.dto.change.*;
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.common.enums.ChangeRequestStatus;
 import com.windchill.common.response.ApiResponse;
 import com.windchill.domain.entity.ChangeNotice;
@@ -152,6 +154,30 @@ public class ChangeRequestController {
         List<ChangeRequestSummaryDto> dtos = results.stream()
             .map(this::toSummary).collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success(dtos));
+    }
+
+    /** GET /api/v1/plm/changes/paginated?contextId=&page=&size=&sortBy=&sortDir= */
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<PaginatedResponse<ChangeRequestDto>>> listPaginated(
+            @RequestParam Long contextId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PaginationRequest pagination = new PaginationRequest();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        pagination.setSortBy(sortBy);
+        pagination.setSortDir(sortDir);
+        PaginatedResponse<ChangeRequest> result = changeService.listPaginated(contextId, pagination);
+
+        List<ChangeRequestDto> dtos = result.getContent().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        PaginatedResponse<ChangeRequestDto> dtoResult = new PaginatedResponse<>(
+                dtos, result.getPage(), result.getSize(), result.getTotalElements());
+
+        return ResponseEntity.ok(ApiResponse.success(dtoResult));
     }
 
     /** GET /api/v1/plm/changes/{id} */

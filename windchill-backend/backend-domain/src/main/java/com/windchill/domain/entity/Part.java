@@ -1,5 +1,6 @@
 package com.windchill.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.windchill.common.enums.LifecycleStateEnum;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -22,15 +23,26 @@ import lombok.EqualsAndHashCode;
         })
 public class Part extends BaseEntity {
 
-    /**
-     * Master id groups all revisions/iterations of the same business object.
-     * For the first created part, masterId == id after save.
-     */
     @Column(name = "master_id")
     private Long masterId;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "master_id", insertable = false, updatable = false)
+    private PartMaster master;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "context_id", insertable = false, updatable = false)
+    private PlmContext context;
+
     @Column(name = "context_id", nullable = false)
     private Long contextId;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", insertable = false, updatable = false)
+    private Folder folder;
 
     @Column(name = "folder_id")
     private Long folderId;

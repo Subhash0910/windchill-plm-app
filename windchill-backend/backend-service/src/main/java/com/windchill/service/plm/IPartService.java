@@ -1,5 +1,7 @@
 package com.windchill.service.plm;
 
+import com.windchill.common.dto.PaginationRequest;
+import com.windchill.common.dto.PaginatedResponse;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.Part;
 
@@ -25,4 +27,6 @@ public interface IPartService {
     Part checkIn(Long partId, String name, String description);
 
     Part undoCheckOut(Long partId);
+
+    PaginatedResponse<Part> listPartsPaginated(Long contextId, PaginationRequest pagination);
 }

@@ -1,0 +1,38 @@
+.cn-panel { padding: 0; }
+.cn-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.cn-header h3 { margin: 0 0 4px 0; font-size: 16px; color: var(--wc-text); }
+.cn-subtitle { font-size: 13px; color: var(--wc-text-secondary); }
+.cn-spinner { width: 32px; height: 32px; border: 3px solid var(--wc-border); border-top-color: var(--wc-blue); border-radius: 50%; animation: cn-spin 0.8s linear infinite; margin: 40px auto; }
+@keyframes cn-spin { to { transform: rotate(360deg); } }
+.cn-error { padding: 24px; text-align: center; color: #dc2626; }
+.cn-error button { margin-left: 8px; cursor: pointer; }
+.cn-empty { text-align: center; padding: 40px; color: var(--wc-text-secondary); }
+.cn-tree { border: 1px solid var(--wc-border); border-radius: 8px; overflow: hidden; }
+.cn-node { border-bottom: 1px solid var(--wc-border); }
+.cn-node:last-child { border-bottom: none; }
+.cn-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; transition: background 0.15s; }
+.cn-row:hover { background: var(--wc-bg-hover); }
+.cn-chevron { font-size: 10px; color: var(--wc-text-secondary); width: 14px; text-align: center; }
+.cn-icon { font-size: 14px; }
+.cn-name { font-weight: 500; font-size: 14px; flex: 1; }
+.cn-type { font-size: 10px; color: var(--wc-text-secondary); background: var(--wc-bg-hover); padding: 1px 6px; border-radius: 3px; text-transform: uppercase; }
+.cn-assigned-badge { font-size: 10px; color: #166534; background: #dcfce7; padding: 1px 6px; border-radius: 3px; }
+.cn-assign-btn { margin-left: auto; }
+.cn-assigned { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.cn-assigned-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: #166534; }
+.cn-assigned-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+.cn-assigned-attr { color: var(--wc-text-secondary); }
+.cn-assigned-val { font-weight: 500; font-family: monospace; }
+.cn-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.cn-modal { background: var(--wc-bg); border-radius: 12px; padding: 24px; max-width: 480px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.cn-modal h4 { margin: 0 0 16px 0; }
+.cn-field { margin-bottom: 12px; }
+.cn-field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.cn-req { color: #ef4444; }
+.cn-unit { color: var(--wc-text-secondary); font-weight: 400; font-size: 11px; }
+.cn-input { width: 100%; padding: 6px 8px; border: 1px solid var(--wc-border); border-radius: 4px; font-size: 13px; background: var(--wc-bg); color: var(--wc-text); box-sizing: border-box; }
+.cn-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.cn-muted { color: var(--wc-text-secondary); font-size: 13px; }
+.btn-sm { padding: 4px 10px; border: 1px solid var(--wc-border); border-radius: 4px; cursor: pointer; font-size: 12px; background: var(--wc-bg); color: var(--wc-text); }
+.btn-sm:hover { opacity: 0.8; }
+.btn-primary { background: var(--wc-blue); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 500; }

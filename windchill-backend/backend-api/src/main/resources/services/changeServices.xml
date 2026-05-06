@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services>
+    <service name="ChangeRequestService"
+             interface="com.windchill.service.IChangeRequestService"
+             impl="com.windchill.service.impl.ChangeRequestServiceImpl"
+             singleton="true"/>
+    <service name="ChangeOrderService"
+             interface="com.windchill.service.change.IChangeOrderService"
+             impl="com.windchill.service.change.ChangeOrderServiceImpl"
+             singleton="true"/>
+    <service name="AuditService"
+             interface="com.windchill.service.plm.IAuditService"
+             impl="com.windchill.service.plm.AuditServiceImpl"
+             singleton="true"/>
+</services>

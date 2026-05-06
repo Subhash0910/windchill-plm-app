@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listeners>
+    <listener name="PartStateChangeListener"
+              class="com.windchill.api.config.listeners.PartStateChangeListener"
+              events="POST_PROMOTE,POST_REVISE,POST_DEMOTE,POST_OBSOLETE"
+              async="false"/>
+    <listener name="PartAuditListener"
+              class="com.windchill.api.config.listeners.AuditEventListener"
+              events="POST_CREATE,POST_UPDATE,POST_DELETE"
+              async="true"/>
+</listeners>

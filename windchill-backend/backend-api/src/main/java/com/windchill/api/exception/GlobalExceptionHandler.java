@@ -1,6 +1,7 @@
 package com.windchill.api.exception;
 
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.common.exception.AccessDeniedException;
 import com.windchill.common.exception.BusinessException;
 import com.windchill.common.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
         log.warn("Resource not found: {} at {}", ex.getMessage(), request.getDescription(false));
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.builder().success(false).message(ex.getMessage()).data(null).build());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<?>> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        log.warn("Access denied: {} at {}", ex.getMessage(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
             .body(ApiResponse.builder().success(false).message(ex.getMessage()).data(null).build());
     }
 

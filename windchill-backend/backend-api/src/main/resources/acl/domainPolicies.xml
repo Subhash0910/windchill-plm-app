@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<acl-policies>
+    <!-- ============================================================== -->
+    <!-- Windchill PLM — Default Domain ACL Policies                     -->
+    <!--                                                               -->
+    <!-- Seeded on first startup when the access_control_rules table    -->
+    <!-- is empty. Delete existing rules and restart to re-seed.        -->
+    <!--                                                               -->
+    <!-- Priority: higher value = evaluated first. Deny rules should    -->
+    <!-- carry higher priority than their allow counterparts so the     -->
+    <!-- "first match wins, default deny" logic works correctly.         -->
+    <!-- ============================================================== -->
+
+    <!-- ── Admins ─────────────────────────────────────────────────── -->
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="ADMIN"     isAllowed="true"  priority="1000"/>
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="READ"      isAllowed="true"  priority="1000"/>
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="MODIFY"    isAllowed="true"  priority="1000"/>
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="CREATE"    isAllowed="true"  priority="1000"/>
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="DELETE"    isAllowed="true"  priority="1000"/>
+    <policy principalType="ROLE" principalName="ADMIN" targetType="GLOBAL" permission="PROMOTE"   isAllowed="true"  priority="1000"/>
+
+    <!-- ── Engineers — Parts & Documents ───────────────────────────── -->
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="READ"     isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="CREATE"   isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="MODIFY"   isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="PROMOTE"  isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="REVISE"   isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="PART" permission="CHECKOUT" isAllowed="true"  priority="100"/>
+
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="DOCUMENT" permission="READ"     isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="DOCUMENT" permission="CREATE"   isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="DOCUMENT" permission="MODIFY"   isAllowed="true"  priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="DOCUMENT" permission="DOWNLOAD" isAllowed="true"  priority="100"/>
+
+    <!-- ── Engineers — Change Management ───────────────────────────── -->
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="ECR" permission="READ"   isAllowed="true" priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="ECR" permission="CREATE" isAllowed="true" priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="ECO" permission="READ"   isAllowed="true" priority="100"/>
+    <policy principalType="ROLE" principalName="ENGINEER" targetType="ECO" permission="CREATE" isAllowed="true" priority="100"/>
+
+    <!-- ── Viewers — Read-only everywhere ──────────────────────────── -->
+    <policy principalType="ROLE" principalName="VIEWER" targetType="GLOBAL" permission="READ"   isAllowed="true"  priority="50"/>
+    <policy principalType="ROLE" principalName="VIEWER" targetType="GLOBAL" permission="MODIFY" isAllowed="false" priority="200"/>
+    <policy principalType="ROLE" principalName="VIEWER" targetType="GLOBAL" permission="DELETE" isAllowed="false" priority="200"/>
+    <policy principalType="ROLE" principalName="VIEWER" targetType="GLOBAL" permission="CREATE" isAllowed="false" priority="200"/>
+
+    <!-- ── Approvers — can read and promote ECRs/ECOs ──────────────── -->
+    <policy principalType="ROLE" principalName="APPROVER" targetType="ECR" permission="READ"    isAllowed="true" priority="200"/>
+    <policy principalType="ROLE" principalName="APPROVER" targetType="ECR" permission="PROMOTE" isAllowed="true" priority="200"/>
+    <policy principalType="ROLE" principalName="APPROVER" targetType="ECO" permission="READ"    isAllowed="true" priority="200"/>
+    <policy principalType="ROLE" principalName="APPROVER" targetType="ECO" permission="PROMOTE" isAllowed="true" priority="200"/>
+
+    <!-- ── Managers — all permissions but not ADMIN ────────────────── -->
+    <policy principalType="ROLE" principalName="MANAGER" targetType="GLOBAL" permission="READ"     isAllowed="true"  priority="800"/>
+    <policy principalType="ROLE" principalName="MANAGER" targetType="GLOBAL" permission="MODIFY"   isAllowed="true"  priority="800"/>
+    <policy principalType="ROLE" principalName="MANAGER" targetType="GLOBAL" permission="CREATE"   isAllowed="true"  priority="800"/>
+    <policy principalType="ROLE" principalName="MANAGER" targetType="GLOBAL" permission="DELETE"   isAllowed="true"  priority="800"/>
+    <policy principalType="ROLE" principalName="MANAGER" targetType="GLOBAL" permission="PROMOTE"  isAllowed="true"  priority="800"/>
+
+    <!-- ── Folder access ───────────────────────────────────────────── -->
+    <policy principalType="ALL" targetType="FOLDER" permission="READ"   isAllowed="true" priority="10"/>
+    <policy principalType="ALL" targetType="CONTEXT" permission="READ"  isAllowed="true" priority="10"/>
+</acl-policies>

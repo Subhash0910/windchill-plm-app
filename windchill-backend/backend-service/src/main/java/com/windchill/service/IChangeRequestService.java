@@ -1,5 +1,7 @@
 package com.windchill.service;
 
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.common.enums.ChangeRequestStatus;
 import com.windchill.domain.entity.ChangeNotice;
 import com.windchill.domain.entity.ChangeOrderItem;
@@ -30,6 +32,9 @@ public interface IChangeRequestService {
     List<ChangeRequest> listByCreator(String username);
 
     List<ChangeRequest> findByImpactedPart(Long partId);
+
+    /** Paginated listing of non-deleted ChangeRequests within a context. */
+    PaginatedResponse<ChangeRequest> listPaginated(Long contextId, PaginationRequest pagination);
 
     // ── Lifecycle transitions ─────────────────────────────────────────────────
 

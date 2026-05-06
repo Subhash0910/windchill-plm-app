@@ -2,6 +2,7 @@ package com.windchill.domain.entity;
 
 import com.windchill.common.enums.RoleEnum;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -52,7 +53,7 @@ public class User extends BaseEntity {
     private String profileImageUrl;
 
     @Column(name = "last_login_at")
-    private String lastLoginAt;
+    private LocalDateTime lastLoginAt;
 
     public String getFullName() {
         return (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");

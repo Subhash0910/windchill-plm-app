@@ -32,4 +32,14 @@ public interface ChangeOrderRepository extends JpaRepository<ChangeOrder, Long> 
         ORDER BY e.createdAt DESC
         """)
     List<ChangeOrder> search(@Param("ctxId") Long contextId, @Param("kw") String keyword);
+
+    // Global keyword search (no context filter)
+    @Query("""
+        SELECT e FROM ChangeOrder e
+        WHERE e.isDeleted = false
+          AND (LOWER(e.ecoNumber) LIKE LOWER(CONCAT('%', :kw, '%'))
+            OR LOWER(e.title)     LIKE LOWER(CONCAT('%', :kw, '%')))
+        ORDER BY e.createdAt DESC
+        """)
+    List<ChangeOrder> searchAll(@Param("kw") String keyword);
 }

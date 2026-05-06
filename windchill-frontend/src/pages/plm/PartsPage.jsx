@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
+import Pagination from '../../components/plm/Pagination';
 import { plmApi } from '../../services/plmApi';
 import styles from './PartsPage.module.css';
 
@@ -19,6 +20,12 @@ export default function PartsPage() {
   const [selected, setSelected] = useState(new Set());
   const [search,   setSearch]   = useState('');
 
+  // Pagination
+  const [page,          setPage]          = useState(0);
+  const [pageSize,      setPageSize]      = useState(20);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages,    setTotalPages]    = useState(0);
+
   // Create panel
   const [creating, setCreating] = useState(false);
   const [form,     setForm]     = useState({ partNumber: '', name: '', description: '' });
@@ -33,11 +40,19 @@ export default function PartsPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    plmApi.listParts(contextId)
-      .then(data => { setParts(Array.isArray(data) ? data : []); setError(null); })
+    setError(null);
+    plmApi.listPartsPaginated(contextId, page, pageSize, 'id', 'desc')
+      .then(data => {
+        setParts(data?.content || []);
+        setTotalElements(data?.totalElements || 0);
+        setTotalPages(data?.totalPages || 0);
+      })
       .catch(e  => setError(e.response?.data?.message || e.message))
       .finally(() => setLoading(false));
-  }, [contextId]);
+  }, [contextId, page, pageSize]);
+
+  const handlePageChange = useCallback((newPage) => setPage(newPage), []);
+  const handleSizeChange = useCallback((newSize) => { setPageSize(newSize); setPage(0); }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -213,9 +228,14 @@ export default function PartsPage() {
         </table>
       </div>
 
-      <footer className={styles.statusBar}>
-        Showing {filtered.length} parts in {contextId === 1 ? 'Global Context' : `Context ID: ${contextId}`}
-      </footer>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        size={pageSize}
+        totalElements={totalElements}
+        onPageChange={handlePageChange}
+        onSizeChange={handleSizeChange}
+      />
 
       {dialog && (
         <div className={styles.dialogOverlay}>

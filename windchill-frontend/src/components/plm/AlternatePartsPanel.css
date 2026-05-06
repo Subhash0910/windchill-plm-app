@@ -1,0 +1,319 @@
+/* ═══════════════════════════════════════════════════════
+   AlternatePartsPanel
+═══════════════════════════════════════════════════════ */
+
+.alt-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ─ Header ─ */
+.alt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.alt-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wc-text-secondary);
+}
+.alt-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─ Add form ─ */
+.alt-add-form {
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md);
+  padding: 16px;
+  background: var(--wc-page-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.alt-add-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.alt-field--toggle {
+  flex-direction: column;
+}
+.alt-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wc-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Part search */
+.alt-searching {
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  margin-top: 2px;
+}
+.alt-search-results {
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--wc-content-bg);
+  margin-top: 2px;
+  box-shadow: var(--wc-shadow-md);
+}
+.alt-search-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--wc-border-light);
+  background: transparent;
+  font-size: 13px;
+  color: var(--wc-text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.alt-search-item:last-child {
+  border-bottom: none;
+}
+.alt-search-item:hover {
+  background: var(--wc-sidebar-hover);
+}
+.alt-rev {
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  margin-left: auto;
+}
+.alt-selected-part {
+  font-size: 12px;
+  color: var(--wc-success-text);
+  background: var(--wc-success-bg);
+  padding: 6px 10px;
+  border-radius: var(--wc-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.alt-clear-select {
+  background: none;
+  border: none;
+  color: var(--wc-text-link);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+}
+.alt-clear-select:hover {
+  text-decoration: underline;
+}
+
+/* Toggle switch */
+.alt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.alt-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.alt-toggle-track {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--wc-border);
+  position: relative;
+  transition: background 0.2s var(--wc-ease-out);
+  flex-shrink: 0;
+}
+.alt-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s var(--wc-ease-out);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.alt-toggle input:checked + .alt-toggle-track {
+  background: var(--wc-blue);
+}
+.alt-toggle input:checked + .alt-toggle-track::after {
+  transform: translateX(18px);
+}
+.alt-toggle-text {
+  font-size: 12px;
+  color: var(--wc-text-secondary);
+}
+
+/* Form actions */
+.alt-form-error {
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  color: var(--wc-danger-text);
+  border-radius: var(--wc-radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.alt-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ─ Error ─ */
+.alt-error {
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  border-radius: var(--wc-radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--wc-danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.alt-error button {
+  background: none;
+  border: none;
+  color: var(--wc-danger-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+}
+
+/* ─ Empty ─ */
+.alt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 0;
+  text-align: center;
+}
+.alt-empty-icon {
+  font-size: 36px;
+  opacity: 0.5;
+}
+.alt-empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wc-text-secondary);
+}
+.alt-empty-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--wc-text-muted);
+}
+
+/* ─ Table ─ */
+.alt-table-wrap {
+  overflow-x: auto;
+}
+.alt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.alt-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--wc-sidebar-active);
+  color: var(--wc-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--wc-border);
+  white-space: nowrap;
+}
+.alt-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wc-border-light);
+  color: var(--wc-text-primary);
+  vertical-align: middle;
+}
+.alt-table tbody tr:hover td {
+  background: var(--wc-sidebar-hover);
+}
+
+/* Part link */
+.alt-part-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--wc-text-link);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+}
+.alt-part-link:hover {
+  text-decoration: underline;
+  color: var(--wc-blue-hover);
+}
+
+/* Badges */
+.alt-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.alt-badge--yes {
+  background: var(--wc-success-bg);
+  color: var(--wc-success-text);
+}
+.alt-badge--no {
+  background: var(--wc-sidebar-active);
+  color: var(--wc-text-muted);
+}
+
+/* Delete button */
+.alt-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--wc-danger);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: var(--wc-radius-sm);
+  transition: background 0.15s;
+}
+.alt-delete-btn:hover:not(:disabled) {
+  background: var(--wc-danger-bg);
+}
+.alt-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

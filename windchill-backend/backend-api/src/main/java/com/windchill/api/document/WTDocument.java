@@ -1,5 +1,6 @@
 package com.windchill.api.document;
 
+import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,8 +49,9 @@ public class WTDocument extends BaseEntity {
     private String docType = "SPEC";
 
     @Default
+    @Enumerated(EnumType.STRING)
     @Column(name = "lifecycle_state", nullable = false, length = 20)
-    private String lifecycleState = "INWORK";
+    private LifecycleStateEnum lifecycleState = LifecycleStateEnum.INWORK;
 
     @Default
     @Column(name = "revision", nullable = false, length = 10)

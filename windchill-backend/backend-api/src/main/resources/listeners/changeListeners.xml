@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listeners>
+    <listener name="ChangeStateChangeListener"
+              class="com.windchill.api.config.listeners.ChangeStateChangeListener"
+              events="POST_SUBMIT,POST_APPROVE,POST_REJECT,POST_CLOSE,POST_REOPEN"
+              async="false"/>
+    <listener name="ChangeAuditListener"
+              class="com.windchill.api.config.listeners.AuditEventListener"
+              events="POST_CREATE,POST_UPDATE,POST_DELETE"
+              async="true"/>
+</listeners>

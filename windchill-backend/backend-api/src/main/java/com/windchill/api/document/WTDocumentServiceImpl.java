@@ -1,5 +1,8 @@
 package com.windchill.api.document;
 
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
+import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.PartRepository;
@@ -9,6 +12,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,6 +39,31 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             ? repo.findByContextIdAndDocTypeAndIsLatestTrueAndIsDeletedFalse(contextId, docType.toUpperCase())
             : repo.findByContextIdAndIsLatestTrueAndIsDeletedFalse(contextId);
         return docs.stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    // ── list paginated ───────────────────────────────────────────────────────
+    @Override
+    public PaginatedResponse<WTDocumentDto> listPaginated(Long contextId, PaginationRequest pagination) {
+        Sort.Direction direction = "asc".equalsIgnoreCase(pagination.getSortDir())
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(
+                pagination.getPage(),
+                pagination.getSize(),
+                Sort.by(direction, pagination.getSortBy())
+        );
+
+        Page<WTDocument> page = repo.findByContextIdAndIsLatestTrueAndIsDeletedFalse(contextId, pageRequest);
+
+        List<WTDocumentDto> dtos = page.getContent().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+
+        return new PaginatedResponse<>(
+                dtos,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements()
+        );
     }
 
     // ── get ──────────────────────────────────────────────────────────────────
@@ -88,7 +119,7 @@ public class WTDocumentServiceImpl implements WTDocumentService {
         WTDocument doc = findOrThrow(id);
         if (doc.getCheckedOutBy() != null)
             throw new IllegalStateException("Cannot promote a checked-out document.");
-        doc.setLifecycleState(targetState.toUpperCase());
+        doc.setLifecycleState(LifecycleStateEnum.valueOf(targetState.toUpperCase()));
         doc.setUpdatedBy(username);
         auditService.log(PlmEntityTypeEnum.DOCUMENT, id, "PROMOTE_" + targetState.toUpperCase(), username);
         return toDto(repo.save(doc));
@@ -101,7 +132,7 @@ public class WTDocumentServiceImpl implements WTDocumentService {
         WTDocument base = findOrThrow(id);
         if (base.getCheckedOutBy() != null)
             throw new IllegalStateException("Already checked out by " + base.getCheckedOutBy());
-        if ("RELEASED".equals(base.getLifecycleState()) || "OBSOLETE".equals(base.getLifecycleState()))
+        if (LifecycleStateEnum.RELEASED.equals(base.getLifecycleState()) || LifecycleStateEnum.OBSOLETE.equals(base.getLifecycleState()))
             throw new IllegalStateException("Cannot check out a " + base.getLifecycleState() + " document.");
 
         base.setIsLatest(false);
@@ -227,7 +258,7 @@ public class WTDocumentServiceImpl implements WTDocumentService {
             .name(d.getName())
             .description(d.getDescription())
             .docType(d.getDocType())
-            .lifecycleState(d.getLifecycleState())
+            .lifecycleState(d.getLifecycleState().name())
             .revision(d.getRevision())
             .iteration(d.getIteration())
             .isLatest(d.getIsLatest())

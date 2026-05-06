@@ -1,5 +1,7 @@
 package com.windchill.service.impl;
 
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.common.enums.ChangePriority;
 import com.windchill.common.enums.ChangeNoticeStatus;
 import com.windchill.common.enums.ChangeRequestStatus;
@@ -9,8 +11,12 @@ import com.windchill.repository.*;
 import com.windchill.service.IChangeRequestService;
 import com.windchill.service.INotificationService;
 import com.windchill.service.plm.IPartService;
+import com.windchill.service.plm.StateHistoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +39,7 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
     private final IPartService              partService;
     private final INotificationService      notificationService;
     private final UserRepository            userRepo;
+    private final StateHistoryService       stateHistoryService;
 
     // ── number generation ──────────────────────────────────────────────────────
 
@@ -178,17 +185,47 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         return changeRequestRepo.findByImpactedPartId(String.valueOf(partId));
     }
 
+    // ── Paginated listing ─────────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResponse<ChangeRequest> listPaginated(Long contextId, PaginationRequest pagination) {
+        if (contextId == null) throw new IllegalArgumentException("contextId is required");
+
+        Sort.Direction direction = "asc".equalsIgnoreCase(pagination.getSortDir())
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(
+                pagination.getPage(),
+                pagination.getSize(),
+                Sort.by(direction, pagination.getSortBy())
+        );
+
+        Page<ChangeRequest> page = changeRequestRepo.findByContextIdAndIsDeletedFalse(contextId, pageRequest);
+
+        return new PaginatedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements()
+        );
+    }
+
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
     @Override
     public ChangeRequest submit(Long id, String submittedBy) {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.DRAFT, ChangeRequestStatus.REJECTED);
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.SUBMITTED);
         cr.setSubmittedBy(submittedBy);
         cr.setSubmittedAt(LocalDateTime.now());
         ChangeRequest saved = changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "SUBMITTED", submittedBy, "Submitted for review");
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", saved.getId(),
+                fromStatus.name(), ChangeRequestStatus.SUBMITTED.name(),
+                "SUBMIT", submittedBy, "Submitted for review");
         notify(cr.getContextId(), submittedBy,
                "ECR Submitted",
                saved.getChangeNumber() + " submitted for review.",
@@ -200,10 +237,15 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
     public ChangeRequest startReview(Long id, String reviewerUsername) {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.SUBMITTED);
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.IN_REVIEW);
         cr.setReviewedBy(reviewerUsername);
         ChangeRequest saved = changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "REVIEW_STARTED", reviewerUsername, "Review started");
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", saved.getId(),
+                fromStatus.name(), ChangeRequestStatus.IN_REVIEW.name(),
+                "START_REVIEW", reviewerUsername, "Review started");
         return saved;
     }
 
@@ -212,6 +254,7 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.IN_REVIEW, ChangeRequestStatus.SUBMITTED);
 
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.APPROVED);
         cr.setReviewedBy(reviewerUsername);
         cr.setReviewedAt(LocalDateTime.now());
@@ -219,6 +262,10 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "APPROVED", reviewerUsername,
               "Approved. Comment: " + comment);
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", cr.getId(),
+                fromStatus.name(), ChangeRequestStatus.APPROVED.name(),
+                "APPROVE", reviewerUsername, "Approved. Comment: " + comment);
 
         // ── auto-revise all impacted parts ─────────────────────────────────────
         List<Long> partIds = decodePartIds(cr.getImpactedPartIds());
@@ -276,6 +323,7 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
     public ChangeRequest reject(Long id, String reviewerUsername, String comment) {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.IN_REVIEW, ChangeRequestStatus.SUBMITTED);
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.REJECTED);
         cr.setReviewedBy(reviewerUsername);
         cr.setReviewedAt(LocalDateTime.now());
@@ -283,6 +331,10 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
         ChangeRequest saved = changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "REJECTED", reviewerUsername,
               "Rejected. Comment: " + comment);
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", saved.getId(),
+                fromStatus.name(), ChangeRequestStatus.REJECTED.name(),
+                "REJECT", reviewerUsername, "Rejected. Comment: " + comment);
         notify(cr.getContextId(), cr.getCreatedBy(),
                "ECR Rejected",
                cr.getChangeNumber() + " was rejected. Reason: " + comment,
@@ -294,11 +346,16 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
     public ChangeRequest close(Long id, String closedBy) {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.APPROVED, ChangeRequestStatus.REJECTED);
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.CLOSED);
         cr.setClosedBy(closedBy);
         cr.setClosedAt(LocalDateTime.now());
         ChangeRequest saved = changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "CLOSED", closedBy, "ECR closed");
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", saved.getId(),
+                fromStatus.name(), ChangeRequestStatus.CLOSED.name(),
+                "CLOSE", closedBy, "ECR closed");
         return saved;
     }
 
@@ -306,12 +363,17 @@ public class ChangeRequestServiceImpl implements IChangeRequestService {
     public ChangeRequest reopen(Long id, String requestedBy) {
         ChangeRequest cr = requireById(id);
         assertStatus(cr, ChangeRequestStatus.REJECTED);
+        ChangeRequestStatus fromStatus = cr.getStatus();
         cr.setStatus(ChangeRequestStatus.DRAFT);
         cr.setResolutionComment(null);
         cr.setReviewedAt(null);
         cr.setReviewedBy(null);
         ChangeRequest saved = changeRequestRepo.save(cr);
         audit("CHANGE_REQUEST", id, "REOPENED", requestedBy, "Reopened for rework after rejection");
+        stateHistoryService.recordTransition(
+                "CHANGE_REQUEST", saved.getId(),
+                fromStatus.name(), ChangeRequestStatus.DRAFT.name(),
+                "REOPEN", requestedBy, "Reopened for rework after rejection");
         return saved;
     }
 

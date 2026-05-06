@@ -21,6 +21,7 @@ import LibraryPage from '../pages/plm/LibraryPage';
 import AuditLogPage from '../pages/plm/AuditLogPage';
 import TeamManagementPage from '../pages/plm/TeamManagementPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
+import SystemAdminPage from '../pages/admin/SystemAdminPage';
 import AIDemo from '../pages/AIDemo';
 import NotFoundPage from '../pages/NotFoundPage';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -31,7 +32,8 @@ const AppRoutes = () => (
       <Routes>
         <Route path="/login"       element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/dashboard"   element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-        <Route path="/admin/users" element={<PrivateRoute><UsersAdminPage /></PrivateRoute>} />
+        <Route path="/admin/users"  element={<PrivateRoute><UsersAdminPage /></PrivateRoute>} />
+        <Route path="/admin/system" element={<PrivateRoute><SystemAdminPage /></PrivateRoute>} />
 
         <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
           <Route index element={<Navigate to="parts" replace />} />

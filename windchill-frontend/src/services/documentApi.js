@@ -14,6 +14,13 @@ export const documentApi = {
     return r.data?.data ?? [];
   },
 
+  listPaginated: async (contextId, page, size, sortBy = 'id', sortDir = 'desc') => {
+    const r = await api.get('/api/v1/plm/documents/paginated', {
+      params: { contextId, page, size, sortBy, sortDir }
+    });
+    return r.data?.data ?? [];
+  },
+
   get: async (id) => {
     const r = await api.get(`/api/v1/plm/documents/${id}`);
     return r.data?.data;

@@ -47,4 +47,17 @@ public class PromotionRequest extends BaseEntity {
 
     @Column(name = "completed_by_user_id")
     private Long completedByUserId;
+
+    /** SERIAL or PARALLEL */
+    @Column(name = "routing_type", length = 10)
+    private String routingType = "SERIAL";
+
+    @Column(name = "escalated_at")
+    private LocalDateTime escalatedAt;
+
+    @Column(name = "escalation_reason", length = 500)
+    private String escalationReason;
+
+    @Column(name = "deadline")
+    private LocalDateTime deadline;
 }

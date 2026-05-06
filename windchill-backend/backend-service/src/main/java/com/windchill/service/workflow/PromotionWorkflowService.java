@@ -1,5 +1,7 @@
 package com.windchill.service.workflow;
 
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.enums.PromotionRequestStatusEnum;
 import com.windchill.common.enums.RoleEnum;
@@ -21,6 +23,9 @@ import jakarta.persistence.OptimisticLockException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,6 +124,35 @@ public class PromotionWorkflowService {
     public List<WorkItem> myPendingWorkItems() {
         Long me = acl.requireUserId();
         return workItemRepository.findByAssigneeUserIdAndStatusAndIsDeletedFalseOrderByDueAtAsc(me, WorkItemStatusEnum.PENDING);
+    }
+
+    /** Paginated listing of WorkItems by assignee and optional status filter. */
+    @Transactional(readOnly = true)
+    public PaginatedResponse<WorkItem> listPaginated(Long assigneeUserId, String status, PaginationRequest pagination) {
+        if (assigneeUserId == null) throw new BusinessException("assigneeUserId is required");
+
+        Sort.Direction direction = "asc".equalsIgnoreCase(pagination.getSortDir())
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageRequest = PageRequest.of(
+                pagination.getPage(),
+                pagination.getSize(),
+                Sort.by(direction, pagination.getSortBy())
+        );
+
+        Page<WorkItem> page;
+        if (status != null && !status.isBlank()) {
+            WorkItemStatusEnum statusEnum = WorkItemStatusEnum.valueOf(status.toUpperCase());
+            page = workItemRepository.findByAssigneeUserIdAndStatusAndIsDeletedFalse(assigneeUserId, statusEnum, pageRequest);
+        } else {
+            page = workItemRepository.findByAssigneeUserIdAndIsDeletedFalse(assigneeUserId, pageRequest);
+        }
+
+        return new PaginatedResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements()
+        );
     }
 
     public WorkItem approve(Long workItemId, String comment) {
@@ -279,5 +313,48 @@ public class PromotionWorkflowService {
         partRepository.save(part);
 
         auditService.log(com.windchill.common.enums.PlmEntityTypeEnum.PART, pr.getPartId(), "PROMOTION_REJECTED", "Rejected by approver. Sent back to INWORK.");
+    }
+
+    /**
+     * Escalate a pending work item. Sets escalation fields on the associated
+     * PromotionRequest and re-notifies the assignee.
+     */
+    public WorkItem escalateWorkItem(Long workItemId, String reason) {
+        Long me = acl.requireUserId();
+
+        WorkItem wi = workItemRepository.findByIdAndIsDeletedFalse(workItemId)
+                .orElseThrow(() -> new BusinessException("WorkItem not found"));
+
+        if (wi.getStatus() != WorkItemStatusEnum.PENDING) {
+            throw new BusinessException("Only pending work items can be escalated");
+        }
+
+        // Mark escalation on the work item's promotion request
+        PromotionRequest pr = promotionRequestRepository.findById(wi.getPromotionRequestId())
+                .orElseThrow(() -> new BusinessException("PromotionRequest not found"));
+
+        pr.setEscalatedAt(LocalDateTime.now());
+        pr.setEscalationReason(reason);
+        promotionRequestRepository.save(pr);
+
+        // Reset due date to now to trigger urgency
+        wi.setDueAt(LocalDateTime.now().plusHours(4));
+        WorkItem saved = workItemRepository.save(wi);
+
+        auditService.log(com.windchill.common.enums.PlmEntityTypeEnum.WORK_ITEM,
+                saved.getId(), "ESCALATED",
+                "WorkItem escalated by userId=" + me + ". Reason: " + reason);
+
+        log.info("WorkItem {} escalated by userId={}. Reason: {}", workItemId, me, reason);
+        return saved;
+    }
+
+    /**
+     * Returns all pending work items that are past their due date.
+     */
+    @Transactional(readOnly = true)
+    public List<WorkItem> getOverdueItems() {
+        return workItemRepository.findByStatusAndDueAtBeforeAndIsDeletedFalse(
+                WorkItemStatusEnum.PENDING, LocalDateTime.now());
     }
 }

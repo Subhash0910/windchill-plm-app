@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lifecycle-template name="BasicDocumentLifecycle" objectType="DOCUMENT">
+    <state name="INWORK" displayName="In Work" isInitial="true">
+        <transition name="PROMOTE" to="UNDERREVIEW" guards="document.lifecycleState=='INWORK'"/>
+        <transition name="OBSOLETE" to="OBSOLETE"/>
+    </state>
+    <state name="UNDERREVIEW" displayName="Under Review">
+        <transition name="PROMOTE" to="RELEASED" requiresApproval="true"/>
+        <transition name="DEMOTE" to="INWORK"/>
+    </state>
+    <state name="RELEASED" displayName="Released" isTerminal="true">
+        <transition name="REVISE" to="INWORK" createsIteration="true"/>
+        <transition name="OBSOLETE" to="OBSOLETE"/>
+    </state>
+    <state name="OBSOLETE" displayName="Obsolete" isTerminal="true"/>
+</lifecycle-template>

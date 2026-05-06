@@ -19,8 +19,18 @@ export const plmApi = {
   createFolder: async (cid, p)   => { const r = await api.post(`/api/v1/plm/contexts/${cid}/folders`, p); return r.data.data; },
   deleteFolder: async (cid, fid) => { const r = await api.delete(`/api/v1/plm/contexts/${cid}/folders/${fid}`); return r.data.data; },
 
+  // ── Global Search ──────────────────────────────────────────────────────
+  globalSearch: async (keyword, contextId) => {
+    const r = await api.get('/api/v1/plm/search', { params: { q: keyword, ...(contextId ? { contextId } : {}) } });
+    return r.data?.data ?? { query: keyword, totalHits: 0, parts: [], documents: [], ecrs: [], ecos: [] };
+  },
+
   // ── Parts ──────────────────────────────────────────────────────────────
   listParts:   async (contextId)          => { const r = await api.get('/api/v1/plm/parts', { params: { contextId } }); return r.data.data; },
+  listPartsPaginated: async (contextId, page = 0, size = 20, sortBy = 'id', sortDir = 'desc') => {
+    const r = await api.get('/api/v1/plm/parts/paginated', { params: { contextId, page, size, sortBy, sortDir } });
+    return r.data.data;
+  },
   searchParts: async (kw, contextId)      => {
     const r = await api.get('/api/v1/plm/parts/search', { params: { keyword: kw, ...(contextId ? { contextId } : {}) } });
     return r.data.data ?? [];
@@ -72,6 +82,16 @@ export const plmApi = {
   listBom:       async (pid)     => { const r = await api.get(`/api/v1/plm/parts/${pid}/bom`); return r.data.data; },
   addBomLine:    async (pid, p)  => { const r = await api.post(`/api/v1/plm/parts/${pid}/bom`, p); return r.data.data; },
   deleteBomLine: async (id)      => { const r = await api.delete(`/api/v1/plm/bom-lines/${id}`); return r.data.data; },
+
+  // ── Alternates ──────────────────────────────────────────────────────────
+  getAlternates:   async (partId)  => { const r = await api.get(`/api/v1/plm/alternates/${partId}`); return r.data.data; },
+  createAlternate: async (data)    => { const r = await api.post('/api/v1/plm/alternates', data); return r.data.data; },
+  deleteAlternate: async (id)      => { const r = await api.delete(`/api/v1/plm/alternates/${id}`); return r.data.data; },
+
+  // ── Manufacturers (AML) ─────────────────────────────────────────────────
+  getManufacturers:   async (partId)  => { const r = await api.get(`/api/v1/plm/manufacturers/${partId}`); return r.data.data; },
+  createManufacturer: async (data)    => { const r = await api.post('/api/v1/plm/manufacturers', data); return r.data.data; },
+  deleteManufacturer: async (id)      => { const r = await api.delete(`/api/v1/plm/manufacturers/${id}`); return r.data.data; },
 
   // ── Audit ──────────────────────────────────────────────────────────────
   getAudit: async (entityType, entityId) => {
@@ -158,6 +178,21 @@ export const plmApi = {
   updateProduct:        async (id, p) => { const r = await api.put(`/api/v1/products/${id}`, p); return r.data?.data; },
   deleteProduct:        async (id)    => { const r = await api.delete(`/api/v1/products/${id}`); return r.data?.data; },
   getProductsByProject: async (pid)   => { const r = await api.get(`/api/v1/products/project/${pid}`); return r.data?.data ?? []; },
+
+  // ── Baselines ──────────────────────────────────────────────────────────
+  listBaselines:   async (contextId, partId) => {
+    const params = {};
+    if (contextId) params.contextId = contextId;
+    if (partId) params.partId = partId;
+    const r = await api.get('/api/v1/plm/baselines', { params });
+    return r.data?.data ?? [];
+  },
+  getBaseline:     async (id)      => { const r = await api.get(`/api/v1/plm/baselines/${id}`); return r.data?.data; },
+  createBaseline:  async (body)    => { const r = await api.post('/api/v1/plm/baselines', body); return r.data?.data; },
+  getBaselineLines: async (id)     => { const r = await api.get(`/api/v1/plm/baselines/${id}/lines`); return r.data?.data ?? []; },
+  freezeBaseline:  async (id, frozenBy) => { const r = await api.post(`/api/v1/plm/baselines/${id}/freeze`, frozenBy ? { frozenBy } : null); return r.data?.data; },
+  deleteBaseline:  async (id)      => { const r = await api.delete(`/api/v1/plm/baselines/${id}`); return r.data?.data; },
+  compareBaselines: async (id, otherId) => { const r = await api.get(`/api/v1/plm/baselines/${id}/compare/${otherId}`); return r.data?.data; },
 
   // ── Projects ────────────────────────────────────────────────────────────
   getAllProjects:         async ()                => { const r = await api.get('/api/v1/projects'); return r.data?.data ?? []; },

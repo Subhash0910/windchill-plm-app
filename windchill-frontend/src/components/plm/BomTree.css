@@ -1,0 +1,372 @@
+/* ═══════════════════════════════════════════════════════
+   BomTree — Windchill-style BOM Structure Tree
+   Indented multi-level tree with expand/collapse,
+   quantity rollup, and find numbers.
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Root wrapper ───────────────────────────────────── */
+.bt-wrap {
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md);
+  overflow: hidden;
+  background: var(--wc-content-bg);
+}
+
+/* ── Toolbar (search + stats) ───────────────────────── */
+.bt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--wc-border-light);
+  background: var(--wc-sidebar-active);
+  flex-wrap: wrap;
+}
+
+.bt-search {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  color: var(--wc-text-primary);
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.bt-search::placeholder { color: var(--wc-text-muted); }
+.bt-search:focus {
+  outline: none;
+  border-color: var(--wc-blue);
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.1);
+}
+
+.bt-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  white-space: nowrap;
+}
+
+.bt-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.bt-stat-value {
+  font-weight: 700;
+  font-family: var(--wc-font-mono);
+  font-size: 12px;
+  color: var(--wc-text-primary);
+}
+
+/* ── Header row ─────────────────────────────────────── */
+.bt-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 60px 52px 120px;
+  gap: 0;
+  align-items: center;
+  padding: 0;
+  background: var(--wc-sidebar-active);
+  border-bottom: 2px solid var(--wc-border);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--wc-text-muted);
+}
+
+.bt-hcell {
+  padding: 8px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bt-hcell:first-child { padding-left: 46px; }
+
+/* ── Tree body ──────────────────────────────────────── */
+.bt-body {
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Tree row ───────────────────────────────────────── */
+.bt-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 60px 52px 120px;
+  gap: 0;
+  align-items: center;
+  border-bottom: 1px solid var(--wc-border-light);
+  transition: background 0.1s;
+  position: relative;
+  min-height: 38px;
+}
+.bt-row:hover { background: var(--wc-sidebar-hover); }
+.bt-row--matched { background: #fefce8; }
+.bt-row--matched:hover { background: #fef9c3; }
+
+.bt-cell {
+  padding: 7px 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Expand column ──────────────────────────────────── */
+.bt-expand-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 0;
+}
+
+.bt-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--wc-border);
+  border-radius: 4px;
+  background: var(--wc-content-bg);
+  color: var(--wc-text-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.bt-expand-btn:hover {
+  background: var(--wc-sidebar-active);
+  border-color: var(--wc-blue);
+  color: var(--wc-blue);
+}
+.bt-expand-btn--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bt-expand-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--wc-border);
+  border-top-color: var(--wc-blue);
+  border-radius: 50%;
+  animation: bt-spin 0.6s linear infinite;
+}
+@keyframes bt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Part name cell ─────────────────────────────────── */
+.bt-part-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  min-width: 0;
+}
+
+.bt-part-number {
+  font-family: var(--wc-font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--wc-blue);
+  white-space: nowrap;
+}
+
+.bt-part-name {
+  font-size: 12px;
+  color: var(--wc-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bt-version {
+  font-family: var(--wc-font-mono);
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Quantity rollup ────────────────────────────────── */
+.bt-qty {
+  font-family: var(--wc-font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wc-text-primary);
+}
+
+.bt-qty--rollup {
+  color: var(--wc-navy-light);
+}
+
+.bt-unit {
+  font-size: 11px;
+  color: var(--wc-text-muted);
+  font-family: var(--wc-font-mono);
+}
+
+.bt-find-number {
+  font-family: var(--wc-font-mono);
+  font-size: 12px;
+  color: var(--wc-text-secondary);
+}
+
+/* ── Tree lines (Windchill PSB style) ───────────────── */
+.bt-tree-container {
+  position: relative;
+}
+
+.bt-tree-line-v {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--wc-border);
+}
+
+/* Use CSS custom properties set per-row for depth-based indentation */
+.bt-row {
+  padding-left: 0;
+}
+
+/* Depth-guided indent via inline style on wrapper div */
+.bt-row-depth-wrap {
+  position: relative;
+}
+
+.bt-row-depth-wrap::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  width: 14px;
+  height: 1px;
+  background: var(--wc-border);
+}
+
+/* Vertical continuations for nested rows */
+.bt-children-wrap {
+  position: relative;
+}
+.bt-children-wrap::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--wc-border);
+}
+
+/* Last child vertical line stops at mid-row */
+.bt-children-wrap > .bt-row-depth-wrap:last-child::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 0;
+  bottom: 50%;
+  width: 1px;
+  background: var(--wc-content-bg);
+}
+
+/* ── Empty state ────────────────────────────────────── */
+.bt-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--wc-text-muted);
+  font-size: 13px;
+}
+.bt-empty-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+.bt-empty-title {
+  font-weight: 700;
+  color: var(--wc-text-secondary);
+  margin-bottom: 4px;
+}
+.bt-empty-sub {
+  font-size: 11px;
+}
+
+/* ── Loading state ──────────────────────────────────── */
+.bt-loading {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--wc-text-muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.bt-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--wc-border);
+  border-top-color: var(--wc-blue);
+  border-radius: 50%;
+  animation: bt-spin 0.6s linear infinite;
+}
+
+/* ── Error state ────────────────────────────────────── */
+.bt-error {
+  margin: 12px;
+  padding: 10px 14px;
+  background: var(--wc-danger-bg);
+  color: var(--wc-danger-text);
+  border: 1px solid var(--wc-danger);
+  border-radius: var(--wc-radius-sm);
+  font-size: 12px;
+}
+
+/* ── Root quantity rollup banner ────────────────────── */
+.bt-rollup-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--wc-sidebar-active);
+  border-bottom: 1px solid var(--wc-border-light);
+  font-size: 11px;
+  color: var(--wc-text-secondary);
+}
+.bt-rollup-badge {
+  font-family: var(--wc-font-mono);
+  font-weight: 700;
+  color: var(--wc-blue);
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bt-header,
+  .bt-row {
+    grid-template-columns: 36px 1fr 50px 40px 80px;
+  }
+  .bt-hcell { padding: 6px 6px; font-size: 9px; }
+  .bt-hcell:first-child { padding-left: 30px; }
+  .bt-cell { padding: 6px 6px; font-size: 11px; }
+  .bt-search { max-width: none; }
+  .bt-stats { gap: 8px; }
+}

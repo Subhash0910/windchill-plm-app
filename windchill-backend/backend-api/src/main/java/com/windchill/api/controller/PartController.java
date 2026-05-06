@@ -2,6 +2,8 @@ package com.windchill.api.controller;
 
 import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.service.plm.IPartService;
@@ -38,6 +40,22 @@ public class PartController {
                 ? partService.listPartsByFolder(contextId, folderId)
                 : partService.listParts(contextId);
         return ok(parts);
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<?>> listPaginated(
+            @RequestParam Long contextId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PaginationRequest pagination = new PaginationRequest();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        pagination.setSortBy(sortBy);
+        pagination.setSortDir(sortDir);
+        PaginatedResponse<Part> result = partService.listPartsPaginated(contextId, pagination);
+        return ok(result);
     }
 
     @PutMapping("/{id}")

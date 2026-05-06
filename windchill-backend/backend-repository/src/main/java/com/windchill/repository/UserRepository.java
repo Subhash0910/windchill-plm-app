@@ -39,5 +39,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE User u SET u.lastLoginAt = :lastLoginAt WHERE u.id = :userId")
-    void updateLastLoginAt(@Param("userId") Long userId, @Param("lastLoginAt") String lastLoginAt);
+    void updateLastLoginAt(@Param("userId") Long userId, @Param("lastLoginAt") java.time.LocalDateTime lastLoginAt);
 }

@@ -2,6 +2,8 @@ package com.windchill.api.document;
 
 import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,22 @@ public class WTDocumentController {
             @RequestParam(required = false) Long contextId,
             @RequestParam(required = false) String docType) {
         return ok(service.listByContext(contextId, docType));
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<?>> listPaginated(
+            @RequestParam Long contextId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+        PaginationRequest pagination = new PaginationRequest();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        pagination.setSortBy(sortBy);
+        pagination.setSortDir(sortDir);
+        PaginatedResponse<WTDocumentDto> result = service.listPaginated(contextId, pagination);
+        return ok(result);
     }
 
     @GetMapping("/{id}")

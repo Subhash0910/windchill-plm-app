@@ -3,8 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import LifecycleActions from '../../components/plm/LifecycleActions';
 import BomEditor from '../../components/plm/BomEditor';
+import BomRiskTree from '../../components/plm/BomRiskTree';
+import ImpactNetworkGraph from '../../components/plm/ImpactNetworkGraph';
 import AuditPanel from '../../components/plm/AuditPanel';
 import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
+import AlternatePartsPanel from '../../components/plm/AlternatePartsPanel';
+import ManufacturerPartsPanel from '../../components/plm/ManufacturerPartsPanel';
+import BaselinePanel from '../../components/plm/BaselinePanel';
+import ClassificationPanel from '../../components/plm/ClassificationPanel';
+import BomCompareView from '../../components/plm/BomCompareView';
+import SavedSearchPanel from '../../components/plm/SavedSearchPanel';
+import ReportExport from '../../components/plm/ReportExport';
+import ActionToolbar from '../../components/plm/ActionToolbar';
+import IbaPanel from '../../components/plm/IbaPanel';
 import StateBadge from '../../components/plm/StateBadge';
 import InfoPage from '../../components/plm/InfoPage';
 import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
@@ -17,10 +28,18 @@ import { AuthContext } from '../../context/AuthContext';
 import styles from './PartDetailPage.module.css';
 
 const TAB = {
-  STRUCTURE:   'STRUCTURE',
-  HISTORY:     'HISTORY',
-  RELATED:     'RELATED',
-  ATTACHMENTS: 'ATTACHMENTS',
+  STRUCTURE:     'STRUCTURE',
+  IMPACT_NETWORK:'IMPACT_NETWORK',
+  HISTORY:       'HISTORY',
+  RELATED:       'RELATED',
+  ALTERNATES:    'ALTERNATES',
+  SOURCES:       'SOURCES',
+  BASELINES:      'BASELINES',
+  BOM_COMPARE:    'BOM_COMPARE',
+  CLASSIFICATION: 'CLASSIFICATION',
+  SEARCHES:       'SEARCHES',
+  IBA:            'IBA',
+  ATTACHMENTS:   'ATTACHMENTS',
 };
 
 const RELATED_VIEW = {
@@ -536,16 +555,42 @@ const PartDetailPage = () => {
             <div>Workspace</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <TabButton tab={TAB.STRUCTURE}>Structure</TabButton>
+              <TabButton tab={TAB.IMPACT_NETWORK}>Impact Network</TabButton>
               <TabButton tab={TAB.HISTORY}>History</TabButton>
               <TabButton tab={TAB.RELATED}>Related Objects</TabButton>
+              <TabButton tab={TAB.ALTERNATES}>🔄 Alternates</TabButton>
+              <TabButton tab={TAB.SOURCES}>🏭 Sources</TabButton>
+              <TabButton tab={TAB.BASELINES}>📸 Baselines</TabButton>
+              <TabButton tab={TAB.BOM_COMPARE}>🔍 BOM Compare</TabButton>
+              <TabButton tab={TAB.CLASSIFICATION}>🏷️ Classification</TabButton>
+              <TabButton tab={TAB.SEARCHES}>🔖 Searches</TabButton>
+              <TabButton tab={TAB.IBA}>📋 IBA</TabButton>
               <TabButton tab={TAB.ATTACHMENTS}>📎 Attachments</TabButton>
             </div>
           </div>
 
           {activeTab === TAB.STRUCTURE && (
             <div>
-              <div className={styles.plmMuted} style={{ marginBottom: 8 }}>BOM structure editor (parent → child lines).</div>
-              <BomEditor parentPartId={part.id} candidateChildren={childrenOptions} />
+              <div className={styles.plmMuted} style={{ marginBottom: 8 }}>
+                BOM structure tree with AI risk overlay &mdash; toggle Risk View to see AI-assessed risk scores per component.
+              </div>
+              <BomRiskTree partId={part.id} contextId={part.contextId} />
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
+                  Add / Remove BOM Lines
+                </div>
+                <BomEditor parentPartId={part.id} candidateChildren={childrenOptions} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === TAB.IMPACT_NETWORK && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>
+                Interactive network graph showing how a change to this part propagates through assemblies and sub-components.
+                Click <strong>Analyze Impact</strong> to run AI risk assessment on all connected parts.
+              </div>
+              <ImpactNetworkGraph part={part} contextId={part.contextId} />
             </div>
           )}
 
@@ -643,6 +688,62 @@ const PartDetailPage = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === TAB.ALTERNATES && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>
+                Alternate / substitute parts that can replace this part in assemblies.
+              </div>
+              <AlternatePartsPanel partId={part.id} contextId={part.contextId} />
+            </div>
+          )}
+
+          {activeTab === TAB.SOURCES && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>
+                Approved Manufacturer List (AML) &mdash; qualified supply sources for this part.
+              </div>
+              <ManufacturerPartsPanel partId={part.id} />
+            </div>
+          )}
+
+          {activeTab === TAB.BASELINES && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Point-in-time BOM snapshots &mdash; capture and freeze product configurations.</div>
+              <BaselinePanel partId={part.id} contextId={part.contextId} />
+            </div>
+          )}
+
+          {activeTab === TAB.BOM_COMPARE && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Side-by-side BOM diff &mdash; compare two parts or revisions to see added, removed, and modified lines.</div>
+              <BomCompareView partId={part.id} contextId={part.contextId} />
+            </div>
+          )}
+
+          {activeTab === TAB.CLASSIFICATION && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Part classification &mdash; categorize with typed attributes in a hierarchical tree.</div>
+              <ClassificationPanel partId={part.id} />
+            </div>
+          )}
+
+          {activeTab === TAB.SEARCHES && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Saved searches &mdash; named queries with filters. Also export data from this page.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <SavedSearchPanel entityType="PART" />
+                <div><h4 style={{ margin: '0 0 8px', fontSize: 14 }}>Export</h4><ReportExport partId={part.id} contextId={part.contextId} /></div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === TAB.IBA && (
+            <div>
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Inter-Business Attributes (IBA) &mdash; custom soft-type attributes for {part.partNumber}.</div>
+              <IbaPanel entityId={part.id} targetType="PART" />
             </div>
           )}
 

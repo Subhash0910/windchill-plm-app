@@ -9,6 +9,7 @@ import com.windchill.domain.entity.WorkItem;
 import com.windchill.domain.entity.WorkItemComment;
 import com.windchill.repository.UserRepository;
 import com.windchill.service.workflow.PromotionWorkflowService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -100,5 +101,21 @@ public class PromotionController {
         );
 
         return ResponseEntity.ok(ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(dto).build());
+    }
+
+    // ─── POST /{workItemId}/escalate ───────────────────────────────────────────
+
+    @PostMapping("/{workItemId}/escalate")
+    public ResponseEntity<ApiResponse<?>> escalate(@PathVariable Long workItemId,
+                                                    @RequestBody EscalateRequest req) {
+        String reason = req != null && req.getReason() != null ? req.getReason() : "Escalated";
+        WorkItem escalated = workflow.escalateWorkItem(workItemId, reason);
+        return ResponseEntity.ok(
+                ApiResponse.builder().success(true).message(APIConstants.UPDATED).data(escalated).build());
+    }
+
+    @Data
+    public static class EscalateRequest {
+        private String reason;
     }
 }

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import NotificationBell from './NotificationBell';
 import Breadcrumb from '../../plm/Breadcrumb';
+import GlobalSearch from '../../plm/GlobalSearch';
 import './Header.css';
 
 /**
@@ -58,6 +59,9 @@ const Header = ({ title }) => {
       <div className="wc-header-breadcrumb">
         <Breadcrumb />
       </div>
+
+      {/* Global Search */}
+      <GlobalSearch />
 
       {/* Right controls */}
       <div className="wc-header-right">

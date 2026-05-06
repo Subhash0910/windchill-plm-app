@@ -1,0 +1,26 @@
+.iba-panel { padding: 0; }
+.iba-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.iba-header h4 { margin: 0 0 4px 0; font-size: 14px; }
+.iba-subtitle { font-size: 12px; color: var(--wc-text-secondary); }
+.iba-spinner { width: 24px; height: 24px; border: 2px solid var(--wc-border); border-top-color: var(--wc-blue); border-radius: 50%; animation: iba-spin 0.8s linear infinite; margin: 20px auto; }
+@keyframes iba-spin { to { transform: rotate(360deg); } }
+.iba-error { padding: 16px; color: #dc2626; font-size: 13px; }
+.iba-msg { padding: 6px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
+.iba-msg-success { background: #f0fdf4; color: #166534; }
+.iba-msg-error { background: #fef2f2; color: #dc2626; }
+.iba-empty { text-align: center; padding: 24px; color: var(--wc-text-secondary); font-size: 13px; }
+.iba-empty span { font-size: 32px; display: block; margin-bottom: 8px; }
+.iba-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.iba-field { border: 1px solid var(--wc-border); border-radius: 6px; padding: 10px; transition: border-color 0.2s; }
+.iba-field:hover { border-color: var(--wc-blue); }
+.iba-changed { border-color: #f59e0b; background: #fffbeb; }
+.iba-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-bottom: 6px; flex-wrap: wrap; }
+.iba-req { color: #ef4444; }
+.iba-type-badge { font-size: 9px; background: var(--wc-bg-hover); padding: 0 4px; border-radius: 3px; color: var(--wc-text-secondary); font-weight: 400; }
+.iba-unit { font-size: 10px; color: var(--wc-text-secondary); font-weight: 400; }
+.iba-input { width: 100%; padding: 5px 8px; border: 1px solid var(--wc-border); border-radius: 4px; font-size: 12px; background: var(--wc-bg); color: var(--wc-text); box-sizing: border-box; }
+.iba-hint { display: block; font-size: 10px; color: var(--wc-text-secondary); margin-top: 4px; }
+.iba-regex { display: block; font-size: 10px; color: var(--wc-blue); margin-top: 2px; font-family: monospace; }
+.btn-sm { padding: 3px 10px; border: 1px solid var(--wc-border); border-radius: 4px; cursor: pointer; font-size: 12px; }
+.btn-primary { background: var(--wc-blue); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 500; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }

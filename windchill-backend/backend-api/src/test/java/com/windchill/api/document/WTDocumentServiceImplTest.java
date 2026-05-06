@@ -1,5 +1,6 @@
 package com.windchill.api.document;
 
+import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.plm.IAuditService;
@@ -50,7 +51,7 @@ class WTDocumentServiceImplTest {
             .docNumber("DOC-0001")
             .name("Design Spec")
             .docType("SPEC")
-            .lifecycleState("INWORK")
+            .lifecycleState(LifecycleStateEnum.INWORK)
             .revision("A")
             .iteration(1)
             .isLatest(true)
@@ -344,7 +345,7 @@ class WTDocumentServiceImplTest {
 
             WTDocument working = WTDocument.builder()
                 .contextId(CTX_ID).docNumber("DOC-0001").name("Design Spec")
-                .docType("SPEC").lifecycleState("INWORK").revision("A").iteration(2)
+                .docType("SPEC").lifecycleState(LifecycleStateEnum.INWORK).revision("A").iteration(2)
                 .isLatest(true).checkedOutBy(OWNER).build();
             working.setId(2L);
 
@@ -370,7 +371,7 @@ class WTDocumentServiceImplTest {
 
         @Test @DisplayName("throws for RELEASED document")
         void releasedBlocked() {
-            baseDoc.setLifecycleState("RELEASED");
+            baseDoc.setLifecycleState(LifecycleStateEnum.RELEASED);
             when(repo.findByIdAndIsDeletedFalse(DOC_ID)).thenReturn(Optional.of(baseDoc));
 
             assertThatThrownBy(() -> service.checkOut(DOC_ID, OWNER))
@@ -380,7 +381,7 @@ class WTDocumentServiceImplTest {
 
         @Test @DisplayName("throws for OBSOLETE document")
         void obsoleteBlocked() {
-            baseDoc.setLifecycleState("OBSOLETE");
+            baseDoc.setLifecycleState(LifecycleStateEnum.OBSOLETE);
             when(repo.findByIdAndIsDeletedFalse(DOC_ID)).thenReturn(Optional.of(baseDoc));
 
             assertThatThrownBy(() -> service.checkOut(DOC_ID, OWNER))
@@ -436,13 +437,13 @@ class WTDocumentServiceImplTest {
         void happyPath() {
             WTDocument working = WTDocument.builder()
                 .contextId(CTX_ID).docNumber("DOC-0001").name("Design Spec")
-                .docType("SPEC").lifecycleState("INWORK").revision("A").iteration(2)
+                .docType("SPEC").lifecycleState(LifecycleStateEnum.INWORK).revision("A").iteration(2)
                 .masterId(DOC_ID).isLatest(true).checkedOutBy(OWNER).build();
             working.setId(2L);
 
             WTDocument prev = WTDocument.builder()
                 .contextId(CTX_ID).docNumber("DOC-0001").name("Design Spec")
-                .docType("SPEC").lifecycleState("INWORK").revision("A").iteration(1)
+                .docType("SPEC").lifecycleState(LifecycleStateEnum.INWORK).revision("A").iteration(1)
                 .masterId(DOC_ID).isLatest(false).build();
             prev.setId(DOC_ID);
 
@@ -467,7 +468,7 @@ class WTDocumentServiceImplTest {
         void noPreviousIteration() {
             WTDocument working = WTDocument.builder()
                 .contextId(CTX_ID).docNumber("DOC-0001").name("Design Spec")
-                .docType("SPEC").lifecycleState("INWORK").revision("A").iteration(1)
+                .docType("SPEC").lifecycleState(LifecycleStateEnum.INWORK).revision("A").iteration(1)
                 .masterId(DOC_ID).isLatest(true).checkedOutBy(OWNER).build();
             working.setId(2L);
 

@@ -3,6 +3,8 @@ package com.windchill.api.controller;
 import com.windchill.api.dto.WorkItemDto;
 import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
+import com.windchill.common.dto.PaginatedResponse;
+import com.windchill.common.dto.PaginationRequest;
 import com.windchill.domain.entity.Part;
 import com.windchill.domain.entity.PromotionRequest;
 import com.windchill.domain.entity.WorkItem;
@@ -38,6 +40,28 @@ public class WorkItemController {
                 .toList();
         return ResponseEntity.ok(
                 ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(items).build());
+    }
+
+    /* ── GET /paginated ────────────────────────────────────────────────────── */
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<?>> listPaginated(
+            @RequestParam Long assigneeUserId,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        PaginationRequest pagination = new PaginationRequest();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        PaginatedResponse<WorkItem> result = workflow.listPaginated(assigneeUserId, status, pagination);
+
+        List<WorkItemDto> dtos = result.getContent().stream()
+                .map(w -> toDto(w, resolvePart(w.getPartId())))
+                .toList();
+        PaginatedResponse<WorkItemDto> dtoResult = new PaginatedResponse<>(
+                dtos, result.getPage(), result.getSize(), result.getTotalElements());
+
+        return ResponseEntity.ok(
+                ApiResponse.builder().success(true).message(APIConstants.SUCCESS).data(dtoResult).build());
     }
 
     /* ── POST /{id}/approve ─────────────────────────────────────────────── */

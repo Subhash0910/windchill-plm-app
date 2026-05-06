@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<type-definitions objectType="PART">
+    <type name="StandardPart" extends="PART">
+        <attribute name="material" type="STRING" displayName="Material"/>
+        <attribute name="weight" type="DECIMAL" displayName="Weight" unit="kg"/>
+        <attribute name="manufacturer" type="STRING" displayName="Manufacturer"/>
+    </type>
+    <type name="ElectricalPart" extends="PART">
+        <attribute name="voltage" type="DECIMAL" displayName="Voltage Rating" unit="V"/>
+        <attribute name="current" type="DECIMAL" displayName="Current Rating" unit="A"/>
+        <attribute name="resistance" type="DECIMAL" displayName="Resistance" unit="ohm"/>
+        <attribute name="powerRating" type="DECIMAL" displayName="Power Rating" unit="W"/>
+    </type>
+    <type name="MechanicalPart" extends="PART">
+        <attribute name="material" type="STRING" displayName="Material"/>
+        <attribute name="surfaceFinish" type="STRING" displayName="Surface Finish"/>
+        <attribute name="tolerance" type="STRING" displayName="Tolerance Class"/>
+    </type>
+</type-definitions>

@@ -3,6 +3,7 @@ package com.windchill.repository;
 import com.windchill.common.enums.StatusEnum;
 import com.windchill.domain.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface DocumentRepository extends JpaRepository<Document, Long> {
+public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
     Optional<Document> findByDocumentNumber(String documentNumber);
 
     List<Document> findByProjectIdAndIsDeletedFalse(Long projectId);
