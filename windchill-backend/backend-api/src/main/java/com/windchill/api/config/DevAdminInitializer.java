@@ -19,7 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 @Slf4j
 @Configuration
-@Profile({"docker", "dev"})
+@Profile({"docker", "dev", "demo"})
 @RequiredArgsConstructor
 public class DevAdminInitializer {
 
