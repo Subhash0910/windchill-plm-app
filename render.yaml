@@ -2,16 +2,15 @@ services:
   - type: web
     name: windchill-backend
     runtime: docker
-    rootDir: windchill-backend
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./windchill-backend/Dockerfile
+    dockerContext: ./windchill-backend
     plan: free
-    port: 8080
     healthCheckPath: /actuator/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: demo
       - key: JAVA_OPTS
-        value: "-Xmx384m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+        value: -Xmx384m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
       - key: APP_JWTSECRET
         generateValue: true
       - key: APP_BASE_URL
