@@ -17,11 +17,12 @@ COPY . .
 # Create directories
 RUN mkdir -p /app/models /app/data /app/logs
 
-# Train the model at build time so it is baked into the image.
-# This means the container starts with a real Random Forest model
-# instead of falling back to rule-based analysis.
-RUN python training/generate_training_data.py && \
-    python training/train_model.py
+# Train the model at build time (bakes real RF model into image).
+# matplotlib/seaborn are only needed for training plots — install, train, remove.
+RUN pip install --no-cache-dir matplotlib==3.8.2 seaborn==0.13.1 && \
+    python training/generate_training_data.py && \
+    python training/train_model.py && \
+    pip uninstall -y matplotlib seaborn
 
 # Expose port
 EXPOSE 5000

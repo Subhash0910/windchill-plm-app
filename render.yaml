@@ -15,3 +15,16 @@ services:
         generateValue: true
       - key: APP_BASE_URL
         value: https://windchill-plm-app.vercel.app
+      - key: ML_SERVICE_URL
+        value: https://windchill-ml.onrender.com
+
+  - type: web
+    name: windchill-ml
+    runtime: docker
+    dockerfilePath: ./ml-service/Dockerfile
+    dockerContext: ./ml-service
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MODEL_PATH
+        value: /app/models/risk_model.pkl
