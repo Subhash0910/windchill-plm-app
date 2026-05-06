@@ -120,3 +120,9 @@
   .ecrCard, .rvpDd { animation: none; }
   .ecrTab, .rvpChip, .rvpPill { transition: none; }
 }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .ecrKv   { grid-template-columns: 1fr; gap: 2px; }
+  .ecrMini { grid-template-columns: 1fr; gap: 2px; }
+}

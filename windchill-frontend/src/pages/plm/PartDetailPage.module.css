@@ -352,3 +352,27 @@
 /* ─── Misc ─── */
 .plmMuted { color: var(--wc-text-muted); font-size: 12px; }
 .plmError { color: var(--wc-danger); background: var(--wc-danger-bg); padding: 8px 12px; border-radius: 4px; font-size: 12px; border: 1px solid var(--wc-danger-border); }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+    padding: 0 12px 16px;
+  }
+  .relatedSplit {
+    flex-direction: column;
+    height: auto;
+  }
+  .relatedNav {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--wc-border-light);
+  }
+  .relatedNavItem {
+    flex-shrink: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--wc-border-light);
+  }
+}

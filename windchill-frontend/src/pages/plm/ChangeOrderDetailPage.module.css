@@ -50,3 +50,10 @@
 
 .loading { text-align: center; padding: 64px 20px; color: var(--wc-text-secondary); font-size: 14px; font-weight: 600; }
 .error { background: var(--wc-danger-bg); color: var(--wc-danger-text); border: 1px solid var(--wc-danger-border); border-radius: var(--wc-radius-sm); padding: 12px 18px; margin-bottom: 20px; font-size: 14px; font-weight: 600; }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .page { padding: 12px 14px 32px; }
+  .grid { grid-template-columns: 1fr; }
+  .kv   { grid-template-columns: 1fr; gap: 2px; }
+}

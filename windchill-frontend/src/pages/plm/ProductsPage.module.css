@@ -122,3 +122,9 @@
 .btnCancel:hover { background: var(--wc-row-hover); color: var(--wc-text-primary); }
 .btnSave   { padding: 10px 24px; background: var(--wc-blue); color: #fff; border: none; border-radius: var(--wc-radius-sm); font-size: 14px; font-weight: 800; cursor: pointer; transition: all 0.15s; }
 .btnSave:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .page    { padding: 12px 14px 32px; }
+  .formRow { grid-template-columns: 1fr; }
+}

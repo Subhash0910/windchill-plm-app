@@ -345,3 +345,10 @@
   text-align: center;
   color: var(--wc-text-muted);
 }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .row2 { grid-template-columns: 1fr; }
+  .statsBar { grid-template-columns: repeat(2, 1fr); }
+  .page { padding: 12px 14px 32px; }
+}
