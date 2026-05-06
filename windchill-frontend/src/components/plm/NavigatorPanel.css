@@ -1,109 +1,111 @@
+/* ══════════════════════════════════════════════
+   NavigatorPanel — dark sidebar nav
+══════════════════════════════════════════════ */
+
 .wc-navigator {
   width: 100%;
   background: transparent;
-  /* Scroll handled by parent wc-shell__nav-scroll */
+  padding-bottom: 16px;
 }
 
 /* ── Section label ── */
 .wc-navigator__section-label {
-  padding: 8px 14px 4px;
+  padding: 14px 16px 6px;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--wc-text-muted);
+  letter-spacing: 0.14em;
+  color: var(--wc-sidebar-text-dim);
 }
 
 .wc-navigator__header {
-  padding: 10px 14px 8px;
-  font-size: 10px;
+  padding: 8px 16px 6px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--wc-text-muted);
-  border-bottom: 1px solid var(--wc-border);
-  background: var(--wc-sidebar-bg);
+  letter-spacing: 0.14em;
+  color: var(--wc-sidebar-text-dim);
   position: sticky;
   top: 0;
   z-index: 1;
+  background: var(--wc-sidebar-bg);
 }
 
 /* ── Group ── */
-.wc-nav__group { border-bottom: 1px solid var(--wc-border-light); }
+.wc-nav__group { padding-bottom: 2px; }
 
 .wc-nav__group-header {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
-  padding: 7px 14px;
+  padding: 5px 16px;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--wc-text-secondary);
+  color: var(--wc-sidebar-text-dim);
   text-align: left;
-  transition: background 0.12s;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 120ms;
+  font-family: var(--wc-font);
 }
-.wc-nav__group-header:hover { background: var(--wc-sidebar-hover); }
+.wc-nav__group-header:hover { color: var(--wc-sidebar-text); }
 
-.wc-nav__group-icon { font-size: 13px; flex-shrink: 0; }
+.wc-nav__group-icon { font-size: 12px; flex-shrink: 0; }
 .wc-nav__group-label { flex: 1; }
 .wc-nav__group-arrow {
-  font-size: 12px;
-  color: var(--wc-text-muted);
-  transition: transform 0.2s;
+  font-size: 11px;
+  color: var(--wc-sidebar-text-dim);
+  transition: transform 180ms var(--wc-ease-std);
   display: inline-block;
-  transform: rotate(90deg);
 }
 .wc-nav__group-arrow.open { transform: rotate(90deg); }
-.wc-nav__group-arrow:not(.open) { transform: rotate(0deg); }
 
-.wc-nav__group-body { padding: 2px 0 4px; }
+.wc-nav__group-body { padding: 2px 0; }
 
-/* ── Item ── */
+/* ── Nav item ── */
 .wc-nav__item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px 6px 26px;
-  font-size: 12px;
-  color: var(--wc-text-primary);
+  gap: 9px;
+  padding: 6px 16px 6px 20px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--wc-sidebar-text);
   text-decoration: none;
-  transition: background 0.12s;
-  border-left: 3px solid transparent;
-  margin: 1px 0;
+  transition: background 100ms, color 100ms;
+  border-left: 2px solid transparent;
+  margin: 1px 6px;
+  border-radius: var(--wc-radius-sm);
+  border-left: none;
 }
 .wc-nav__item:hover {
   background: var(--wc-sidebar-hover);
+  color: rgba(255,255,255,0.9);
   text-decoration: none;
 }
 .wc-nav__item.active {
   background: var(--wc-sidebar-active);
-  border-left-color: var(--wc-blue);
-  color: var(--wc-blue);
-  font-weight: 700;
+  color: #fff;
+  font-weight: 500;
 }
-/* Design spell: active item left border glows */
-@keyframes wc-nav-active-glow {
-  0%, 100% { box-shadow: -2px 0 8px rgba(14,165,233,0.3); }
-  50%       { box-shadow: -2px 0 14px rgba(14,165,233,0.6); }
-}
-.wc-nav__item.active {
-  animation: wc-nav-active-glow 2.5s ease-in-out infinite;
-}
+.wc-nav__item.active .wc-nav__item-icon { color: var(--wc-indigo-light); }
 
-.wc-nav__item-icon { font-size: 13px; flex-shrink: 0; opacity: 0.8; }
+.wc-nav__item-icon { font-size: 14px; flex-shrink: 0; opacity: 0.75; }
+.wc-nav__item.active .wc-nav__item-icon { opacity: 1; }
 .wc-nav__item-label { flex: 1; }
+
 .wc-nav__item-badge {
-  background: var(--wc-blue);
-  color: white;
-  font-size: 9px;
-  font-weight: 800;
+  background: var(--wc-indigo);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--wc-radius-full);
   min-width: 18px;
   text-align: center;
-  letter-spacing: 0.02em;
+  line-height: 16px;
 }

@@ -15,7 +15,7 @@
 .comment { width: 100%; min-width: 240px; padding: 6px 10px; border: 1px solid var(--wc-border); border-radius: var(--wc-radius-sm); background: var(--wc-page-bg); color: var(--wc-text-primary); font-family: inherit; font-size: 13px; }
 .comment:focus { border-color: var(--wc-blue); outline: none; }
 
-.rowActive { background: var(--wc-sidebar-hover); }
+.rowActive { background: var(--wc-row-hover); }
 .btnSubmit { padding: 6px 14px; background: var(--wc-blue); color: #fff; border: none; border-radius: var(--wc-radius-sm); font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .btnSubmit:hover { background: var(--wc-blue-hover); transform: translateY(-1px); }
 .btnSubmit:disabled { opacity: 0.5; cursor: not-allowed; }

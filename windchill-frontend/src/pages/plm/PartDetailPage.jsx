@@ -3,11 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import LifecycleActions from '../../components/plm/LifecycleActions';
 import BomEditor from '../../components/plm/BomEditor';
+import BomTreeView from '../../components/plm/BomTreeView';
 import AuditPanel from '../../components/plm/AuditPanel';
 import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
 import StateBadge from '../../components/plm/StateBadge';
+import LifecycleStateflow from '../../components/plm/LifecycleStateflow';
 import InfoPage from '../../components/plm/InfoPage';
 import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
+import ImpactPreview from '../../components/ai/ImpactPreview';
 import ImpactVisualizer from '../../components/plm/ImpactVisualizer';
 import { plmApi } from '../../services/plmApi';
 import { aiService } from '../../services/aiService';
@@ -56,6 +59,8 @@ const PartDetailPage = () => {
   const [activeTab,  setActiveTab]  = useState(TAB.STRUCTURE);
   const [relatedView, setRelatedView] = useState(RELATED_VIEW.VERSIONS);
   const [edit, setEdit] = useState({ name: '', description: '' });
+  const [showAiAnalysis, setShowAiAnalysis] = useState(false);
+  const [selectedChangeType, setSelectedChangeType] = useState('OBSOLETE');
 
   /* ── loaders ────────────────────────────────────────────────────────────── */
   const loadPromotion = async (partId) => {
@@ -310,6 +315,7 @@ const PartDetailPage = () => {
               <div className={styles.infoSubtitle}>
                 {part.description || 'No description'}
               </div>
+              <LifecycleStateflow entityType="part" currentState={part.lifecycleState} />
             </div>
           </div>
           <div className={styles.infoHeaderRight}>
@@ -527,6 +533,46 @@ const PartDetailPage = () => {
           </div>
         </div>
 
+          {/* ── AI Impact Analysis ── */}
+          <div style={{ marginTop: 16, borderTop: '1px solid #eef2f7', paddingTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 800 }}>AI Impact Analysis</div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select
+                  value={selectedChangeType}
+                  onChange={e => setSelectedChangeType(e.target.value)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db',
+                    fontSize: 13, background: '#fff'
+                  }}
+                >
+                  <option value="OBSOLETE">Obsolete</option>
+                  <option value="REVISE">Revise</option>
+                  <option value="PROMOTE">Promote</option>
+                  <option value="MODIFY">Modify</option>
+                </select>
+                <Button
+                  variant="primary" size="sm"
+                  onClick={() => setShowAiAnalysis(!showAiAnalysis)}
+                >
+                  {showAiAnalysis ? 'Hide Analysis' : 'Analyze Impact'}
+                </Button>
+              </div>
+            </div>
+            {showAiAnalysis && (
+              <div style={{ marginTop: 10 }}>
+                <ImpactPreview
+                  partId={part.id}
+                  changeType={selectedChangeType}
+                  onAnalysisComplete={(result) => {
+                    console.log('AI Analysis complete:', result);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* ── RIGHT: Tab workspace ── */}
         <div className={styles.detailCard}>
           <div className="card-title" style={{
@@ -544,8 +590,18 @@ const PartDetailPage = () => {
 
           {activeTab === TAB.STRUCTURE && (
             <div>
-              <div className={styles.plmMuted} style={{ marginBottom: 8 }}>BOM structure editor (parent → child lines).</div>
-              <BomEditor parentPartId={part.id} candidateChildren={childrenOptions} />
+              <div style={{ marginBottom: 16 }}>
+                <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Product Structure — click ▸ to expand child assemblies</div>
+                <BomTreeView rootPartId={part.id} />
+              </div>
+              <details style={{ marginTop: 20 }}>
+                <summary style={{ cursor: 'pointer', color: 'var(--plm-text-muted, #64748b)', fontSize: 13 }}>
+                  Edit BOM lines
+                </summary>
+                <div style={{ marginTop: 10 }}>
+                  <BomEditor parentPartId={part.id} candidateChildren={childrenOptions} />
+                </div>
+              </details>
             </div>
           )}
 

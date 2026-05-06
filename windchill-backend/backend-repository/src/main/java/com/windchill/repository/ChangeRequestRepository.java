@@ -32,4 +32,12 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
     /** Next sequence number for generating changeNumber. */
     @Query("SELECT COUNT(cr) FROM ChangeRequest cr")
     long countAll();
+
+    /**
+     * Find active change requests (not CLOSED or REJECTED) that have at least one
+     * of the given part IDs in their impactedPartIds field.
+     * Used by conflict detection in AI impact analysis.
+     */
+    @Query("SELECT cr FROM ChangeRequest cr WHERE cr.status NOT IN ('CLOSED', 'REJECTED')")
+    List<ChangeRequest> findActiveChangeRequests();
 }

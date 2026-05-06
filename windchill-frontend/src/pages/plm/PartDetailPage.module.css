@@ -121,7 +121,7 @@
   color: var(--wc-text-primary);
   transition: all 0.15s;
 }
-.checkoutBannerBtn:hover:not(:disabled) { background: var(--wc-sidebar-hover); }
+.checkoutBannerBtn:hover:not(:disabled) { background: var(--wc-row-hover); }
 .checkoutBannerBtn:disabled { opacity: .5; cursor: default; }
 
 /* ─── Attribute grid ─────────────────────────────────────────────────────── */
@@ -258,7 +258,7 @@
   font-family: inherit;
   transition: all .15s var(--wc-ease-out);
 }
-.tabBtn:hover { background: var(--wc-sidebar-hover); transform: translateY(-1px); }
+.tabBtn:hover { background: var(--wc-row-hover); transform: translateY(-1px); }
 .tabBtnActive {
   background: var(--wc-blue) !important;
   color: #fff !important;
@@ -299,7 +299,7 @@
   text-align: left;
   transition: all 0.15s;
 }
-.relatedNavItem:hover { background: var(--wc-sidebar-hover); }
+.relatedNavItem:hover { background: var(--wc-row-hover); }
 .relatedNavItemActive {
   background: var(--wc-sidebar-active);
   color: var(--wc-blue);
@@ -346,7 +346,7 @@
   color: var(--wc-text-primary);
 }
 .partsTable tr:hover td {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
 }
 
 /* ─── Misc ─── */

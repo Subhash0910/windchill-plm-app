@@ -37,6 +37,13 @@ export const plmApi = {
   revisePart:   async (id)       => { const r = await api.post(`/api/v1/plm/parts/${id}/revise`); return r.data.data; },
   getWhereUsed: async (id)       => { const r = await api.get(`/api/v1/plm/parts/${id}/where-used`); return r.data.data; },
 
+  findSimilarParts: async (partNumber, name) => {
+    try {
+      const r = await api.get('/api/v1/plm/parts/similar', { params: { partNumber, name } });
+      return r.data.data ?? [];
+    } catch { return []; }
+  },
+
   // ── Parts — Checkout / Checkin (Phase 0) ───────────────────────────────
   checkOutPart:    async (id)            => { const r = await api.post(`/api/v1/plm/parts/${id}/checkout`);         return r.data.data; },
   checkInPart:     async (id, body = {}) => { const r = await api.post(`/api/v1/plm/parts/${id}/checkin`, body);    return r.data.data; },
@@ -97,12 +104,12 @@ export const plmApi = {
   closeEcr:        async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/close`);              return r.data?.data ?? r.data; },
   reopenEcr:       async (id)            => { const r = await api.post(`/api/v1/plm/changes/${id}/reopen`);             return r.data?.data ?? r.data; },
   getEcrOrderItems:async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}/order-items`);        return r.data?.data ?? []; },
-  getEcrNotice:    async (id)            => { const r = await api.get(`/api/v1/plm/changes/${id}/notice`);              return r.data?.data ?? null; },
-  listEcns:        async (contextId)     => {
-    const r = await api.get('/api/v1/plm/changes/notices', { params: contextId ? { contextId } : {} });
-    return r.data?.data ?? [];
-  },
-  releaseEcn:      async (noticeId)      => { const r = await api.post(`/api/v1/plm/changes/notices/${noticeId}/release`); return r.data?.data ?? r.data; },
+  getEcrNotice:    async (id)            => { try { const r = await api.get(`/api/v1/plm/changes/ecn/by-ecr/${id}`); return r.data?.data ?? null; } catch { return null; } },
+  listEcns:        async (contextId)     => { try { const r = await api.get('/api/v1/plm/changes/ecn', { params: { contextId } }); return r.data?.data ?? []; } catch { return []; } },
+  getEcn:          async (id)            => { const r = await api.get(`/api/v1/plm/changes/ecn/${id}`); return r.data?.data ?? r.data; },
+  promoteEcn:      async (id, target)    => { const r = await api.post(`/api/v1/plm/changes/ecn/${id}/promote`, null, { params: { target } }); return r.data?.data ?? r.data; },
+  updateEcn:       async (id, body)      => { const r = await api.patch(`/api/v1/plm/changes/ecn/${id}`, body); return r.data?.data ?? r.data; },
+  createEcn:       async (body)          => { const r = await api.post('/api/v1/plm/changes/ecn', body); return r.data?.data ?? r.data; },
 
   getEcrDetails: async (id) => {
     const [ecr, ecn] = await Promise.all([
@@ -135,6 +142,21 @@ export const plmApi = {
     const insights = await plmApi.getEcrInsights(id);
     return insights?.contextual ?? null;
   },
+
+  getEcrAiImpact: async (id) => {
+    try {
+      const r = await api.get(`/api/v1/ai/impact/ecr/${id}`);
+      return r.data;
+    } catch {
+      return null;
+    }
+  },
+
+  // ── Change Orders (ECO) ───────────────────────────────────────────────
+  getEco:       async (id)                  => { const r = await api.get(`/api/v1/plm/changes/eco/${id}`);                              return r.data; },
+  listEcoByContext: async (contextId)       => { const r = await api.get(`/api/v1/plm/changes/eco/context/${contextId}`);               return r.data ?? []; },
+  promoteEco:   async (id, targetState)     => { const r = await api.post(`/api/v1/plm/changes/eco/${id}/promote`, null, { params: { targetState } }); return r.data; },
+  deleteEco:    async (id)                  => api.delete(`/api/v1/plm/changes/eco/${id}`),
 
   // ── Change Tasks (legacy alias → ECN list) ────────────────────────────
   getMyChangeTasks:  async ()             => { const r = await api.get('/api/v1/plm/workitems/my'); return r.data.data ?? []; },

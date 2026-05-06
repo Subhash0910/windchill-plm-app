@@ -4,6 +4,8 @@ import com.windchill.common.exception.BusinessException;
 import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.ChangeOrder;
 import com.windchill.repository.ChangeOrderRepository;
+import com.windchill.repository.UserRepository;
+import com.windchill.service.INotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +27,8 @@ import static org.mockito.Mockito.*;
 class ChangeOrderServiceImplTest {
 
     @Mock  ChangeOrderRepository repo;
+    @Mock  INotificationService notificationService;
+    @Mock  UserRepository userRepo;
     @InjectMocks ChangeOrderServiceImpl service;
 
     private ChangeOrder draftEco;

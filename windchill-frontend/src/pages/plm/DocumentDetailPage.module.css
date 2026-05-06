@@ -139,7 +139,7 @@
   border-radius: var(--wc-radius-sm);
   transition: all .15s;
 }
-.docFileItem:hover { background: var(--wc-sidebar-hover); border-color: var(--wc-text-muted); }
+.docFileItem:hover { background: var(--wc-row-hover); border-color: var(--wc-text-muted); }
 
 /* Misc */
 .docLoading { padding: 80px; text-align: center; color: var(--wc-text-muted); font-size: 14px; font-weight: 700; }

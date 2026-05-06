@@ -73,6 +73,12 @@ spring:
       max-age: 3600
     throw-exception-if-no-handler-found: false
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 55MB
+
   web:
     resources:
       add-mappings: false
@@ -110,6 +116,8 @@ logging:
 app:
   jwtSecret: ${APP_JWTSECRET:replace-this-dev-secret-before-sharing-your-env}
   jwtExpirationInMs: 86400000
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
 
 # Change Impact routing config (CSV usernames)
 change-impact:

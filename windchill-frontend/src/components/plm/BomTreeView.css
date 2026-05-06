@@ -1,0 +1,76 @@
+.bom-tree-wrap { overflow-x: auto; }
+
+.bom-tree-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.bom-tree-table thead th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--plm-text-muted, #64748b);
+  border-bottom: 1px solid var(--plm-border, #e2e8f0);
+  white-space: nowrap;
+}
+.bom-row td { border-bottom: 1px solid var(--plm-border, #e2e8f0); }
+.bom-row:hover td { background: var(--plm-hover, #f8fafc); }
+
+.bom-cell-expand { width: 32px; text-align: center; }
+.bom-cell-number { white-space: nowrap; }
+.bom-cell-name   { color: var(--plm-text, #1e293b); min-width: 160px; }
+.bom-cell-rev    { width: 60px; }
+.bom-cell-state  { width: 110px; }
+.bom-cell-qty    { width: 60px; }
+.bom-cell-fn     { width: 60px; }
+.bom-cell-risk   { width: 40px; text-align: center; }
+
+.bom-tree-table td { padding: 7px 10px; vertical-align: middle; }
+
+.bom-toggle {
+  background: none;
+  border: 1px solid var(--plm-border, #e2e8f0);
+  border-radius: 3px;
+  width: 20px; height: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0;
+  color: var(--plm-text-muted, #64748b);
+  transition: background .12s;
+}
+.bom-toggle:hover { background: var(--plm-hover, #f1f5f9); }
+
+.bom-leaf { color: var(--plm-text-muted, #94a3b8); font-size: 16px; line-height: 1; }
+
+.bom-tree-prefix { font-family: monospace; color: var(--plm-text-muted, #94a3b8); font-size: 12px; user-select: none; }
+
+.bom-part-link {
+  background: none; border: none; cursor: pointer;
+  color: var(--plm-accent, #2563eb);
+  font-family: monospace; font-size: 13px; font-weight: 600;
+  padding: 0; text-decoration: none;
+}
+.bom-part-link:hover { text-decoration: underline; }
+
+.mono { font-family: monospace; }
+
+.bom-risk-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.risk-high { background: #ef4444; }
+.risk-med  { background: #f59e0b; }
+.risk-low  { background: #22c55e; }
+
+.bom-tree-loading, .bom-tree-error, .bom-tree-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--plm-text-muted, #64748b);
+  font-size: 14px;
+}
+.bom-tree-error { color: #ef4444; }

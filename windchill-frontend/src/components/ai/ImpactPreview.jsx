@@ -3,6 +3,29 @@ import api from '../../utils/api';
 import './ImpactPreview.css';
 
 /**
+ * Build blocker messages from backend data.
+ */
+function buildBlockers(backendData, conflictingNumbers) {
+  const blockers = [];
+
+  if (backendData.releasedAffected > 0) {
+    blockers.push(`${backendData.releasedAffected} RELEASED part(s) affected — ECN process required`);
+  }
+
+  if (backendData.conflictingChanges > 0 && conflictingNumbers.length > 0) {
+    blockers.push(`Active ECR conflict(s): ${conflictingNumbers.join(', ')} — coordinate before proceeding`);
+  } else if (backendData.conflictingChanges > 0) {
+    blockers.push(`${backendData.conflictingChanges} active ECR(s) conflict with this change`);
+  }
+
+  if (backendData.hasComplianceIssues) {
+    blockers.push('Compliance issues detected — review before submitting');
+  }
+
+  return blockers;
+}
+
+/**
  * ImpactPreview - Real-time AI impact analysis component
  * NOW SUPPORTS: External triggers from AI chat (triggerAnalysis prop)
  */
@@ -54,6 +77,10 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete, triggerA
       }
 
       // Transform backend flat structure to frontend nested structure
+      const conflictingNumbers = backendData.conflictingChangeNumbers || [];
+      const complianceIssues = backendData.hasComplianceIssues || false;
+      const complianceWarningsList = backendData.complianceWarnings || [];
+
       const transformedData = {
         riskPrediction: {
           riskScore: backendData.riskScore || 0,
@@ -65,14 +92,15 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete, triggerA
           bomDepth: backendData.bomDepth || 0,
           totalAffectedCount: backendData.whereUsedCount || 0,
           releasedAffectedCount: backendData.releasedAffected || 0,
-          conflictingChangesCount: backendData.conflictingChanges || 0
+          conflictingChangesCount: backendData.conflictingChanges || 0,
+          conflictingChangeNumbers: conflictingNumbers
         },
         warnings: backendData.riskLevel === 'HIGH' || backendData.riskLevel === 'MEDIUM'
           ? (backendData.riskFactors || [])
           : [],
-        blockers: backendData.releasedAffected > 0 
-          ? [`${backendData.releasedAffected} RELEASED parts affected - ECN process required`]
-          : [],
+        blockers: buildBlockers(backendData, conflictingNumbers),
+        complianceIssues: complianceIssues,
+        complianceWarnings: complianceWarningsList,
         recommendations: backendData.suggestedActions || [],
         affectedParts: (backendData.affectedPartNumbers || []).map((partNum, idx) => ({
           id: idx,
@@ -253,10 +281,24 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete, triggerA
           <span className="stat-label">Released</span>
         </div>
         <div className="summary-stat">
-          <span className="stat-value" style={{ color: '#ed8936' }}>
+          <span
+            className="stat-value"
+            style={{ color: (graph.conflictingChangesCount || 0) > 0 ? '#e53e3e' : '#ed8936' }}
+            title={graph.conflictingChangeNumbers?.length > 0
+              ? `Conflicts: ${graph.conflictingChangeNumbers.join(', ')}`
+              : 'No active conflicts'}
+          >
             {graph.conflictingChangesCount || 0}
           </span>
-          <span className="stat-label">Conflicts</span>
+          <span className="stat-label">
+            Conflicts
+            {graph.conflictingChangeNumbers?.length > 0 && (
+              <small style={{display:'block',fontSize:'10px',color:'#e53e3e',marginTop:'2px'}}>
+                {graph.conflictingChangeNumbers[0]}
+                {graph.conflictingChangeNumbers.length > 1 && ` +${graph.conflictingChangeNumbers.length - 1}`}
+              </small>
+            )}
+          </span>
         </div>
         <div className="summary-stat">
           <span className="stat-value">{graph.bomDepth || 0}</span>
@@ -295,6 +337,23 @@ export const ImpactPreview = ({ partId, changeType, onAnalysisComplete, triggerA
           </h4>
           <ul>
             {warnings.map((warning, i) => (
+              <li key={i}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Compliance Issues */}
+      {analysis.complianceIssues && analysis.complianceWarnings?.length > 0 && (
+        <div className="impact-preview__compliance">
+          <h4>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#805ad5">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Compliance Issues
+          </h4>
+          <ul>
+            {analysis.complianceWarnings.map((warning, i) => (
               <li key={i}>{warning}</li>
             ))}
           </ul>

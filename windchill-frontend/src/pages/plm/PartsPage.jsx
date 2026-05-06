@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
 import { plmApi } from '../../services/plmApi';
@@ -23,6 +23,8 @@ export default function PartsPage() {
   const [creating, setCreating] = useState(false);
   const [form,     setForm]     = useState({ partNumber: '', name: '', description: '' });
   const [saving,   setSaving]   = useState(false);
+  const [similar,  setSimilar]  = useState([]);
+  const similarTimer = useRef(null);
 
   // Action dialog
   const [dialog, setDialog] = useState(null);
@@ -55,6 +57,21 @@ export default function PartsPage() {
 
   const selectedParts = filtered.filter(p => selected.has(p.id));
   const single        = selectedParts.length === 1 ? selectedParts[0] : null;
+
+  const checkSimilarity = (partNumber, name) => {
+    clearTimeout(similarTimer.current);
+    if (!partNumber.trim() && !name.trim()) { setSimilar([]); return; }
+    similarTimer.current = setTimeout(async () => {
+      const results = await plmApi.findSimilarParts(partNumber, name);
+      setSimilar(results);
+    }, 600);
+  };
+
+  const handleFormChange = (field, value) => {
+    const next = { ...form, [field]: value };
+    setForm(next);
+    checkSimilarity(next.partNumber, next.name);
+  };
 
   /* ── create ────────────────────────────────────────────────────────────── */
   const handleNew = async () => {
@@ -152,9 +169,23 @@ export default function PartsPage() {
             <button className={styles.closeBtn} onClick={() => setCreating(false)}>×</button>
           </div>
           <div className={styles.createBody}>
-            <label>Part Number <input value={form.partNumber} onChange={e => setForm({...form, partNumber: e.target.value})} /></label>
-            <label>Part Name <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></label>
+            <label>Part Number <input value={form.partNumber} onChange={e => handleFormChange('partNumber', e.target.value)} /></label>
+            <label>Part Name <input value={form.name} onChange={e => handleFormChange('name', e.target.value)} /></label>
             <label>Description <textarea rows="2" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></label>
+            {similar.length > 0 && (
+              <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 6, padding: '8px 12px', fontSize: 12, marginTop: 4 }}>
+                <strong>⚠ Possible duplicates detected by AI:</strong>
+                <ul style={{ margin: '4px 0 0', paddingLeft: 16 }}>
+                  {similar.map(s => (
+                    <li key={s.partNumber}>
+                      <span style={{ fontFamily: 'monospace' }}>{s.partNumber}</span> — {s.name}
+                      <span style={{ color: '#92400e', marginLeft: 6 }}>{Math.round(s.similarity * 100)}% match</span>
+                    </li>
+                  ))}
+                </ul>
+                <span style={{ color: '#78350f' }}>Review existing parts before creating a new one.</span>
+              </div>
+            )}
             <div className={styles.createActions}>
               <button className={styles.btnPrimary} disabled={saving} onClick={handleNew}>
                 {saving ? 'Creating…' : 'Create Part'}

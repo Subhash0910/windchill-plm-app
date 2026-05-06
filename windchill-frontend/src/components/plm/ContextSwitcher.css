@@ -1,71 +1,65 @@
-/* ═══════════════════════════════════════════════════════
-   Context Switcher — Compact Sidebar Panel
-   Design: Industrial Utilitarian + Technical Precision
-   DFII: Impact 4, Fit 5, Feasibility 5, Perf 5 → 13/15
-═══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   Context Switcher — dark sidebar panel
+══════════════════════════════════════════════════════ */
 
-/* ── Outer container (no extra box — uses sidebar bg directly) ── */
 .cs-panel {
-  padding: 10px 12px 8px;
+  padding: 10px 12px 10px;
 }
 
-/* ── Top row: label + New button ── */
 .cs-panel__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 }
 .cs-panel__label {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--wc-text-muted);
+  letter-spacing: 0.14em;
+  color: var(--wc-sidebar-text-dim);
 }
 .cs-panel__new-btn {
   font-size: 10px;
   font-weight: 700;
-  color: var(--wc-blue);
-  background: transparent;
-  border: 1px solid var(--wc-blue);
+  color: var(--wc-indigo-light);
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.2);
   border-radius: 4px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  line-height: 1.6;
+  transition: background 120ms;
+  font-family: var(--wc-font);
+  line-height: 1.5;
 }
 .cs-panel__new-btn:hover {
-  background: var(--wc-blue);
-  color: #fff;
+  background: rgba(99,102,241,0.25);
 }
 
-/* ── Context select dropdown ── */
 .cs-panel__select {
   width: 100%;
-  padding: 5px 8px;
+  padding: 6px 24px 6px 9px;
   font-size: 12px;
   font-weight: 600;
-  background: var(--wc-page-bg);
-  border: 1px solid var(--wc-border);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--wc-radius-sm);
-  color: var(--wc-text-primary);
+  color: rgba(255,255,255,0.85);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235c6278'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
-  padding-right: 24px;
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
+  font-family: var(--wc-font);
 }
+.cs-panel__select option { background: #1c1d22; color: #e8eaf2; }
 .cs-panel__select:focus {
   outline: none;
-  border-color: var(--wc-blue);
-  box-shadow: 0 0 0 2px rgba(14,165,233,0.15);
+  border-color: var(--wc-indigo);
 }
 
-/* ── Context meta row (type badge + code + nav) ── */
 .cs-panel__meta {
   display: flex;
   align-items: center;
@@ -84,7 +78,7 @@
 .cs-panel__code {
   font-size: 10px;
   font-family: var(--wc-font-mono);
-  color: var(--wc-text-muted);
+  color: var(--wc-sidebar-text-dim);
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -98,49 +92,41 @@
   border: none;
   cursor: pointer;
   color: #fff;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity 120ms;
   white-space: nowrap;
+  font-family: var(--wc-font);
 }
-.cs-panel__nav-btn:hover {
-  opacity: 0.85;
-  transform: translateX(2px);
-}
+.cs-panel__nav-btn:hover { opacity: 0.82; }
 
-/* ── Edit / Rename row ── */
 .cs-panel__actions {
   display: flex;
   gap: 5px;
-  margin-top: 5px;
+  margin-top: 6px;
 }
 .cs-panel__action-btn {
   flex: 1;
   font-size: 10px;
   font-weight: 600;
-  padding: 3px 0;
+  padding: 4px 0;
   border-radius: var(--wc-radius-sm);
   cursor: pointer;
-  transition: background 0.15s;
   text-align: center;
+  font-family: var(--wc-font);
+  transition: background 120ms;
 }
 .cs-panel__action-btn--rename {
-  background: var(--wc-page-bg);
-  border: 1px solid var(--wc-border);
-  color: var(--wc-text-secondary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--wc-sidebar-text);
 }
-.cs-panel__action-btn--rename:hover {
-  background: var(--wc-sidebar-hover);
-  border-color: var(--wc-text-muted);
-}
+.cs-panel__action-btn--rename:hover { background: rgba(255,255,255,0.1); }
 .cs-panel__action-btn--delete {
   background: transparent;
-  border: 1px solid var(--wc-danger-border, #fca5a5);
-  color: var(--wc-danger);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
 }
-.cs-panel__action-btn--delete:hover {
-  background: var(--wc-danger-bg);
-}
+.cs-panel__action-btn--delete:hover { background: rgba(239,68,68,0.1); }
 
-/* ── Edit form ── */
 .cs-panel__form {
   margin-top: 6px;
   display: flex;
@@ -150,40 +136,35 @@
 .cs-panel__input,
 .cs-panel__textarea {
   width: 100%;
-  padding: 5px 8px;
+  padding: 6px 9px;
   font-size: 12px;
-  background: var(--wc-page-bg);
-  border: 1px solid var(--wc-border);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--wc-radius-sm);
-  color: var(--wc-text-primary);
+  color: rgba(255,255,255,0.85);
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 120ms;
+  font-family: var(--wc-font);
 }
+.cs-panel__input::placeholder { color: var(--wc-sidebar-text-dim); }
 .cs-panel__input:focus,
-.cs-panel__textarea:focus {
-  outline: none;
-  border-color: var(--wc-blue);
-}
+.cs-panel__textarea:focus { outline: none; border-color: var(--wc-indigo); }
 .cs-panel__textarea { min-height: 52px; resize: vertical; }
 .cs-panel__form-row { display: flex; gap: 5px; }
 .cs-panel__form-label {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--wc-text-muted);
-  margin-bottom: 2px;
+  letter-spacing: 0.08em;
+  color: var(--wc-sidebar-text-dim);
+  margin-bottom: 3px;
 }
-.cs-panel__muted {
-  font-size: 10px;
-  color: var(--wc-text-muted);
-  margin-top: 2px;
-}
+.cs-panel__muted { font-size: 10px; color: var(--wc-sidebar-text-dim); margin-top: 2px; }
 .cs-panel__error {
   font-size: 10px;
-  color: #dc2626;
+  color: #f87171;
   margin-top: 4px;
-  padding: 4px 6px;
-  background: #fee2e2;
+  padding: 4px 7px;
+  background: rgba(239,68,68,0.1);
   border-radius: var(--wc-radius-sm);
 }

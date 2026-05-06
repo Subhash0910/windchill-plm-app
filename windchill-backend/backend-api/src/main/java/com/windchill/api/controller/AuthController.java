@@ -64,7 +64,7 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<ApiResponse<?>> validateToken(@RequestHeader(APIConstants.AUTHORIZATION) String authHeader) {
+    public ResponseEntity<ApiResponse<?>> validateToken(@RequestHeader(value = APIConstants.AUTHORIZATION, required = false) String authHeader) {
         if (authHeader == null || !authHeader.startsWith(APIConstants.BEARER)) {
             return ResponseEntity.ok(ApiResponse.builder()
                     .success(false)

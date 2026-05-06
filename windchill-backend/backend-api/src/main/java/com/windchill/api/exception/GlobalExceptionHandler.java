@@ -40,6 +40,13 @@ public class GlobalExceptionHandler {
             .body(ApiResponse.builder().success(false).message("Validation failed").data(errors).build());
     }
 
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidationException(ValidationException ex, WebRequest request) {
+        log.warn("Validation/auth error at {}: {}", request.getDescription(false), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.builder().success(false).message(ex.getMessage()).data(null).build());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<?>> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         log.warn("Invalid argument: {} at {}", ex.getMessage(), request.getDescription(false));

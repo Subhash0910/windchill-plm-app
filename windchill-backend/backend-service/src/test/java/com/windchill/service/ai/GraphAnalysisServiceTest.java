@@ -1,12 +1,16 @@
 package com.windchill.service.ai;
 
+import com.windchill.common.enums.ChangeRequestStatus;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.BomLine;
+import com.windchill.domain.entity.ChangeRequest;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
+import com.windchill.repository.ChangeRequestRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.ai.dto.GraphImpactResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,19 +19,28 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GraphAnalysisServiceTest {
 
-    @Mock PartRepository    partRepository;
-    @Mock BomLineRepository bomLineRepository;
+    @Mock PartRepository            partRepository;
+    @Mock BomLineRepository         bomLineRepository;
+    @Mock ChangeRequestRepository   changeRequestRepository;
     @InjectMocks GraphAnalysisService service;
+
+    @BeforeEach
+    void setUp() {
+        when(changeRequestRepository.findActiveChangeRequests())
+                .thenReturn(Collections.emptyList());
+    }
 
     // ─── analyzePartChange ───────────────────────────────────────────────────
 
@@ -195,6 +208,86 @@ class GraphAnalysisServiceTest {
             assertThat(children).containsOnly(2L);
             verify(bomLineRepository, never())
                 .findByParentPartIdAndIsDeletedFalseOrderBySortOrderAscIdAsc(2L);
+        }
+    }
+
+    // ─── conflict detection ───────────────────────────────────────────────────
+
+    @Nested @DisplayName("Conflict Detection")
+    class ConflictDetection {
+
+        @Test @DisplayName("reports zero conflicts when no active ECRs exist")
+        void zeroConflicts() {
+            when(partRepository.findById(1L))
+                    .thenReturn(Optional.of(part(1L, "P-001", LifecycleStateEnum.INWORK)));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(1L))
+                    .thenReturn(List.of(2L));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(2L))
+                    .thenReturn(List.of());
+            when(partRepository.findAllById(anySet()))
+                    .thenReturn(List.of(part(2L, "P-002", LifecycleStateEnum.INWORK)));
+
+            GraphImpactResult result = service.analyzePartChange(1L, "MODIFY");
+
+            assertThat(result.getConflictingChangesCount()).isZero();
+            assertThat(result.getConflictingChangeNumbers()).isEmpty();
+        }
+
+        @Test @DisplayName("detects active ECR on an affected parent part")
+        void detectsConflict() {
+            ChangeRequest activeEcr = new ChangeRequest();
+            activeEcr.setId(100L);
+            activeEcr.setChangeNumber("ECR-0042");
+            activeEcr.setImpactedPartIds("2,5,8");
+
+            when(partRepository.findById(1L))
+                    .thenReturn(Optional.of(part(1L, "P-001", LifecycleStateEnum.INWORK)));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(1L))
+                    .thenReturn(List.of(2L));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(2L))
+                    .thenReturn(List.of());
+            when(partRepository.findAllById(anySet()))
+                    .thenReturn(List.of(part(2L, "P-002", LifecycleStateEnum.INWORK)));
+            when(changeRequestRepository.findActiveChangeRequests())
+                    .thenReturn(List.of(activeEcr));
+
+            GraphImpactResult result = service.analyzePartChange(1L, "MODIFY");
+
+            assertThat(result.getConflictingChangesCount()).isEqualTo(1);
+            assertThat(result.getConflictingChangeNumbers()).contains("ECR-0042");
+        }
+    }
+
+    // ─── compliance checking ─────────────────────────────────────────────────
+
+    @Nested @DisplayName("Compliance Checking")
+    class ComplianceChecking {
+
+        @Test @DisplayName("flags compliance issue for OBSOLETE on RELEASED part")
+        void obsoleteOnReleased() {
+            when(partRepository.findById(1L))
+                    .thenReturn(Optional.of(part(1L, "P-001", LifecycleStateEnum.RELEASED)));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(1L))
+                    .thenReturn(List.of());
+            when(partRepository.findAllById(anySet())).thenReturn(List.of());
+
+            GraphImpactResult result = service.analyzePartChange(1L, "OBSOLETE");
+
+            assertThat(result.isHasComplianceIssues()).isTrue();
+            assertThat(result.getComplianceWarnings()).isNotEmpty();
+        }
+
+        @Test @DisplayName("no compliance flag for MODIFY on INWORK part")
+        void modifyOnInwork() {
+            when(partRepository.findById(1L))
+                    .thenReturn(Optional.of(part(1L, "P-001", LifecycleStateEnum.INWORK)));
+            when(bomLineRepository.findDistinctParentPartIdsByChildPartId(1L))
+                    .thenReturn(List.of());
+            when(partRepository.findAllById(anySet())).thenReturn(List.of());
+
+            GraphImpactResult result = service.analyzePartChange(1L, "MODIFY");
+
+            assertThat(result.isHasComplianceIssues()).isFalse();
         }
     }
 

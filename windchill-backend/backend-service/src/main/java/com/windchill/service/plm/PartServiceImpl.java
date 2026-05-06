@@ -8,6 +8,8 @@ import com.windchill.common.enums.RoleEnum;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
 import com.windchill.repository.PartRepository;
+import com.windchill.repository.UserRepository;
+import com.windchill.service.INotificationService;
 import com.windchill.service.plm.security.PlmAclService;
 import com.windchill.service.workflow.PromotionWorkflowService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,20 @@ public class PartServiceImpl implements IPartService {
     private final IAuditService auditService;
     private final PlmAclService acl;
     private final PromotionWorkflowService promotionWorkflowService;
+    private final INotificationService notificationService;
+    private final UserRepository userRepo;
+
+    private void notifyPartEvent(String username, String title, String message, Part part) {
+        if (username == null || username.isBlank()) return;
+        try {
+            userRepo.findByUsername(username).ifPresent(u ->
+                notificationService.create(u.getId(), title, message,
+                    "PART_PROMOTED", "PART", part.getId(), part.getPartNumber())
+            );
+        } catch (Exception ex) {
+            log.warn("Part notification failed (non-fatal): {}", ex.getMessage());
+        }
+    }
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
@@ -165,6 +181,13 @@ public class PartServiceImpl implements IPartService {
         part.setLifecycleState(target);
         Part saved = partRepository.save(part);
         auditService.log(PlmEntityTypeEnum.PART, saved.getId(), "PROMOTE", from + " -> " + target);
+
+        String actor = currentUsername();
+        if (saved.getCreatedBy() != null && !saved.getCreatedBy().equals(actor)) {
+            notifyPartEvent(saved.getCreatedBy(),
+                "Part " + saved.getPartNumber() + " → " + target.name(),
+                saved.getName() + " was promoted from " + from + " to " + target, saved);
+        }
         return saved;
     }
 

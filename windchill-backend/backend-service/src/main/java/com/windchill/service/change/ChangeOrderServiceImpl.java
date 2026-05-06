@@ -4,7 +4,10 @@ import com.windchill.common.exception.BusinessException;
 import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.ChangeOrder;
 import com.windchill.repository.ChangeOrderRepository;
+import com.windchill.repository.UserRepository;
+import com.windchill.service.INotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,11 +16,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChangeOrderServiceImpl implements IChangeOrderService {
 
     private final ChangeOrderRepository repo;
+    private final INotificationService notificationService;
+    private final UserRepository userRepo;
+
+    private void notify(String username, String title, String message, ChangeOrder eco) {
+        if (username == null || username.isBlank()) return;
+        try {
+            userRepo.findByUsername(username).ifPresent(u ->
+                notificationService.create(u.getId(), title, message,
+                    "ECO", "CHANGE_ORDER", eco.getId(), eco.getEcoNumber())
+            );
+        } catch (Exception ex) {
+            log.warn("ECO notification failed (non-fatal): {}", ex.getMessage());
+        }
+    }
 
     private static final Map<ChangeOrder.State, Set<ChangeOrder.State>> TRANSITIONS = Map.of(
         ChangeOrder.State.DRAFT,        Set.of(ChangeOrder.State.OPEN, ChangeOrder.State.CANCELLED),
@@ -47,7 +65,13 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
             .createdBy(currentUser)
             .updatedBy(currentUser)
             .build();
-        return ChangeOrderDto.from(repo.save(eco));
+        ChangeOrder saved = repo.save(eco);
+        if (saved.getAssignedTo() != null && !Objects.equals(saved.getAssignedTo(), currentUser)) {
+            notify(saved.getAssignedTo(),
+                "ECO assigned: " + saved.getEcoNumber(),
+                "You have been assigned to " + saved.getTitle(), saved);
+        }
+        return ChangeOrderDto.from(saved);
     }
 
     @Override
@@ -95,7 +119,18 @@ public class ChangeOrderServiceImpl implements IChangeOrderService {
         }
         eco.setState(target);
         eco.setUpdatedBy(currentUser);
-        return ChangeOrderDto.from(repo.save(eco));
+        ChangeOrder saved = repo.save(eco);
+
+        // Notify creator + assignee on state change (skip self)
+        String title = "ECO " + saved.getEcoNumber() + " → " + target.name();
+        String message = saved.getTitle() + " is now " + target.name().replace("_", " ");
+        if (!Objects.equals(saved.getCreatedBy(), currentUser)) {
+            notify(saved.getCreatedBy(), title, message, saved);
+        }
+        if (saved.getAssignedTo() != null && !Objects.equals(saved.getAssignedTo(), currentUser)) {
+            notify(saved.getAssignedTo(), title, message, saved);
+        }
+        return ChangeOrderDto.from(saved);
     }
 
     @Override

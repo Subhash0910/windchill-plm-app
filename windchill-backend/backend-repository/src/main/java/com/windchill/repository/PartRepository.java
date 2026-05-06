@@ -22,4 +22,6 @@ public interface PartRepository extends JpaRepository<Part, Long> {
 
     // Used by undoCheckOut() to find and restore the previous iteration
     Optional<Part> findByMasterIdAndRevisionAndIteration(Long masterId, String revision, Integer iteration);
+
+    List<Part> findByIsLatestTrueAndIsDeletedFalseOrderByPartNumberAsc();
 }

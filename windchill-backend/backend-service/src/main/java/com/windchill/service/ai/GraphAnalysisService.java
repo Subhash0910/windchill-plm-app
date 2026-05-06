@@ -3,8 +3,10 @@ package com.windchill.service.ai;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.exception.ResourceNotFoundException;
 import com.windchill.domain.entity.BomLine;
+import com.windchill.domain.entity.ChangeRequest;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
+import com.windchill.repository.ChangeRequestRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.ai.dto.GraphImpactResult;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class GraphAnalysisService {
 
     private final PartRepository partRepository;
     private final BomLineRepository bomLineRepository;
+    private final ChangeRequestRepository changeRequestRepository;
 
     @Transactional(readOnly = true)
     public GraphImpactResult analyzePartChange(Long partId, String changeType) {
@@ -39,14 +42,25 @@ public class GraphAnalysisService {
 
             boolean complexStructure = affectedPartIds.size() > 10 || maxDepth > 5;
 
+            // Conflict detection: find active ECRs on affected parts
+            int conflictingCount = detectConflictingChanges(new ArrayList<>(affectedPartIds));
+            List<String> conflictingNumbers = getConflictingChangeNumbers(new ArrayList<>(affectedPartIds));
+
+            // Compliance check: lifecycle + released-parent rules
+            boolean hasComplianceIssues = checkCompliance(targetPart, changeType,
+                    new ArrayList<>(affectedPartIds));
+            List<String> complianceWarnings = getComplianceWarnings(targetPart, changeType,
+                    new ArrayList<>(affectedPartIds));
+
             GraphImpactResult result = GraphImpactResult.builder()
                 .totalAffectedCount(affectedPartIds.size())
                 .releasedAffectedCount((int) releasedCount)
                 .bomDepth(maxDepth)
                 .hasComplexStructure(complexStructure)
-                .conflictingChangesCount(0)
-                .conflictingChangeNumbers(Collections.emptyList())
-                .hasComplianceIssues(false)
+                .conflictingChangesCount(conflictingCount)
+                .conflictingChangeNumbers(conflictingNumbers)
+                .hasComplianceIssues(hasComplianceIssues)
+                .complianceWarnings(complianceWarnings)
                 .currentLifecycleState(targetPart.getLifecycleState() != null
                     ? targetPart.getLifecycleState().name() : "UNKNOWN")
                 .currentVersion(targetPart.getRevision() + "." + targetPart.getIteration())
@@ -114,5 +128,102 @@ public class GraphAnalysisService {
                 explodeBOMRecursive(childId, children, depth + 1, maxDepth);
             }
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CONFLICT DETECTION
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Count active ECRs whose impactedPartIds overlap with the given part IDs.
+     */
+    private int detectConflictingChanges(List<Long> partIds) {
+        if (partIds == null || partIds.isEmpty()) return 0;
+
+        Set<Long> idSet = new HashSet<>(partIds);
+        List<ChangeRequest> activeEcrs = changeRequestRepository.findActiveChangeRequests();
+
+        Set<Long> conflictingIds = new HashSet<>();
+        for (ChangeRequest ecr : activeEcrs) {
+            if (ecr.getImpactedPartIds() == null || ecr.getImpactedPartIds().isBlank()) continue;
+            for (String token : ecr.getImpactedPartIds().split(",")) {
+                try {
+                    if (idSet.contains(Long.parseLong(token.trim()))) {
+                        conflictingIds.add(ecr.getId());
+                        break;
+                    }
+                } catch (NumberFormatException ignored) { /* skip */ }
+            }
+        }
+        return conflictingIds.size();
+    }
+
+    /**
+     * Collect change numbers of conflicting active ECRs.
+     */
+    private List<String> getConflictingChangeNumbers(List<Long> partIds) {
+        if (partIds == null || partIds.isEmpty()) return Collections.emptyList();
+
+        Set<Long> idSet = new HashSet<>(partIds);
+        List<ChangeRequest> activeEcrs = changeRequestRepository.findActiveChangeRequests();
+
+        List<String> numbers = new ArrayList<>();
+        for (ChangeRequest ecr : activeEcrs) {
+            if (ecr.getImpactedPartIds() == null || ecr.getImpactedPartIds().isBlank()) continue;
+            for (String token : ecr.getImpactedPartIds().split(",")) {
+                try {
+                    if (idSet.contains(Long.parseLong(token.trim()))) {
+                        numbers.add(ecr.getChangeNumber());
+                        break;
+                    }
+                } catch (NumberFormatException ignored) { /* skip */ }
+            }
+        }
+        return numbers;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // COMPLIANCE CHECKING
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Check lifecycle compliance rules against the proposed change.
+     */
+    private boolean checkCompliance(Part part, String changeType, List<Long> affectedPartIds) {
+        if ("OBSOLETE".equalsIgnoreCase(changeType)
+                && part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            return true;
+        }
+        if (affectedPartIds != null && !affectedPartIds.isEmpty()) {
+            List<Part> affected = partRepository.findAllById(affectedPartIds);
+            if (affected != null && affected.stream()
+                    .anyMatch(p -> p.getLifecycleState() == LifecycleStateEnum.RELEASED)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Generate human-readable compliance warnings.
+     */
+    private List<String> getComplianceWarnings(Part part, String changeType, List<Long> affectedPartIds) {
+        List<String> warnings = new ArrayList<>();
+        if ("OBSOLETE".equalsIgnoreCase(changeType)
+                && part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            warnings.add("Obsoleting a RELEASED part requires a formal ECN with phase-out plan");
+        }
+        if (affectedPartIds != null && !affectedPartIds.isEmpty()) {
+            List<Part> affected = partRepository.findAllById(affectedPartIds);
+            if (affected != null) {
+                long released = affected.stream()
+                        .filter(p -> p.getLifecycleState() == LifecycleStateEnum.RELEASED).count();
+                if (released > 0) {
+                    warnings.add(String.format(
+                            "%d released part(s) affected — coordinate ECN cascade", released));
+                }
+            }
+        }
+        return warnings;
     }
 }

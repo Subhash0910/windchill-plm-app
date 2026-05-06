@@ -96,3 +96,9 @@ docker-compose.override.yml
 # ── Gradle (if added later) ────────────────────────────────────────
 .gradle/
 gradle-app.setting
+
+# ── Claude Code local worktrees (never commit) ─────────────────────
+.claude/worktrees/
+
+# ── Build / dev artefacts that should not be committed ─────────────
+build_log.txt

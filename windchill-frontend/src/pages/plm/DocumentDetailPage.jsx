@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import StateBadge from '../../components/plm/StateBadge';
+import LifecycleStateflow from '../../components/plm/LifecycleStateflow';
 import { documentApi } from '../../services/documentApi';
 import { plmApi } from '../../services/plmApi';
+import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
 import styles from './DocumentDetailPage.module.css';
 
-const TAB = { DETAILS: 'DETAILS', RELATED: 'RELATED', HISTORY: 'HISTORY' };
+const TAB = { DETAILS: 'DETAILS', RELATED: 'RELATED', ATTACHMENTS: 'ATTACHMENTS', HISTORY: 'HISTORY' };
 
 const DocumentDetailPage = () => {
   const { id } = useParams();
@@ -111,6 +113,7 @@ const DocumentDetailPage = () => {
             )}
           </div>
           <div className={styles.docTitle}>{doc.name}</div>
+          <LifecycleStateflow entityType="document" currentState={doc.lifecycleState} />
         </div>
 
         <div className={styles.docActions}>
@@ -132,6 +135,7 @@ const DocumentDetailPage = () => {
         <div className={styles.docTabs}>
           <TabBtn tab={TAB.DETAILS}>Properties</TabBtn>
           <TabBtn tab={TAB.RELATED}>Related Parts</TabBtn>
+          <TabBtn tab={TAB.ATTACHMENTS}>Attachments</TabBtn>
           <TabBtn tab={TAB.HISTORY}>History</TabBtn>
         </div>
 
@@ -193,6 +197,13 @@ const DocumentDetailPage = () => {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {activeTab === TAB.ATTACHMENTS && (
+          <div className={styles.docCard}>
+            <div className={styles.docCardTitle}>Attachments</div>
+            <AttachmentsPanel entityType="DOCUMENT" entityId={Number(id)} />
           </div>
         )}
 

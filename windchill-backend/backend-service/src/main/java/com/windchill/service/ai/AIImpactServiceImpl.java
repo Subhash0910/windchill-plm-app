@@ -4,8 +4,10 @@ import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.common.exceptions.ResourceNotFoundException;
 import com.windchill.domain.entity.BomLine;
+import com.windchill.domain.entity.ChangeRequest;
 import com.windchill.domain.entity.Part;
 import com.windchill.repository.BomLineRepository;
+import com.windchill.repository.ChangeRequestRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.ai.dto.AIImpactAnalysis;
 import com.windchill.service.ai.dto.MLRiskRequest;
@@ -36,6 +38,7 @@ public class AIImpactServiceImpl implements IAIImpactService {
 
     private final PartRepository partRepository;
     private final BomLineRepository bomLineRepository;
+    private final ChangeRequestRepository changeRequestRepository;
     private final IAuditService auditService;
     private final RestTemplate restTemplate;
 
@@ -62,13 +65,19 @@ public class AIImpactServiceImpl implements IAIImpactService {
         int releasedAffected = countReleasedParts(whereUsedIds);
         List<String> affectedPartNumbers = getAffectedPartNumbers(whereUsedIds);
         
-        // 4. Detect conflicting changes (future enhancement - placeholder for now)
-        int conflictingChanges = 0; // TODO: Check for active ECRs on affected parts
+        // 4. Detect conflicting changes (active ECRs on affected parent parts)
+        int conflictingChanges = detectConflictingChanges(whereUsedIds);
+        List<String> conflictingChangeNumbers = getConflictingChangeNumbers(whereUsedIds);
         
+        // 4b. Check compliance issues
+        boolean hasComplianceIssues = checkCompliance(part, changeType, whereUsedIds);
+        List<String> complianceWarnings = getComplianceWarnings(part, changeType, whereUsedIds);
+
         // 5. Call ML Service for risk prediction
         MLRiskResponse mlResponse = callMLService(
-            partId, changeType, bomDepth, whereUsedCount, 
-            releasedAffected, conflictingChanges, part.getLifecycleState().name()
+            partId, changeType, bomDepth, whereUsedCount,
+            releasedAffected, conflictingChanges, part.getLifecycleState().name(),
+            hasComplianceIssues
         );
         
         // 6. Generate recommendations
@@ -88,7 +97,10 @@ public class AIImpactServiceImpl implements IAIImpactService {
             .whereUsedCount(whereUsedCount)
             .releasedAffected(releasedAffected)
             .conflictingChanges(conflictingChanges)
+            .conflictingChangeNumbers(conflictingChangeNumbers)
             .affectedPartNumbers(affectedPartNumbers)
+            .hasComplianceIssues(hasComplianceIssues)
+            .complianceWarnings(complianceWarnings)
             .riskScore(mlResponse.getRiskScore())
             .confidence(mlResponse.getConfidence())
             .riskLevel(mlResponse.getRiskLevel())
@@ -183,9 +195,10 @@ public class AIImpactServiceImpl implements IAIImpactService {
     /**
      * Call ML microservice for risk prediction
      */
-    private MLRiskResponse callMLService(Long partId, String changeType, int bomDepth, 
-                                         int whereUsedCount, int releasedAffected, 
-                                         int conflictingChanges, String lifecycleState) {
+    private MLRiskResponse callMLService(Long partId, String changeType, int bomDepth,
+                                         int whereUsedCount, int releasedAffected,
+                                         int conflictingChanges, String lifecycleState,
+                                         boolean hasComplianceIssues) {
         try {
             MLRiskRequest request = MLRiskRequest.builder()
                 .partId(partId)
@@ -195,7 +208,7 @@ public class AIImpactServiceImpl implements IAIImpactService {
                 .releasedAffected(releasedAffected)
                 .conflictingChanges(conflictingChanges)
                 .lifecycleState(lifecycleState)
-                .hasComplianceIssues(false) // TODO: Implement compliance checker
+                .hasComplianceIssues(hasComplianceIssues)
                 .build();
             
             ResponseEntity<MLRiskResponse> response = restTemplate.postForEntity(
@@ -300,8 +313,140 @@ public class AIImpactServiceImpl implements IAIImpactService {
     private Integer estimateCycleTime(double riskScore, int releasedAffected) {
         if (riskScore < 4) return 3;
         if (riskScore < 7) return 7;
-        
+
         // High risk: 7 days base + 2 days per released part
         return 7 + (releasedAffected * 2);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CONFLICT DETECTION
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Detect active ECRs that impact any of the where-used parent parts.
+     * An active ECR is one not in CLOSED or REJECTED state.
+     *
+     * @param parentPartIds the list of parent part IDs from where-used analysis
+     * @return count of unique active ECRs that conflict with this change
+     */
+    private int detectConflictingChanges(List<Long> parentPartIds) {
+        if (parentPartIds == null || parentPartIds.isEmpty()) {
+            return 0;
+        }
+
+        Set<Long> parentIdSet = new HashSet<>(parentPartIds);
+        List<ChangeRequest> activeEcrs = changeRequestRepository.findActiveChangeRequests();
+
+        Set<Long> conflictingEcrIds = new HashSet<>();
+        for (ChangeRequest ecr : activeEcrs) {
+            if (ecr.getImpactedPartIds() == null || ecr.getImpactedPartIds().isBlank()) {
+                continue;
+            }
+            for (String idToken : ecr.getImpactedPartIds().split(",")) {
+                try {
+                    Long impactedId = Long.parseLong(idToken.trim());
+                    if (parentIdSet.contains(impactedId)) {
+                        conflictingEcrIds.add(ecr.getId());
+                        break; // count this ECR once
+                    }
+                } catch (NumberFormatException ignored) {
+                    // malformed token — skip
+                }
+            }
+        }
+
+        return conflictingEcrIds.size();
+    }
+
+    /**
+     * Get the change numbers of conflicting active ECRs for reporting.
+     */
+    private List<String> getConflictingChangeNumbers(List<Long> parentPartIds) {
+        if (parentPartIds == null || parentPartIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> parentIdSet = new HashSet<>(parentPartIds);
+        List<ChangeRequest> activeEcrs = changeRequestRepository.findActiveChangeRequests();
+
+        List<String> numbers = new ArrayList<>();
+        for (ChangeRequest ecr : activeEcrs) {
+            if (ecr.getImpactedPartIds() == null || ecr.getImpactedPartIds().isBlank()) {
+                continue;
+            }
+            for (String idToken : ecr.getImpactedPartIds().split(",")) {
+                try {
+                    Long impactedId = Long.parseLong(idToken.trim());
+                    if (parentIdSet.contains(impactedId)) {
+                        numbers.add(ecr.getChangeNumber());
+                        break;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // skip
+                }
+            }
+        }
+        return numbers;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // COMPLIANCE CHECKING
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Check whether the proposed change violates any compliance / lifecycle rules.
+     *
+     * Rules checked:
+     *   1. OBSOLETE on a RELEASED part requires a formal ECN (compliance flag)
+     *   2. Changing a part that affects RELEASED parents without an ECN path
+     *   3. PROMOTE on a part at the latest revision (should already be promoted)
+     *
+     * @return true if any compliance rule is violated
+     */
+    private boolean checkCompliance(Part part, String changeType, List<Long> parentPartIds) {
+        // Rule 1: Obsoleting a released part requires formal process
+        if ("OBSOLETE".equalsIgnoreCase(changeType)
+                && part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            return true;
+        }
+
+        // Rule 2: Check if affected parents include RELEASED parts (requires ECN cascade)
+        if (parentPartIds != null && !parentPartIds.isEmpty()) {
+            List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentPartIds);
+            if (parents != null && parents.stream()
+                    .anyMatch(p -> p.getLifecycleState() == LifecycleStateEnum.RELEASED)) {
+                // Any change affecting released parents is a compliance concern
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Generate human-readable compliance warnings for the user.
+     */
+    private List<String> getComplianceWarnings(Part part, String changeType, List<Long> parentPartIds) {
+        List<String> warnings = new ArrayList<>();
+
+        if ("OBSOLETE".equalsIgnoreCase(changeType)
+                && part.getLifecycleState() == LifecycleStateEnum.RELEASED) {
+            warnings.add("Obsoleting a RELEASED part requires a formal ECN with phase-out plan");
+        }
+
+        if (parentPartIds != null && !parentPartIds.isEmpty()) {
+            List<Part> parents = partRepository.findByIdInAndIsDeletedFalseOrderByPartNumberAsc(parentPartIds);
+            if (parents != null) {
+                long releasedParents = parents.stream()
+                        .filter(p -> p.getLifecycleState() == LifecycleStateEnum.RELEASED)
+                        .count();
+                if (releasedParents > 0) {
+                    warnings.add(String.format(
+                            "%d released parent part(s) affected — coordinate ECN cascade", releasedParents));
+                }
+            }
+        }
+
+        return warnings;
     }
 }

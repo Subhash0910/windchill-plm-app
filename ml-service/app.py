@@ -300,6 +300,154 @@ async def clear_session(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
+# NATURAL LANGUAGE SEARCH PARSER
+# ============================================================================
+
+import re
+
+class NlSearchRequest(BaseModel):
+    query: str
+
+class NlSearchIntent(BaseModel):
+    entity_types: List[str]           # PART, DOCUMENT, ECR, ECO — empty = all
+    keywords: List[str]
+    lifecycle_state: Optional[str]    # DRAFT, RELEASED, OBSOLETE, etc.
+    modified_after_days: Optional[int]
+    created_by: Optional[str]
+    confidence: float
+
+@app.post("/nl-parse", response_model=NlSearchIntent, tags=["Search"])
+async def nl_parse(request: NlSearchRequest):
+    """Parse a natural language PLM search query into structured filters."""
+    q = request.query.lower().strip()
+
+    # Entity type detection
+    entity_map = {
+        "part": "PART", "parts": "PART", "component": "PART", "components": "PART",
+        "assembly": "PART", "assemblies": "PART",
+        "document": "DOCUMENT", "documents": "DOCUMENT", "doc": "DOCUMENT", "docs": "DOCUMENT",
+        "ecr": "ECR", "change request": "ECR", "change requests": "ECR",
+        "eco": "ECO", "change order": "ECO", "change orders": "ECO",
+    }
+    entity_types = []
+    for kw, etype in entity_map.items():
+        if kw in q and etype not in entity_types:
+            entity_types.append(etype)
+
+    # Lifecycle state detection
+    state_map = {
+        "released": "RELEASED", "release": "RELEASED",
+        "draft": "DRAFT", "in work": "IN_WORK", "inwork": "IN_WORK",
+        "in review": "IN_REVIEW", "under review": "IN_REVIEW",
+        "obsolete": "OBSOLETE", "approved": "APPROVED",
+        "open": "OPEN", "closed": "CLOSED", "submitted": "SUBMITTED",
+    }
+    lifecycle_state = None
+    for kw, state in state_map.items():
+        if kw in q:
+            lifecycle_state = state
+            break
+
+    # Time range detection
+    modified_after_days = None
+    patterns = [
+        (r"last\s+(\d+)\s+days?", lambda m: int(m.group(1))),
+        (r"past\s+(\d+)\s+days?", lambda m: int(m.group(1))),
+        (r"last\s+week", lambda m: 7),
+        (r"last\s+month", lambda m: 30),
+        (r"last\s+(\d+)\s+weeks?", lambda m: int(m.group(1)) * 7),
+    ]
+    for pattern, extractor in patterns:
+        m = re.search(pattern, q)
+        if m:
+            modified_after_days = extractor(m)
+            break
+
+    # Created by detection
+    created_by = None
+    by_match = re.search(r"(?:by|created by|assigned to)\s+([a-z0-9._-]+)", q)
+    if by_match:
+        created_by = by_match.group(1)
+
+    # Extract remaining keywords (strip structural words)
+    stop = {"show", "me", "all", "the", "a", "an", "in", "of", "for", "that",
+            "were", "modified", "created", "changed", "last", "past", "and",
+            "or", "with", "by", "is", "are", "have", "has", "been", "days",
+            "week", "month", "part", "parts", "document", "documents", "ecr",
+            "eco", "released", "draft", "in", "review", "obsolete", "approved",
+            "open", "closed", "submitted", "inwork", "week", "assembly", "assemblies"}
+    tokens = [t for t in re.split(r"\W+", q) if t and t not in stop and len(t) > 1]
+    keywords = list(dict.fromkeys(tokens))[:6]  # dedup, cap at 6
+
+    confidence = 0.5
+    if entity_types: confidence += 0.2
+    if lifecycle_state: confidence += 0.15
+    if modified_after_days: confidence += 0.1
+    if keywords: confidence += 0.05
+
+    return NlSearchIntent(
+        entity_types=entity_types,
+        keywords=keywords,
+        lifecycle_state=lifecycle_state,
+        modified_after_days=modified_after_days,
+        created_by=created_by,
+        confidence=min(confidence, 1.0),
+    )
+
+# ============================================================================
+# PART SIMILARITY ENDPOINT
+# ============================================================================
+
+class SimilarPartCandidate(BaseModel):
+    part_number: str = Field(..., alias="partNumber")
+    name: str
+    similarity: float
+
+class PartSimilarityRequest(BaseModel):
+    part_number: str = Field(..., alias="partNumber")
+    name: str
+    candidates: List[Dict]  # [{"partNumber": "...", "name": "..."}]
+
+class PartSimilarityResponse(BaseModel):
+    similar: List[SimilarPartCandidate]
+
+@app.post("/part-similarity", response_model=PartSimilarityResponse, tags=["Similarity"])
+async def part_similarity(request: PartSimilarityRequest):
+    """Find similar parts using TF-IDF cosine similarity on part number + name."""
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        query = f"{request.part_number} {request.name}".lower()
+        docs = [f"{c.get('partNumber','')} {c.get('name','')}".lower() for c in request.candidates]
+        if not docs:
+            return PartSimilarityResponse(similar=[])
+
+        all_docs = [query] + docs
+        vec = TfidfVectorizer(analyzer='char_wb', ngram_range=(2, 4), min_df=1)
+        matrix = vec.fit_transform(all_docs)
+        sims = cosine_similarity(matrix[0:1], matrix[1:]).flatten()
+
+        threshold = 0.35
+        results = []
+        for i, score in enumerate(sims):
+            if score >= threshold:
+                c = request.candidates[i]
+                results.append(SimilarPartCandidate(
+                    partNumber=c.get('partNumber', ''),
+                    name=c.get('name', ''),
+                    similarity=round(float(score), 3)
+                ))
+        results.sort(key=lambda x: x.similarity, reverse=True)
+        return PartSimilarityResponse(similar=results[:5])
+    except ImportError:
+        # sklearn not available — return empty
+        return PartSimilarityResponse(similar=[])
+    except Exception as e:
+        logger.error(f"Similarity error: {e}")
+        return PartSimilarityResponse(similar=[])
+
+# ============================================================================
 # RISK PREDICTION ENDPOINTS (UNCHANGED)
 # ============================================================================
 

@@ -84,7 +84,7 @@
   cursor: pointer;
   color: var(--wc-text-primary);
 }
-.btnIcon:hover { background: var(--wc-sidebar-hover); border-color: var(--wc-text-muted); }
+.btnIcon:hover { background: var(--wc-row-hover); border-color: var(--wc-text-muted); }
 
 /* Dialog */
 .dialogOverlay {
@@ -159,7 +159,7 @@
 .btnReject  { background: var(--wc-state-obsolete-text); color: #fff; border: none; }
 .btnReject:hover:not(:disabled)  { opacity: 0.9; transform: translateY(-1px); }
 .btnCancel  { background: var(--wc-content-bg); color: var(--wc-text-primary); border: 1px solid var(--wc-border); }
-.btnCancel:hover { background: var(--wc-sidebar-hover); }
+.btnCancel:hover { background: var(--wc-row-hover); }
 
 /* Layout Grid */
 .contentGrid {
@@ -185,7 +185,7 @@
   font-size: 13px;
 }
 .wcTable thead tr {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -206,7 +206,7 @@
   transition: all 0.2s var(--wc-ease-out);
 }
 .wcTable tbody tr:hover { 
-  background: var(--wc-sidebar-hover); 
+  background: var(--wc-row-hover); 
   transform: translateY(-1px);
   box-shadow: var(--wc-shadow-sm);
 }
@@ -284,7 +284,7 @@
   text-align: center;
 }
 .panelButton:hover {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
   border-color: var(--wc-text-muted);
   transform: translateY(-1px);
   box-shadow: var(--wc-shadow-sm);

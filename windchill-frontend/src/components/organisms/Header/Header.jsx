@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import NotificationBell from './NotificationBell';
 import Breadcrumb from '../../plm/Breadcrumb';
+import GlobalSearchBar from '../../plm/GlobalSearchBar';
 import './Header.css';
 
 /**
@@ -54,9 +55,10 @@ const Header = ({ title }) => {
         <span className="wc-logo-text">PLM Learning Workspace</span>
       </div>
 
-      {/* Breadcrumb — fills centre */}
+      {/* Centre — breadcrumb + NL search */}
       <div className="wc-header-breadcrumb">
         <Breadcrumb />
+        <GlobalSearchBar />
       </div>
 
       {/* Right controls */}

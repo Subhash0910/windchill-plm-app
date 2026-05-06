@@ -81,6 +81,25 @@ public class MLServiceClient {
         }
     }
 
+    public SimilarPartResult findSimilarParts(String partNumber, String name, java.util.List<java.util.Map<String,String>> candidates) {
+        if (!mlServiceEnabled || candidates.isEmpty()) return new SimilarPartResult(java.util.List.of());
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            var body = java.util.Map.of("partNumber", partNumber, "name", name, "candidates", candidates);
+            HttpEntity<?> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<SimilarPartResult> resp = restTemplate.postForEntity(
+                mlServiceUrl + "/part-similarity", entity, SimilarPartResult.class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) return resp.getBody();
+        } catch (Exception e) {
+            log.warn("Part similarity call failed: {}", e.getMessage());
+        }
+        return new SimilarPartResult(java.util.List.of());
+    }
+
+    public record SimilarPart(String partNumber, String name, double similarity) {}
+    public record SimilarPartResult(java.util.List<SimilarPart> similar) {}
+
     public boolean isHealthy() {
         if (!mlServiceEnabled) return false;
         try {

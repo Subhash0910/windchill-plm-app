@@ -4,6 +4,8 @@ import com.windchill.common.constants.APIConstants;
 import com.windchill.common.dto.ApiResponse;
 import com.windchill.common.enums.LifecycleStateEnum;
 import com.windchill.domain.entity.Part;
+import com.windchill.repository.PartRepository;
+import com.windchill.service.ai.MLServiceClient;
 import com.windchill.service.plm.IPartService;
 import com.windchill.service.plm.PartServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/plm/parts")
@@ -19,6 +22,8 @@ import java.util.Map;
 public class PartController {
 
     private final IPartService partService;
+    private final PartRepository partRepository;
+    private final MLServiceClient mlServiceClient;
 
     @PostMapping
     public ResponseEntity<ApiResponse<?>> create(@RequestBody Part part) {
@@ -73,6 +78,18 @@ public class PartController {
             @RequestParam String q,
             @RequestParam(required = false) Long contextId) {
         return ok(partService.searchPartsByNumber(q));
+    }
+
+    @GetMapping("/similar")
+    public ResponseEntity<ApiResponse<?>> similar(
+            @RequestParam String partNumber,
+            @RequestParam String name) {
+        List<Part> allLatest = partRepository.findByIsLatestTrueAndIsDeletedFalseOrderByPartNumberAsc();
+        List<Map<String, String>> candidates = allLatest.stream()
+            .map(p -> Map.of("partNumber", p.getPartNumber(), "name", p.getName() != null ? p.getName() : ""))
+            .collect(Collectors.toList());
+        MLServiceClient.SimilarPartResult result = mlServiceClient.findSimilarParts(partNumber, name, candidates);
+        return ok(result.similar());
     }
 
     // ─── Checkout / Checkin ───────────────────────────────────────────────────

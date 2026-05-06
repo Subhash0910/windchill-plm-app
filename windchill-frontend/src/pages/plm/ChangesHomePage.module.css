@@ -151,7 +151,7 @@
 }
 
 .createHeader {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
   padding: 12px 20px;
   display: flex;
   justify-content: space-between;
@@ -223,7 +223,7 @@
 }
 
 .wcTable th {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
   padding: 12px 16px;
   text-align: left;
   font-size: 11px;
@@ -246,7 +246,7 @@
 }
 
 .tableRow:hover {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
 }
 
 .ecrLink {

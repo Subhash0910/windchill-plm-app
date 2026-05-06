@@ -37,6 +37,31 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── ML Service (Python FastAPI) ───────────────────────────────────
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: windchill-ml-service
+    ports:
+      - "5000:5000"
+    environment:
+      MODEL_PATH: /app/models/risk_model.pkl
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    volumes:
+      - ml_models:/app/models
+      - ml_data:/app/data
+      - ml_logs:/app/logs
+    networks:
+      - windchill-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # ── Spring Boot Backend ───────────────────────────────────────────
   backend:
     build:
@@ -47,6 +72,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      ml-service:
         condition: service_healthy
     environment:
       # ── Spring profile ──
@@ -88,6 +115,14 @@ services:
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@windchill-plm.com}
 
+      # ── ML Service ──
+      ML_SERVICE_URL: http://ml-service:5000
+      ML_SERVICE_ENABLED: "true"
+      ML_SERVICE_TIMEOUT: "5000"
+      AI_IMPACT_ANALYSIS_ENABLED: "true"
+      AI_RISK_PREDICTION_ENABLED: "true"
+      AI_FALLBACK_USE_RULE_BASED: "true"
+
       # ── App URL (CORS) ──
       # Set APP_BASE_URL=https://yourdomain.com in .env for production.
       # This value is injected into CORS allowed-origins in application.yml.
@@ -128,6 +163,12 @@ volumes:
   mysql_data:
     driver: local
   windchill_files:
+    driver: local
+  ml_models:
+    driver: local
+  ml_data:
+    driver: local
+  ml_logs:
     driver: local
 
 networks:

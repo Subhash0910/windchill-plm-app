@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/atoms/Button/Button';
 import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
 import StateBadge from '../../components/plm/StateBadge';
+import LifecycleStateflow from '../../components/plm/LifecycleStateflow';
 import { plmApi } from '../../services/plmApi';
 import { aiService } from '../../services/aiService';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
@@ -64,6 +65,8 @@ const EcrDetailPage = () => {
   const [reviewSummaryError, setReviewSummaryError] = useState('');
 
   const [recomputeLoading, setRecomputeLoading] = useState(false);
+  const [aiImpact, setAiImpact] = useState(null);
+  const [aiImpactLoading, setAiImpactLoading] = useState(false);
 
   // Reviewer picker (Windchill-ish)
   const [memberLoading, setMemberLoading] = useState(false);
@@ -100,6 +103,9 @@ const EcrDetailPage = () => {
       setDetails(d || null);
       setInsights(i || null);
       setReviewSummary(summary || i?.contextual || null);
+      // fire AI impact in background — non-blocking
+      setAiImpactLoading(true);
+      plmApi.getEcrAiImpact(id).then(r => setAiImpact(r)).finally(() => setAiImpactLoading(false));
       setReviewSummaryError('');
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to load ECR');
@@ -327,6 +333,7 @@ const EcrDetailPage = () => {
             <Pill value={ecr.status} />
           </div>
           <div className={styles.ecrSub}>{title}</div>
+          <LifecycleStateflow entityType="ecr" currentState={ecr.status} />
         </div>
 
         <div className={styles.ecrActions}>
@@ -444,7 +451,7 @@ const EcrDetailPage = () => {
                         onClick={() => addReviewer(reviewerQuery.trim())}
                       >
                         <div className={styles.rvpMain}>
-                          <div className={`${styles.rvpU} mono`}>Add “{reviewerQuery.trim()}”</div>
+                          <div className={`${styles.rvpU} mono`}>Add "{reviewerQuery.trim()}"</div>
                           <div className={styles.rvpSub}>Not found in team list (still allowed)</div>
                         </div>
                         <div className={styles.rvpTag}>Manual</div>
@@ -520,7 +527,7 @@ const EcrDetailPage = () => {
                 <div className={styles.ecrK}>Created by</div>
                 <div className={`${styles.ecrV} mono`}>{ecn.createdBy || '-'}</div>
               </div>
-              <div className="plm-muted" style={{ marginTop: 8 }}>Implementation task will appear in “My change tasks”.</div>
+              <div className="plm-muted" style={{ marginTop: 8 }}>Implementation task will appear in "My change tasks".</div>
             </div>
           ) : null}
         </div>
@@ -590,11 +597,94 @@ const EcrDetailPage = () => {
             )}
           />
 
+          {/* ── AI Impact Analysis Card ──────────────────────────────────────── */}
+          <div className={styles.ecrCard} style={{ marginBottom: 16 }}>
+            <div className={styles.ecrCardTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>AI Impact Analysis</span>
+              {aiImpactLoading && <span className="plm-muted" style={{ fontSize: 12 }}>Analyzing...</span>}
+            </div>
+            {!aiImpact && !aiImpactLoading ? (
+              <div className="plm-muted">No impacted parts linked to this ECR yet.</div>
+            ) : aiImpact && (
+              <>
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <div>
+                    <div className="plm-muted" style={{ fontSize: 11, marginBottom: 3 }}>RISK LEVEL</div>
+                    <span className={`ecr-risk-badge ecr-risk-${aiImpact.riskLevel?.toLowerCase()}`}>
+                      {aiImpact.riskLevel}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="plm-muted" style={{ fontSize: 11, marginBottom: 3 }}>MAX RISK SCORE</div>
+                    <strong style={{ fontSize: 18 }}>{aiImpact.maxRiskScore?.toFixed(1)} / 10</strong>
+                  </div>
+                  <div>
+                    <div className="plm-muted" style={{ fontSize: 11, marginBottom: 3 }}>PARTS ANALYZED</div>
+                    <strong style={{ fontSize: 18 }}>{aiImpact.analyzedPartCount}</strong>
+                  </div>
+                  <div>
+                    <div className="plm-muted" style={{ fontSize: 11, marginBottom: 3 }}>TOTAL AFFECTED</div>
+                    <strong style={{ fontSize: 18 }}>{aiImpact.totalAffectedCount}</strong>
+                  </div>
+                </div>
+
+                {aiImpact.blockers?.length > 0 && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '10px 14px', marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: '#dc2626', marginBottom: 6 }}>Blockers</div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {aiImpact.blockers.map((b, i) => <li key={i} style={{ color: '#dc2626', fontSize: 13 }}>{b}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {aiImpact.warnings?.length > 0 && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 14px', marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: '#d97706', marginBottom: 6 }}>Warnings</div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {aiImpact.warnings.map((w, i) => <li key={i} style={{ color: '#92400e', fontSize: 13 }}>{w}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {aiImpact.recommendations?.length > 0 && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '10px 14px', marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: '#16a34a', marginBottom: 6 }}>Recommendations</div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {aiImpact.recommendations.map((r, i) => <li key={i} style={{ color: '#15803d', fontSize: 13 }}>{r}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {aiImpact.partAnalyses?.length > 0 && (
+                  <details>
+                    <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                      Per-part breakdown ({aiImpact.partAnalyses.length})
+                    </summary>
+                    <table className={styles.ecrTable} style={{ marginTop: 8 }}>
+                      <thead><tr><th>Part</th><th>Risk Score</th><th>Risk Level</th><th>Affected</th><th>Depth</th></tr></thead>
+                      <tbody>
+                        {aiImpact.partAnalyses.map((a, i) => (
+                          <tr key={i}>
+                            <td className="mono">{a.partNumber}</td>
+                            <td className="mono">{a.riskPrediction?.riskScore?.toFixed(1)}</td>
+                            <td>{a.riskPrediction?.riskLevel}</td>
+                            <td className="mono">{a.graphAnalysis?.totalAffectedCount}</td>
+                            <td className="mono">{a.graphAnalysis?.bomDepth}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </details>
+                )}
+              </>
+            )}
+          </div>
+
           <div className={styles.ecrGrid}>
             <div className={styles.ecrCard}>
               <div className={styles.ecrCardTitle}>Impact</div>
               {!report ? (
-                <div className="plm-muted">No impact report available yet. Click “Recompute impact” or submit the ECR.</div>
+                <div className="plm-muted">No impact report available yet. Click "Recompute impact" or submit the ECR.</div>
               ) : (
                 <>
                   <div className={styles.ecrImpactTop}>

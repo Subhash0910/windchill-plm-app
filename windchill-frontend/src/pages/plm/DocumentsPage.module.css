@@ -70,7 +70,7 @@
   font-weight: 600;
   transition: all 0.15s var(--wc-ease-out);
 }
-.btnSecondary:hover:not(:disabled) { background: var(--wc-sidebar-hover); transform: translateY(-1px); }
+.btnSecondary:hover:not(:disabled) { background: var(--wc-row-hover); transform: translateY(-1px); }
 .btnSecondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .searchBox {
@@ -140,7 +140,7 @@
   font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
 }
 .wcTable tbody tr { border-bottom: 1px solid var(--wc-border-light); cursor: pointer; transition: background .1s; }
-.wcTable tbody tr:hover { background: var(--wc-sidebar-hover); }
+.wcTable tbody tr:hover { background: var(--wc-row-hover); }
 .rowSelected { background: var(--wc-sidebar-active) !important; border-left: 3px solid var(--wc-blue); }
 .row td { padding: 12px; vertical-align: middle; }
 

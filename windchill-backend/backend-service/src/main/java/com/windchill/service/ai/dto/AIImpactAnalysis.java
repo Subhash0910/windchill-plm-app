@@ -30,7 +30,12 @@ public class AIImpactAnalysis {
     private Integer whereUsedCount;
     private Integer releasedAffected;
     private Integer conflictingChanges;
+    private List<String> conflictingChangeNumbers;
     private List<String> affectedPartNumbers;
+
+    // Compliance
+    private Boolean hasComplianceIssues;
+    private List<String> complianceWarnings;
     
     // ML risk prediction
     private Double riskScore;        // 0-10

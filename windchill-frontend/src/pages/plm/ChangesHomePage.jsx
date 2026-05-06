@@ -6,6 +6,7 @@ import {
   submitEcr, startEcrReview, approveEcr, rejectEcr, closeEcr, reopenEcr,
 } from '../../services/changeApi';
 import { getEcosByContext, createEco, promoteEco } from '../../services/changeApi';
+import { plmApi } from '../../services/plmApi';
 import styles from './ChangesHomePage.module.css';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ export default function ChangesHomePage() {
   const [activeTab, setActiveTab] = useState('ecr');
   const [ecrs, setEcrs]     = useState([]);
   const [ecos, setEcos]     = useState([]);
+  const [ecns, setEcns]     = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState('');
   const [showCreateEcr, setShowCreateEcr] = useState(false);
@@ -54,12 +56,14 @@ export default function ChangesHomePage() {
   const loadAll = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [ecrRes, ecoRes] = await Promise.all([
+      const [ecrRes, ecoRes, ecnList] = await Promise.all([
         getEcrsByContext(contextId),
         getEcosByContext(contextId),
+        plmApi.listEcns(contextId),
       ]);
       setEcrs(ecrRes.data?.data ?? ecrRes.data ?? []);
       setEcos(Array.isArray(ecoRes.data) ? ecoRes.data : (ecoRes.data?.data ?? []));
+      setEcns(Array.isArray(ecnList) ? ecnList : []);
     } catch { setError('Failed to load change management data.'); }
     finally { setLoading(false); }
   }, [contextId]);
@@ -141,13 +145,14 @@ export default function ChangesHomePage() {
           <button className={`${styles.tab} ${activeTab === 'eco' ? styles.tabActive : ''}`} onClick={() => setActiveTab('eco')}>
             ECO – Change Orders
           </button>
+          <button className={`${styles.tab} ${activeTab === 'ecn' ? styles.tabActive : ''}`} onClick={() => setActiveTab('ecn')}>
+            ECN – Change Notices
+          </button>
         </div>
         <div className={styles.toolbarRight}>
           <button className={styles.btnIcon} onClick={loadAll} title="Refresh">↻</button>
-          {activeTab === 'ecr'
-            ? <button className={styles.btnPrimary} onClick={() => setShowCreateEcr(true)}>+ New ECR</button>
-            : <button className={styles.btnPrimary} onClick={() => setShowCreateEco(true)}>+ New ECO</button>
-          }
+          {activeTab === 'ecr' && <button className={styles.btnPrimary} onClick={() => setShowCreateEcr(true)}>+ New ECR</button>}
+          {activeTab === 'eco' && <button className={styles.btnPrimary} onClick={() => setShowCreateEco(true)}>+ New ECO</button>}
         </div>
       </div>
 
@@ -307,12 +312,44 @@ export default function ChangesHomePage() {
                 </tbody>
               </table>
             )}
+
+            {/* ECN Table */}
+            {activeTab === 'ecn' && (
+              <table className={styles.wcTable}>
+                <thead>
+                  <tr>
+                    <th>Number</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Created by</th>
+                    <th>Released by</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ecns.length === 0 && (
+                    <tr><td colSpan={6} className={styles.emptyRow}>No ECNs yet. ECNs are auto-created when an ECR is approved.</td></tr>
+                  )}
+                  {ecns.map(n => (
+                    <tr key={n.id} className={styles.tableRow} onClick={() => navigate(`/plm/changes/ecn/${n.id}`)}>
+                      <td><span className={styles.ecrLink}>{n.noticeNumber}</span></td>
+                      <td className={styles.titleCell}>{n.title}</td>
+                      <td><StateBadge state={n.status} /></td>
+                      <td className={styles.monoCell}>{n.createdBy || '—'}</td>
+                      <td className={styles.monoCell}>{n.releasedBy || '—'}</td>
+                      <td className={styles.dimCell}>{n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
           </div>
         )
       }
 
       <div className={styles.statusBar}>
-        {activeTab === 'ecr' ? `${ecrs.length} ECR(s)` : `${ecos.length} ECO(s)`} · Context #{contextId}
+        {activeTab === 'ecr' ? `${ecrs.length} ECR(s)` : activeTab === 'eco' ? `${ecos.length} ECO(s)` : `${ecns.length} ECN(s)`} · Context #{contextId}
       </div>
     </div>
   );

@@ -91,7 +91,7 @@
   padding: 12px 14px; border: none; background: transparent; color: var(--wc-text-primary);
   cursor: pointer; text-align: left; transition: background 0.15s;
 }
-.rvpItem:hover { background: var(--wc-sidebar-hover); }
+.rvpItem:hover { background: var(--wc-row-hover); }
 .rvpItemAdd { border-top: 1px solid var(--wc-border-light); }
 
 .rvpMain { display: flex; flex-direction: column; gap: 2px; }
