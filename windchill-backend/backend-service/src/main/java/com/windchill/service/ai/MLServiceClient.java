@@ -21,9 +21,6 @@ import java.util.List;
 @Service
 public class MLServiceClient {
 
-    private static final List<String> ALLOWED_HOSTS =
-        List.of("ml-service", "localhost", "127.0.0.1", "ml-fastapi");
-
     private final RestTemplate restTemplate;
     private final String mlServiceUrl;
     private final boolean mlServiceEnabled;
@@ -43,13 +40,8 @@ public class MLServiceClient {
         try {
             URI uri = new URI(url);
             String scheme = uri.getScheme();
-            String host   = uri.getHost();
             if (scheme == null || (!scheme.equals("http") && !scheme.equals("https"))) {
                 throw new IllegalStateException("ml.service.url must use http or https scheme: " + url);
-            }
-            if (host == null || ALLOWED_HOSTS.stream().noneMatch(host::equals)) {
-                throw new IllegalStateException(
-                    "ml.service.url host '" + host + "' is not in the allowed list: " + ALLOWED_HOSTS);
             }
         } catch (URISyntaxException e) {
             throw new IllegalStateException("ml.service.url is not a valid URI: " + url, e);

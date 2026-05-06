@@ -191,8 +191,20 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .wc-header-brand { width: auto; min-width: unset; border-right: none; }
-  .wc-logo-text    { display: none; }
+  .wc-header-brand  { width: auto; min-width: unset; border-right: none; padding: 0 10px; }
+  .wc-logo-text     { display: none; }
   .wc-header-context { display: none; }
-  .wc-header-sep   { display: none; }
+  .wc-header-sep    { display: none; }
+
+  /* Hide the search bar — too wide for mobile header */
+  .wc-header-breadcrumb .gsb-wrap { display: none; }
+
+  /* Right controls: tighter gap + padding so avatar isn't flush to edge */
+  .wc-header-right  { gap: 4px; padding-right: 10px; }
+
+  /* Hide Admin chip on small screens — accessible via /admin/users route */
+  .wc-nav-chip      { display: none; }
+
+  /* Breadcrumb takes full remaining space */
+  .wc-header-breadcrumb { padding: 0 8px; }
 }

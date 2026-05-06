@@ -271,7 +271,7 @@ a:hover { text-decoration: underline; }
 }
 .wc-btn:hover {
   background: var(--wc-page-bg);
-  border-color: #c8cad8;
+  border-color: var(--wc-border);
   color: var(--wc-text-primary);
   transform: translateY(-1px);
   box-shadow: var(--wc-shadow-xs);
@@ -326,7 +326,7 @@ a:hover { text-decoration: underline; }
 }
 .wc-card:hover {
   box-shadow: var(--wc-shadow-md);
-  border-color: #d0d2e0;
+  border-color: var(--wc-border);
 }
 .wc-card--flat { box-shadow: none; }
 .wc-card--flat:hover { box-shadow: var(--wc-shadow-sm); }

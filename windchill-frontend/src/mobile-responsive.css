@@ -133,7 +133,7 @@ body {
   .MuiTable-root .MuiTableCell-root:first-child {
     position: sticky;
     left: 0;
-    background: white;
+    background: var(--wc-content-bg);
     z-index: 1;
     box-shadow: 2px 0 4px rgba(0,0,0,0.05);
   }

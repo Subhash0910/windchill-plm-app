@@ -315,7 +315,7 @@
 }
 .errorBanner button {
   color: var(--wc-text-primary);
-  background: white;
+  background: var(--wc-content-bg);
   border: 1px solid var(--wc-state-obsolete-text);
   padding: 4px 10px;
   border-radius: 4px;
