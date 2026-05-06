@@ -531,7 +531,6 @@ const PartDetailPage = () => {
               </div>
             )}
           </div>
-        </div>
 
           {/* ── AI Impact Analysis ── */}
           <div style={{ marginTop: 16, borderTop: '1px solid #eef2f7', paddingTop: 12 }}>
