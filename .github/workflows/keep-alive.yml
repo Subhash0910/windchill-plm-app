@@ -1,0 +1,22 @@
+name: Keep Render Services Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 minutes
+  workflow_dispatch:          # allow manual trigger from GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping windchill-backend
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://windchill-backend.onrender.com/actuator/health)
+          echo "windchill-backend status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ Backend alive" || echo "⚠️ Backend returned $STATUS"
+
+      - name: Ping windchill-ml
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://windchill-ml.onrender.com/health)
+          echo "windchill-ml status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ ML service alive" || echo "⚠️ ML service returned $STATUS"
