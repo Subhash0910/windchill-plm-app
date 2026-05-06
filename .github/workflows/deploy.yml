@@ -1,0 +1,28 @@
+name: Deploy Windchill PLM
+on:
+  push:
+    branches: [main, claude/*]
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '18'}
+      - run: cd windchill-frontend && npm ci && npm run build
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Render
+        run: |
+          curl -X POST "https://api.render.com/v1/services" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"web_service","name":"windchill-backend","repo":"${{ github.repository }}","branch":"${{ github.ref_name }}","dockerfilePath":"./Dockerfile.render"}'
