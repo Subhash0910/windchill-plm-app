@@ -1,7 +1,10 @@
 package com.windchill.api.config;
 
+import com.windchill.common.enums.ContextTypeEnum;
 import com.windchill.common.enums.RoleEnum;
+import com.windchill.domain.entity.PlmContext;
 import com.windchill.domain.entity.User;
+import com.windchill.repository.PlmContextRepository;
 import com.windchill.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,68 +28,69 @@ public class DevAdminInitializer {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PlmContextRepository plmContextRepository;
 
     @Bean
     public ApplicationRunner ensureDefaultAdmin() {
         return args -> {
-            final String username = "admin";
-            final String email = "admin@windchill.local";
-            final String rawPassword = "admin123";
-
-            User admin = userRepository.findActiveUserByUsername(username).orElse(null);
-
-            if (admin == null) {
-                // If username doesn't exist, create it; otherwise don't risk duplicate insert.
-                if (!userRepository.existsByUsername(username)) {
-                    admin = new User();
-                    admin.setUsername(username);
-                    admin.setEmail(email);
-                    admin.setFirstName("Admin");
-                    admin.setLastName("User");
-                    admin.setRole(RoleEnum.ADMIN);
-                    admin.setIsActive(true);
-                    admin.setIsEmailVerified(true);
-                    admin.setDepartment("IT");
-                    admin.setIsDeleted(false);
-                    admin.setPasswordHash(passwordEncoder.encode(rawPassword));
-                    userRepository.save(admin);
-                    log.info("Default admin user created (username={})", username);
-                } else {
-                    log.warn("Default admin username exists but was not returned by findActiveUserByUsername; skipping auto-fix (username={})", username);
-                }
-                return;
-            }
-
-            boolean changed = false;
-
-            // Ensure documented default password works
-            if (admin.getPasswordHash() == null || !passwordEncoder.matches(rawPassword, admin.getPasswordHash())) {
-                admin.setPasswordHash(passwordEncoder.encode(rawPassword));
-                changed = true;
-            }
-
-            // Ensure sane defaults
-            if (admin.getEmail() == null) {
-                admin.setEmail(email);
-                changed = true;
-            }
-            if (admin.getRole() == null || admin.getRole() != RoleEnum.ADMIN) {
-                admin.setRole(RoleEnum.ADMIN);
-                changed = true;
-            }
-            if (admin.getIsActive() == null || !admin.getIsActive()) {
-                admin.setIsActive(true);
-                changed = true;
-            }
-            if (admin.getIsEmailVerified() == null || !admin.getIsEmailVerified()) {
-                admin.setIsEmailVerified(true);
-                changed = true;
-            }
-
-            if (changed) {
-                userRepository.save(admin);
-                log.info("Default admin user updated to match documented credentials (username={})", username);
-            }
+            seedAdmin();
+            seedDefaultContext();
         };
+    }
+
+    private void seedAdmin() {
+        final String username = "admin";
+        final String email = "admin@windchill.local";
+        final String rawPassword = "admin123";
+
+        User admin = userRepository.findActiveUserByUsername(username).orElse(null);
+
+        if (admin == null) {
+            if (!userRepository.existsByUsername(username)) {
+                admin = new User();
+                admin.setUsername(username);
+                admin.setEmail(email);
+                admin.setFirstName("Admin");
+                admin.setLastName("User");
+                admin.setRole(RoleEnum.ADMIN);
+                admin.setIsActive(true);
+                admin.setIsEmailVerified(true);
+                admin.setDepartment("IT");
+                admin.setIsDeleted(false);
+                admin.setPasswordHash(passwordEncoder.encode(rawPassword));
+                userRepository.save(admin);
+                log.info("Default admin user created (username={})", username);
+            }
+            return;
+        }
+
+        boolean changed = false;
+
+        if (admin.getPasswordHash() == null || !passwordEncoder.matches(rawPassword, admin.getPasswordHash())) {
+            admin.setPasswordHash(passwordEncoder.encode(rawPassword));
+            changed = true;
+        }
+        if (admin.getEmail() == null) { admin.setEmail(email); changed = true; }
+        if (admin.getRole() == null || admin.getRole() != RoleEnum.ADMIN) { admin.setRole(RoleEnum.ADMIN); changed = true; }
+        if (admin.getIsActive() == null || !admin.getIsActive()) { admin.setIsActive(true); changed = true; }
+        if (admin.getIsEmailVerified() == null || !admin.getIsEmailVerified()) { admin.setIsEmailVerified(true); changed = true; }
+
+        if (changed) {
+            userRepository.save(admin);
+            log.info("Default admin user updated (username={})", username);
+        }
+    }
+
+    private void seedDefaultContext() {
+        if (plmContextRepository.count() == 0) {
+            PlmContext ctx = new PlmContext();
+            ctx.setCode("DEFAULT");
+            ctx.setName("Default Product Context");
+            ctx.setContextType(ContextTypeEnum.PRODUCT);
+            ctx.setDescription("Default context seeded for demo deployment");
+            ctx.setIsActive(true);
+            plmContextRepository.save(ctx);
+            log.info("Default PLM context seeded");
+        }
     }
 }
