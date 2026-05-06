@@ -124,19 +124,12 @@ public class ChangeRequestController {
     public ResponseEntity<ApiResponse<ChangeRequestDto>> create(
             @Valid @RequestBody CreateChangeRequestRequest req,
             @AuthenticationPrincipal AuthenticatedUser principal) {
-        try {
-            ChangeRequest cr = changeService.create(
-                req.getContextId(), req.getTitle(), req.getDescription(),
-                req.getReason(), req.getPriority(),
-                req.getImpactedPartIds(), principal.getUsername()
-            );
-            return ResponseEntity.ok(ApiResponse.success(toDto(cr)));
-        } catch (Exception e) {
-            // Temporary debug: surface root cause
-            String cause = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-            return ResponseEntity.status(500).body(
-                ApiResponse.error("ECR_CREATE_FAILED: " + e.getClass().getSimpleName() + " — " + cause));
-        }
+        ChangeRequest cr = changeService.create(
+            req.getContextId(), req.getTitle(), req.getDescription(),
+            req.getReason(), req.getPriority(),
+            req.getImpactedPartIds(), principal.getUsername()
+        );
+        return ResponseEntity.ok(ApiResponse.success(toDto(cr)));
     }
 
     /** GET /api/v1/plm/changes?contextId=&status= */
