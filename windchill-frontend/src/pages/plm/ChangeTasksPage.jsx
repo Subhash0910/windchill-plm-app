@@ -34,7 +34,7 @@ const ChangeTasksPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOnly]);
 
-  const pendingCount = useMemo(() => tasks.filter((t) => t.decision === 'PENDING').length, [tasks]);
+  const pendingCount = useMemo(() => tasks.filter((t) => t.status === 'PENDING').length, [tasks]);
 
   const setRowLoading = (id, v) => setActionLoading((m) => ({ ...m, [id]: v }));
 
@@ -105,43 +105,43 @@ const ChangeTasksPage = () => {
                 <tr>
                   <th>ID</th>
                   <th>Type</th>
-                  <th>For</th>
-                  <th>Decision</th>
+                  <th>Part</th>
+                  <th>Due</th>
+                  <th>Status</th>
                   <th>Comment</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {tasks.map((t) => {
-                  const forText = t.changeRequestId
-                    ? `ECR ${t.changeRequestId}`
-                    : t.changeNoticeId
-                      ? `ECN ${t.changeNoticeId}`
-                      : '-';
+                  const partLabel = t.partNumber
+                    ? `${t.partNumber}${t.partName ? ' — ' + t.partName : ''}`
+                    : t.partId ? `Part #${t.partId}` : '—';
 
-                  const canAct = t.decision === 'PENDING' && !actionLoading[t.id];
+                  const canAct = t.status === 'PENDING' && !actionLoading[t.id];
 
                   return (
                     <tr key={t.id} className={canAct ? styles.rowActive : ''}>
                       <td className="mono" style={{ fontWeight: 700 }}>{t.id}</td>
-                      <td>{t.type}</td>
+                      <td>Promotion Review</td>
                       <td className="mono">
-                        {forText}
-                        {t.changeRequestId ? (
+                        {partLabel}
+                        {t.partId ? (
                           <span style={{ marginLeft: 10 }}>
-                            <Button variant="secondary" size="xs" onClick={() => navigate(`/plm/changes/ecr/${t.changeRequestId}`)}>Open</Button>
+                            <Button variant="secondary" size="xs" onClick={() => navigate(`/plm/parts/${t.partId}`)}>Open</Button>
                           </span>
                         ) : null}
                       </td>
-                      <td>{t.decision}</td>
+                      <td>{t.dueAt ? new Date(t.dueAt).toLocaleDateString() : '—'}</td>
+                      <td>{t.status}</td>
                       <td>
                         <textarea
                           className={styles.comment}
                           rows={2}
-                          value={comments[t.id] ?? (t.comment || '')}
+                          value={comments[t.id] ?? ''}
                           onChange={(e) => setComments((m) => ({ ...m, [t.id]: e.target.value }))}
-                          placeholder={t.decision === 'PENDING' ? 'Add comment (required for reject)…' : ''}
-                          disabled={t.decision !== 'PENDING'}
+                          placeholder={t.status === 'PENDING' ? 'Comment (required to reject)…' : ''}
+                          disabled={t.status !== 'PENDING'}
                         />
                       </td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
