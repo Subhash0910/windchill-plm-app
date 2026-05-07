@@ -19,3 +19,10 @@
 .btnSubmit { padding: 6px 14px; background: var(--wc-blue); color: #fff; border: none; border-radius: var(--wc-radius-sm); font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .btnSubmit:hover { background: var(--wc-blue-hover); transform: translateY(-1px); }
 .btnSubmit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .page { overflow-x: hidden; }
+  .head { flex-direction: column; gap: 8px; }
+  .table { min-width: 560px; }
+  .comment { min-width: 140px; }
+}

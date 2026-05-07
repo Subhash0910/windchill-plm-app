@@ -107,13 +107,15 @@
 }
 
 @media (max-width: 768px) {
-  .admin-users { padding: 14px 12px; }
+  .admin-users { padding: 14px 12px; overflow-x: hidden; }
   .admin-grid { grid-template-columns: 1fr; }
+  .users-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .users-head { display: none; }
   .users-row {
     grid-template-columns: 1fr 1fr;
     gap: 6px;
     padding: 10px 6px;
+    min-width: 0;
   }
   .users-row > div:nth-child(3),
   .users-row > div:nth-child(4) {
@@ -122,5 +124,6 @@
   .users-row > div:last-child {
     grid-column: 1 / -1;
   }
-  .row-actions { justify-content: flex-start; }
+  .row-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .mono { word-break: break-all; }
 }
