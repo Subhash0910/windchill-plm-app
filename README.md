@@ -1,8 +1,10 @@
-# Windchill PLM — Open Source
+# Open PLM Workspace
 
-An enterprise-grade, Windchill-inspired PLM platform built with Spring Boot, React, and FastAPI. Clone it, deploy it in one command, and experience the same workflows — parts, BOM, ECR/ECO, change orders, worklists, IBA attributes, and AI-assisted impact analysis — that engineers use in production Windchill environments.
+> A free, open-source PLM platform inspired by Windchill — built so engineers and students can experience real PLM workflows before entering (or evaluating) an enterprise environment.
 
-Not affiliated with or endorsed by PTC. Built to close the gap for engineers, students, and teams who need a realistic PLM environment without a PTC license.
+> **Disclaimer:** Windchill is a registered trademark of PTC Inc. This project is independent, non-commercial, and not affiliated with or endorsed by PTC.
+
+Built with Spring Boot, React, and FastAPI. Clone it, deploy it in one command, and practice the same workflows — parts, BOM, ECR/ECO, change orders, worklists, IBA attributes, and AI-assisted impact analysis — used in production PLM environments.
 
 ## Why This Exists
 
@@ -91,4 +93,4 @@ See [QUICK_START.md](./QUICK_START.md) for manual setup and troubleshooting.
 
 ## Disclaimer
 
-Windchill is a registered trademark of PTC Inc. This project is an independent, open-source PLM platform inspired by Windchill's information architecture. It is not affiliated with, endorsed by, or sponsored by PTC.
+Windchill is a registered trademark of PTC Inc. This is an independent, non-commercial, open-source project inspired by Windchill's information architecture. It is not affiliated with, endorsed by, or sponsored by PTC in any way. No PTC source code or proprietary assets are used.
