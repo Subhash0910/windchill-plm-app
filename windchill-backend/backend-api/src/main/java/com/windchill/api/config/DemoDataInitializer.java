@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
@@ -41,6 +42,7 @@ public class DemoDataInitializer {
 
     @Bean
     @DependsOn("ensureDefaultAdmin")
+    @Order(2)
     public ApplicationRunner seedDemoData() {
         return args -> {
             if (partRepo.count() > 0) {
