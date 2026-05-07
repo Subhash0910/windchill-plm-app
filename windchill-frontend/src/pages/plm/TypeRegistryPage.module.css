@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════
+   TypeRegistryPage
+═══════════════════════════════════════════════════════════════ */
+
+.page {
+  display: flex; flex-direction: column; gap: 20px;
+  padding: 0 0 40px;
+  background: var(--wc-page-bg);
+  min-height: 100%;
+  font-family: var(--wc-font); font-size: 13px;
+  animation: wc-page-enter 0.3s var(--wc-ease-out) both;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  background: var(--wc-content-bg); border-bottom: 2px solid var(--wc-indigo);
+  padding: 20px 24px 16px; flex-wrap: wrap;
+}
+.headerLeft  { display: flex; align-items: flex-start; gap: 16px; }
+.headerIcon  {
+  width: 44px; height: 44px; border-radius: var(--wc-radius-md);
+  background: var(--wc-indigo-muted); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.title { margin: 0 0 4px; font-size: 20px; font-weight: 800; color: var(--wc-text-primary); letter-spacing: -0.03em; }
+.sub   { font-size: 12px; color: var(--wc-text-muted); }
+
+/* ── Concept banner ──────────────────────────────────────────────────────── */
+.conceptBanner {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.2);
+  border-radius: var(--wc-radius-md); padding: 14px 18px; margin: 0 24px;
+}
+.conceptTitle { font-weight: 700; color: var(--wc-text-primary); margin-bottom: 4px; }
+.conceptText  { font-size: 12px; color: var(--wc-text-muted); line-height: 1.6; }
+.conceptText code { font-family: var(--wc-font-mono); background: var(--wc-page-bg); border: 1px solid var(--wc-border); border-radius: 3px; padding: 1px 4px; }
+
+/* ── Register form ───────────────────────────────────────────────────────── */
+.registerForm {
+  background: var(--wc-content-bg); border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md); padding: 20px; margin: 0 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.formTitle { font-size: 14px; font-weight: 700; color: var(--wc-text-primary); }
+.formGrid  { display: grid; grid-template-columns: 1fr 1fr 1fr 1.5fr; gap: 12px; }
+@media (max-width: 900px) { .formGrid { grid-template-columns: 1fr 1fr; } }
+.formActions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; border-top: 1px solid var(--wc-border); }
+
+/* ── Attributes section in form ──────────────────────────────────────────── */
+.attrsSection { background: var(--wc-page-bg); border: 1px solid var(--wc-border); border-radius: var(--wc-radius-sm); padding: 12px; }
+.attrsSectionHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.attrsSectionTitle   { font-size: 12px; font-weight: 700; color: var(--wc-text-primary); display: flex; align-items: center; gap: 6px; }
+.count { background: var(--wc-indigo-muted); color: var(--wc-indigo); border-radius: 10px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+.attrForm    { background: rgba(99,102,241,.04); border: 1px solid rgba(99,102,241,.15); border-radius: var(--wc-radius-sm); padding: 10px; margin-bottom: 8px; }
+.attrFormRow { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.attrFormRow .wc-field { flex: 1; min-width: 100px; }
+.attrList    { display: flex; flex-direction: column; gap: 4px; }
+.attrRow     { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--wc-content-bg); border-radius: var(--wc-radius-sm); }
+.attrDel     { background: none; border: none; color: var(--wc-text-muted); cursor: pointer; font-size: 16px; opacity: 0.5; margin-left: auto; }
+.attrDel:hover { opacity: 1; color: #ef4444; }
+
+/* ── Main grid ───────────────────────────────────────────────────────────── */
+.mainGrid {
+  display: grid; grid-template-columns: 280px 1fr; gap: 20px; padding: 0 24px; align-items: start;
+}
+@media (max-width: 860px) { .mainGrid { grid-template-columns: 1fr; } }
+
+/* ── Tree panel ──────────────────────────────────────────────────────────── */
+.treePanel { background: var(--wc-content-bg); border: 1px solid var(--wc-border); border-radius: var(--wc-radius-md); overflow: hidden; }
+.treePanelHeader { padding: 12px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--wc-text-muted); border-bottom: 1px solid var(--wc-border); background: var(--wc-page-bg); }
+.treeBody { padding: 10px 0; }
+.treeNode {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; cursor: pointer;
+  transition: background 0.12s; font-size: 12px;
+  border-left: 2px solid transparent;
+}
+.treeNode:hover { background: rgba(255,255,255,.04); }
+.treeNodeSelected { background: rgba(99,102,241,.08) !important; border-left-color: var(--type-color, var(--wc-indigo)); }
+.treeNodeDot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.treeNodeId   { font-weight: 700; color: var(--wc-text-primary); font-family: var(--wc-font-mono); }
+.treeNodePkg  { font-size: 10px; color: var(--wc-text-muted); display: none; }
+.abstractBadge { background: rgba(107,114,128,.15); color: #9ca3af; border: 1px solid rgba(107,114,128,.3); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-style: italic; }
+.customBadge   { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.3); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+
+/* ── Detail panel ────────────────────────────────────────────────────────── */
+.detailPanel {
+  background: var(--wc-content-bg); border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-md); padding: 20px; display: flex; flex-direction: column; gap: 16px;
+}
+.detailHeader  { display: flex; align-items: flex-start; gap: 12px; }
+.detailDot     { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.detailId      { font-family: var(--wc-font-mono); font-size: 18px; font-weight: 800; }
+.detailPkg     { font-size: 11px; color: var(--wc-text-muted); font-family: var(--wc-font-mono); margin-top: 2px; }
+.detailDesc    { font-size: 12px; color: var(--wc-text-muted); line-height: 1.6; }
+
+/* ── Attribute table ─────────────────────────────────────────────────────── */
+.attrsTitle    { font-size: 12px; font-weight: 700; color: var(--wc-text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.attrTable     { border: 1px solid var(--wc-border); border-radius: var(--wc-radius-sm); overflow: hidden; }
+.attrTableHead {
+  display: grid; grid-template-columns: 1.2fr 1fr 2fr; gap: 12px;
+  padding: 8px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--wc-text-muted);
+  background: var(--wc-page-bg); border-bottom: 1px solid var(--wc-border);
+}
+.attrTableRow {
+  display: grid; grid-template-columns: 1.2fr 1fr 2fr; gap: 12px;
+  padding: 8px 12px; border-bottom: 1px solid var(--wc-border); align-items: center;
+}
+.attrTableRow:last-child { border-bottom: none; }
+.attrTableRow:hover { background: rgba(255,255,255,.02); }
+.attrName { font-family: var(--wc-font-mono); font-size: 12px; color: #79c0ff; }
+.attrType { font-size: 11px; color: #d2a8ff; font-family: var(--wc-font-mono); }
+.attrDesc { font-size: 11px; color: var(--wc-text-muted); }
+
+/* ── Java stub ───────────────────────────────────────────────────────────── */
+.javaSection { display: flex; flex-direction: column; gap: 8px; }
+.javaSectionHeader { display: flex; align-items: center; justify-content: space-between; }
+.javaCode {
+  background: #0d1117; border: 1px solid var(--wc-border); border-radius: var(--wc-radius-sm);
+  padding: 14px 16px; font-family: var(--wc-font-mono); font-size: 11px;
+  color: #e6edf3; line-height: 1.6; overflow-x: auto; white-space: pre;
+}

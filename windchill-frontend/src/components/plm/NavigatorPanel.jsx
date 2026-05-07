@@ -83,8 +83,10 @@ const NavigatorPanel = () => {
 
       {/* CUSTOMIZATION */}
       <NavGroup icon="⚙️" label="Customization" defaultOpen={false}>
-        <NavItem to="/plm/admin/actions" icon="⚡" label="Action Model Registry" />
-        <NavItem to="/plm/admin/system"  icon="🖥️" label="System Status" />
+        <NavItem to="/plm/admin/actions"    icon="⚡" label="Action Model Registry" />
+        <NavItem to="/plm/admin/lifecycle"  icon="🔄" label="Lifecycle Designer" />
+        <NavItem to="/plm/admin/types"      icon="🧬" label="Type Registry" />
+        <NavItem to="/plm/admin/system"     icon="🖥️" label="System Status" />
       </NavGroup>
 
       {/* ADMINISTRATION */}

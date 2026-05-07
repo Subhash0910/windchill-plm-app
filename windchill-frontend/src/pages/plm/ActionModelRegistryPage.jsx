@@ -113,7 +113,7 @@ const ActionDialog = ({ action, onSave, onClose }) => {
 
         {/* Tabs */}
         <div className={styles.dialogTabs}>
-          {[['general','⚙ General'],['processor','🔌 Processor'],['xml','📄 XML']].map(([k, l]) => (
+          {[['general','⚙ General'],['processor','🔌 Processor'],['xml','📄 XML'],['java','☕ Java Stub']].map(([k, l]) => (
             <button key={k} className={`${styles.dialogTab} ${tab===k ? styles.dialogTabActive : ''}`} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
@@ -263,6 +263,17 @@ const ActionDialog = ({ action, onSave, onClose }) => {
               <XmlViewer xml={xml || buildLocalXml(form)} />
             </div>
           )}
+
+          {/* ── Java Stub tab ── */}
+          {tab === 'java' && (
+            <div>
+              <div className={styles.xmlInfoBanner}>
+                <span>☕</span>
+                <span>Copy this stub into <code>backend-service/src/main/java/com/windchill/service/plm/</code> and implement the business logic. Wire the endpoint in the corresponding <code>@RestController</code>.</span>
+              </div>
+              <JavaStubViewer form={form} />
+            </div>
+          )}
         </div>
 
         <div className="wc-dialog__footer">
@@ -333,6 +344,32 @@ const ActionModelRegistryPage = () => {
     } catch (e) { setError(e.response?.data?.message || e.message); }
   };
 
+  const handleCopy = (action) => {
+    const copy = { ...action };
+    delete copy.id;
+    copy.actionName = `copy_of_${action.actionName}`;
+    copy.label = `${action.label} (Copy)`;
+    setEditAction(copy);
+    setShowDialog(true);
+  };
+
+  const exportAllXml = (allActions) => {
+    const enabled = allActions.filter(a => !a.isDeleted);
+    const inner = enabled.map(a => buildLocalXml(a)
+      .replace(/^<\?xml[^?]*\?>\n/, '')
+      .replace(/<!--[\s\S]*?-->\n/, '')
+      .replace(/<actionModels[^>]*>\n\n/, '')
+      .replace(/\n<\/actionModels>\n$/, '')
+      .trim()
+    ).join('\n\n');
+    const full = `<?xml version="1.0" encoding="UTF-8"?>\n<!--\n  Open PLM Action Model Registry Export\n  Generated: ${new Date().toISOString().split('T')[0]}\n  Actions: ${enabled.length}\n-->\n<actionModels xmlns="http://openplm.io/schema/actionModel" version="1.0">\n\n${inner}\n\n</actionModels>\n`;
+    const blob = new Blob([full], { type: 'application/xml' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'site_actionmodels.xml'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   /* ── Filter ── */
   const filtered = actions.filter(a => {
     const typeOk = selectedType === 'ALL' || a.objectType === selectedType;
@@ -369,6 +406,9 @@ const ActionModelRegistryPage = () => {
         <div className={styles.pageHeaderRight}>
           <div className={styles.statPill}><span>{totalEnabled}</span> Enabled</div>
           <div className={`${styles.statPill} ${styles.statPillDim}`}><span>{totalDisabled}</span> Disabled</div>
+          <button className="wc-btn" onClick={() => exportAllXml(actions)} title="Download complete site_actionmodels.xml">
+            ⬇ Export XML
+          </button>
           <button className="wc-btn wc-btn--primary" onClick={() => { setEditAction(null); setShowDialog(true); }}>
             ➕ Register Action
           </button>
@@ -496,6 +536,7 @@ const ActionModelRegistryPage = () => {
 
                         <div className={styles.actionCardActions} onClick={e => e.stopPropagation()}>
                           <button className={styles.cardBtn} onClick={() => { setEditAction(action); setShowDialog(true); }} title="Edit">✏️</button>
+                          <button className={styles.cardBtn} onClick={() => handleCopy(action)} title="Duplicate action">📋</button>
                           <button className={`${styles.cardBtn} ${action.isEnabled ? styles.cardBtnActive : ''}`} onClick={() => handleToggle(action)} title={action.isEnabled ? 'Disable' : 'Enable'}>
                             {action.isEnabled ? '🟢' : '🔴'}
                           </button>
@@ -571,6 +612,101 @@ const SectionBadge = ({ section }) => (
     {section}
   </span>
 );
+
+/* ── Java Stub Viewer ───────────────────────────────────────────────────── */
+const JavaStubViewer = ({ form }) => {
+  const [copied, setCopied] = useState(false);
+  const code = buildJavaStub(form);
+  const copy = () => { navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
+  const highlighted = code
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\b(package|import|public|class|interface|void|return|new|throw|if|throws|final|static|private)\b/g, '<span class="java-kw">$1</span>')
+    .replace(/(@\w+)/g, '<span class="java-ann">$1</span>')
+    .replace(/(\/\/[^\n]*)/g, '<span class="java-comment">$1</span>')
+    .replace(/("([^"]*)")/g, '<span class="java-str">$1</span>');
+  return (
+    <div className={styles.xmlViewer}>
+      <div className={styles.xmlHeader}>
+        <div className={styles.xmlTitle}>Spring Boot Processor Stub</div>
+        <div className={styles.xmlSub}>Copy to backend-service/src/main/java/com/windchill/service/plm/</div>
+        <button className={styles.xmlCopyBtn} onClick={copy}>{copied ? '✅ Copied' : '📋 Copy'}</button>
+      </div>
+      <pre className={`${styles.xmlCode} ${styles.javaCode}`} dangerouslySetInnerHTML={{ __html: highlighted }} />
+    </div>
+  );
+};
+
+function buildJavaStub(form) {
+  const type    = form.objectType  || 'PART';
+  const action  = form.actionName  || 'myAction';
+  const method  = form.processorMethod || action;
+  const cls     = form.processorClass  || `com.windchill.service.plm.${cap(type)}ActionProcessor`;
+  const simpleClass = cls.split('.').pop();
+  const states  = form.enabledStates ? form.enabledStates.split(',').map(s => s.trim()).join(', ') : 'ALL';
+  const ep      = form.endpoint || `/api/v1/plm/${type.toLowerCase()}s/{id}/${action}`;
+  const roleEnum = `ROLE_${form.minRole || 'ENGINEER'}`;
+
+  return `package com.windchill.service.plm;
+
+import com.windchill.common.exceptions.BusinessException;
+import com.windchill.common.exceptions.ResourceNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Action Processor: ${action}
+ * Object Type  : ${type}
+ * Toolbar      : ${form.toolbarSection || 'PRIMARY'} — "${form.label || action}"
+ * Min Role     : ${roleEnum}
+ * Endpoint     : ${form.httpMethod || 'POST'} ${ep}
+ * Enabled When : ${states}
+ *
+ * Steps to wire this processor:
+ *   1. Add a @RestController method for the endpoint above
+ *   2. Inject this service into that controller
+ *   3. Call ${method}(id) from the controller method
+ *   4. Ensure the action is registered in the Action Model Registry UI
+ */
+@Service
+@Transactional
+public class ${simpleClass} {
+
+    // @Autowired
+    // private ${cap(type)}Repository ${type.toLowerCase()}Repository;
+    // @Autowired
+    // private ApplicationEventPublisher eventPublisher;
+
+    /**
+     * Executes the "${action}" action on a ${cap(type)}.
+     *
+     * @param objectId ID of the ${type} being acted upon
+     */
+    public void ${method}(Long objectId) {
+        // ── 1. FETCH ────────────────────────────────────────────────
+        // ${cap(type)} object = ${type.toLowerCase()}Repository.findById(objectId)
+        //     .orElseThrow(() -> new ResourceNotFoundException("${type}", objectId));
+
+        // ── 2. PRE-CONDITION ────────────────────────────────────────
+        // Enabled states: ${states}
+        // if (!"${states}".contains(object.getLifecycleState())) {
+        //     throw new BusinessException(
+        //         "Action '${action}' is not allowed in state: " + object.getLifecycleState());
+        // }
+
+        // ── 3. BUSINESS LOGIC ───────────────────────────────────────
+        // TODO: implement the "${action}" action here
+
+        // ── 4. PERSIST ──────────────────────────────────────────────
+        // ${type.toLowerCase()}Repository.save(object);
+
+        // ── 5. POST-ACTION ──────────────────────────────────────────
+        // eventPublisher.publishEvent(new ${cap(action)}Event(objectId));
+    }
+}
+`;
+}
+
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
 
 function buildLocalXml(form) {
   const states = form.enabledStates || 'ALL';

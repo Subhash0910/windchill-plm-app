@@ -381,6 +381,11 @@
 .xmlCode :global(.xml-val)     { color: #ff7b72; }
 .xmlCode :global(.xml-comment) { color: #8b949e; font-style: italic; }
 
+.javaCode :global(.java-kw)      { color: #ff7b72; font-weight: 600; }
+.javaCode :global(.java-ann)     { color: #d2a8ff; }
+.javaCode :global(.java-comment) { color: #8b949e; font-style: italic; }
+.javaCode :global(.java-str)     { color: #a5d6ff; }
+
 .xmlEmpty {
   flex: 1;
   display: flex;
