@@ -540,9 +540,30 @@
   .dialog { width: 95vw !important; }
 }
 @media (max-width: 600px) {
-  .pageHeader { padding: 14px 16px 12px; }
+  .pageHeader { padding: 14px 16px 12px; overflow: hidden; }
   .filterBar { padding: 0 16px; }
   .tablePanel, .mainSplit { padding: 0 16px; }
-  .conceptBanner { margin: 0 16px; }
+  .conceptBanner { margin: 0 16px; overflow: hidden; }
   .referenceCard { margin: 0 16px; }
+
+  /* Long file paths in page subtitle wrap instead of clipping */
+  .pageSub { overflow-wrap: break-word; word-break: break-word; }
+  .pageHeaderLeft { min-width: 0; overflow: hidden; }
+
+  /* Concept banner body text + code strings wrap */
+  .conceptBannerText {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Action card top row: badges wrap below name when screen is narrow */
+  .actionCardTop { flex-wrap: wrap; }
+  .actionCardBadges { flex-shrink: 1; flex-wrap: wrap; }
+
+  /* Type section sub (wt.document, etc.) wraps instead of clipping */
+  .typeSectionHeader { flex-wrap: wrap; }
+  .typeSectionSub { white-space: normal; word-break: break-all; }
+
+  /* Processor preview mono values wrap */
+  .processorPreviewValue { word-break: break-all; overflow-wrap: anywhere; }
 }

@@ -59,6 +59,20 @@
   padding: 0 24px;
 }
 @media (max-width: 900px) { .mainGrid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .header { padding: 14px 16px 12px; overflow: hidden; }
+  .mainGrid { padding: 0 16px; }
+  .flowSection { padding: 0 16px; }
+  .xmlSection  { padding: 0 16px; }
+
+  /* Transitions table scrolls horizontally instead of clipping */
+  .transTable  { overflow-x: auto; display: block; }
+  .transTableHead,
+  .transRow    { min-width: 480px; }
+
+  /* Flow diagram nodes stack and wrap */
+  .flowNode { min-width: 140px; }
+}
 
 /* ── Panel ───────────────────────────────────────────────────────────────── */
 .panel {

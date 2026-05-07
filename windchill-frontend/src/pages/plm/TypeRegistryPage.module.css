@@ -122,3 +122,33 @@
   padding: 14px 16px; font-family: var(--wc-font-mono); font-size: 11px;
   color: #e6edf3; line-height: 1.6; overflow-x: auto; white-space: pre;
 }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .mainGrid { padding: 0 16px; }
+  .registerForm { margin: 0 16px; }
+  .conceptBanner { margin: 0 16px; }
+}
+@media (max-width: 600px) {
+  .header { padding: 14px 16px 12px; overflow: hidden; }
+  .headerLeft { min-width: 0; overflow: hidden; }
+
+  /* Concept banner: long path strings wrap */
+  .conceptBanner { overflow: hidden; }
+  .conceptText { overflow-wrap: break-word; word-break: break-word; }
+
+  /* Detail panel: Java package path breaks at dot boundaries */
+  .detailPanel { min-width: 0; overflow: hidden; }
+  .detailPkg { word-break: break-all; overflow-wrap: anywhere; }
+  .detailId  { font-size: 15px; word-break: break-all; }
+
+  /* Attribute table scrolls horizontally */
+  .attrTable { overflow-x: auto; display: block; }
+
+  /* Form grid single column below 600px */
+  .formGrid { grid-template-columns: 1fr !important; }
+  .registerForm { padding: 14px; }
+
+  /* Java stub code block scrolls */
+  .javaCode { font-size: 10px; }
+}

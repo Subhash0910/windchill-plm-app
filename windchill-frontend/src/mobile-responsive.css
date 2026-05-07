@@ -454,26 +454,47 @@ body {
   .hide-on-mobile {
     display: none !important;
   }
-  
+
   .show-on-mobile {
     display: block !important;
   }
-  
+
   .full-width-mobile {
     width: 100% !important;
     max-width: 100% !important;
   }
-  
+
   .text-center-mobile {
     text-align: center !important;
   }
-  
+
   .no-padding-mobile {
     padding: 0 !important;
   }
-  
+
   .no-margin-mobile {
     margin: 0 !important;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   * PLM CUSTOM COMPONENT FIXES
+   * Covers all pages — no MUI dependency
+   * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  /* Java class names, file paths, endpoints — break rather than overflow */
+  code, kbd, samp {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+
+  /* Code blocks (XML viewer, Java stubs) scroll rather than push page wider */
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: pre;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
