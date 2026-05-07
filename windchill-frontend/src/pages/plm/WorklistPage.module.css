@@ -335,12 +335,27 @@
 
 /* ─── Mobile ─── */
 @media (max-width: 768px) {
+  .page { height: auto; min-height: 100%; overflow-y: auto; }
   .contentGrid {
-    grid-template-columns: 1fr;
+    display: block;
     padding: 12px;
+    flex: none;
+    min-height: auto;
+    overflow: visible;
   }
-  .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .tableWrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    max-height: none;
+    margin-bottom: 12px;
+  }
+  .sidePanel { display: none; }
+  .toolbar { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 12px; }
   .tabs { flex-wrap: wrap; }
   .toolbarRight { flex-wrap: wrap; gap: 6px; }
   .dialog { width: calc(100vw - 32px); max-width: calc(100vw - 32px); }
+  .statusBar { position: static; }
+  .wcTable th, .wcTable .row td { padding: 8px 10px; }
+  .taskCell { max-width: 160px; }
+  .actionsCell { flex-direction: column; gap: 4px; }
 }

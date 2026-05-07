@@ -175,8 +175,12 @@
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  .page { height: auto; min-height: 100%; overflow-y: auto; }
   .toolbar { flex-direction: column; align-items: stretch; padding: 8px 10px; gap: 8px; }
   .toolbarLeft, .toolbarRight { flex-wrap: wrap; gap: 6px; }
   .searchBox { width: 100%; box-sizing: border-box; order: -1; }
   .divider { display: none; }
+  .tableWrap { flex: none; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
+  .wcTable { min-width: 580px; }
+  .statusBar { position: static; }
 }
