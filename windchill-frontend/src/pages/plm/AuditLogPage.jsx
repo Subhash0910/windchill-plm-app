@@ -17,7 +17,7 @@ const AuditLogPage = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await plmApi.getAuditLogs();
+      const data = await plmApi.getAllAuditLogs();
       setLogs(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to load audit logs');
