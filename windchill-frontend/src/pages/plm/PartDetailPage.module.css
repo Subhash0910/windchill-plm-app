@@ -543,6 +543,13 @@
     grid-template-columns: 1fr;
     padding: 0 12px 16px;
   }
+  /* Grid items must have min-width:0 or they expand to fit content (BOM table)
+     which pushes the card wider than the viewport, clipping text and tabs */
+  .detailCard {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
   .workspaceHeader { flex-direction: column; align-items: flex-start; }
   .tabBar { width: 100%; }
   .relatedSplit {
