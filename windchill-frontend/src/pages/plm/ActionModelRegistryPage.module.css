@@ -149,6 +149,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
 /* ── Type section ── */
@@ -240,6 +241,7 @@
   padding: 5px 8px;
   background: var(--wc-page-bg);
   border-radius: var(--wc-radius-sm);
+  min-width: 0;
 }
 .processorIcon { font-size: 12px; }
 .processorText { font-family: var(--wc-font-mono); font-size: 11px; color: var(--wc-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -249,6 +251,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
+  min-width: 0;
 }
 .httpMethodBadge {
   display: inline-block;
