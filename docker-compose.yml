@@ -74,7 +74,7 @@ services:
       redis:
         condition: service_healthy
       ml-service:
-        condition: service_healthy
+        condition: service_started
     environment:
       # ── Spring profile ──
       # Set SPRING_PROFILES_ACTIVE=prod in your .env on the production server.
@@ -91,7 +91,7 @@ services:
       # ── JPA / Hibernate ──
       # Override to 'validate' in production to prevent accidental schema drift.
       # application-prod.yml already sets this to validate when profile=prod.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${JPA_DDL_AUTO:-validate}
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
       SPRING_JPA_SHOW_SQL: "false"
 

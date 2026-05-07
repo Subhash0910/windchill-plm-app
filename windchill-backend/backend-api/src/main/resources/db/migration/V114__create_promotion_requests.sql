@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS promotion_requests (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    context_id BIGINT NOT NULL,
+    part_id BIGINT NOT NULL,
+    requested_by_user_id BIGINT NOT NULL,
+    from_state VARCHAR(20) NOT NULL,
+    to_state VARCHAR(20) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING_APPROVAL',
+    completed_at TIMESTAMP NULL,
+    completed_by_user_id BIGINT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    version BIGINT DEFAULT 0,
+    PRIMARY KEY (id),
+    INDEX idx_pr_part (part_id),
+    INDEX idx_pr_context (context_id),
+    INDEX idx_pr_status (status),
+    CONSTRAINT fk_pr_context FOREIGN KEY (context_id) REFERENCES plm_contexts(id),
+    CONSTRAINT fk_pr_part FOREIGN KEY (part_id) REFERENCES parts(id)
+) ENGINE=InnoDB;
