@@ -2,6 +2,8 @@ package com.windchill.api.document;
 
 import com.windchill.common.enums.PlmEntityTypeEnum;
 import com.windchill.domain.entity.Part;
+import com.windchill.domain.entity.PartDocument;
+import com.windchill.repository.PartDocumentRepository;
 import com.windchill.repository.PartRepository;
 import com.windchill.service.plm.IAuditService;
 import jakarta.persistence.EntityManager;
@@ -18,9 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WTDocumentServiceImpl implements WTDocumentService {
 
-    private final WTDocumentRepository repo;
-    private final PartRepository       partRepository;
-    private final IAuditService        auditService;
+    private final WTDocumentRepository   repo;
+    private final PartRepository         partRepository;
+    private final PartDocumentRepository partDocumentRepo;
+    private final IAuditService          auditService;
 
     @PersistenceContext
     private EntityManager em;
@@ -194,21 +197,15 @@ public class WTDocumentServiceImpl implements WTDocumentService {
     @Override
     @Transactional
     public void linkToPart(Long docId, Long partId) {
-        em.createNativeQuery(
-            "INSERT IGNORE INTO part_documents (part_id, document_id) VALUES (:p, :d)")
-            .setParameter("p", partId)
-            .setParameter("d", docId)
-            .executeUpdate();
+        if (!partDocumentRepo.existsByPartIdAndDocumentId(partId, docId)) {
+            partDocumentRepo.save(new PartDocument(partId, docId));
+        }
     }
 
     @Override
     @Transactional
     public void unlinkFromPart(Long docId, Long partId) {
-        em.createNativeQuery(
-            "DELETE FROM part_documents WHERE part_id=:p AND document_id=:d")
-            .setParameter("p", partId)
-            .setParameter("d", docId)
-            .executeUpdate();
+        partDocumentRepo.deleteByPartIdAndDocumentId(partId, docId);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

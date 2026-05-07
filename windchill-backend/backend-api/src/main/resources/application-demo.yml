@@ -30,6 +30,18 @@ spring:
     console:
       enabled: false
 
+# Disable ML service calls in demo — no Python service on Render free tier
+ml:
+  service:
+    url: http://localhost:9999
+    enabled: false
+
+ai:
+  impact-analysis:
+    enabled: false
+  risk-prediction:
+    enabled: false
+
 logging:
   level:
     root: WARN

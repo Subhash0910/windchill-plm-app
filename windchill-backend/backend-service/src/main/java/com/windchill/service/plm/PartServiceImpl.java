@@ -361,7 +361,9 @@ public class PartServiceImpl implements IPartService {
     }
 
     private String currentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) return "SYSTEM";
+        return auth.getName();
     }
 
     private String incrementRevision(String current) {

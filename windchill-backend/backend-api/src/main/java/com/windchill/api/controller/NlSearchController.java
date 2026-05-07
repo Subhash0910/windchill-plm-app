@@ -9,6 +9,7 @@ import com.windchill.repository.PartRepository;
 import com.windchill.service.ai.MLServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,12 +31,15 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class NlSearchController {
 
-    private final PartRepository partRepo;
-    private final WTDocumentRepository docRepo;
+    private final PartRepository          partRepo;
+    private final WTDocumentRepository    docRepo;
     private final ChangeRequestRepository ecrRepo;
-    private final ChangeOrderRepository ecoRepo;
-    private final MLServiceClient mlClient;
-    private final RestTemplate restTemplate;
+    private final ChangeOrderRepository   ecoRepo;
+    private final MLServiceClient         mlClient;
+    private final RestTemplate            restTemplate;
+
+    @Value("${ml.service.url:http://ml-service:5000}")
+    private String configuredMlServiceUrl;
 
     @GetMapping
     public ResponseEntity<ApiResponse<?>> search(@RequestParam String q) {
@@ -246,8 +250,7 @@ public class NlSearchController {
     }
 
     private String mlServiceUrl() {
-        // Read from same config used by MLServiceClient
-        return System.getenv().getOrDefault("ML_SERVICE_URL", "http://ml-service:5000");
+        return configuredMlServiceUrl;
     }
 
     // ── inner types ───────────────────────────────────────────────────────
