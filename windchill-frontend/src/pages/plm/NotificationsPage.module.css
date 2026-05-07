@@ -63,3 +63,12 @@
 .btnRead:hover { background: var(--wc-row-hover); border-color: var(--wc-blue); }
 .btnDel { background: var(--wc-danger-bg); color: var(--wc-danger-text); border-color: var(--wc-danger-border); font-size: 18px; }
 .btnDel:hover { opacity: 0.9; transform: scale(1.05); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .page { padding: 12px; max-width: 100%; }
+  .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filters { flex-wrap: wrap; }
+  .itemHeader { flex-wrap: wrap; gap: 6px; }
+  .itemActions { flex-shrink: 0; }
+}

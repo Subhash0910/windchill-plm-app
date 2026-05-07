@@ -48,7 +48,37 @@
 .welcome-text p { margin: 0; font-size: 15px; color: var(--wc-text-muted); line-height: 1.6; }
 .welcome-actions { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
 
-.role-badge { 
+/* Ghost button — sits on the dark welcome banner */
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  font-size: 13px; font-weight: 600; font-family: var(--wc-font);
+  border-radius: var(--wc-radius-sm);
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.55); }
+
+/* Primary button — solid indigo, works on light surfaces */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  font-size: 13px; font-weight: 600; font-family: var(--wc-font);
+  border-radius: var(--wc-radius-sm);
+  border: none;
+  background: var(--wc-indigo);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--wc-indigo-dark); box-shadow: var(--wc-shadow-indigo); }
+
+.role-badge {
   background: rgba(255,255,255,0.08); 
   border: 1px solid rgba(255,255,255,0.15); 
   color: white; 
@@ -251,6 +281,100 @@
 
 .ecr-recent-pills { display: flex; gap: 6px; flex-shrink: 0; }
 .ecr-recent-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+
+/* ── Skeleton loaders ───────────────────────────────── */
+.skeleton-list { display: flex; flex-direction: column; gap: 10px; }
+.skeleton-row {
+  height: 44px; border-radius: var(--wc-radius-sm);
+  background: linear-gradient(90deg, var(--wc-border-light) 25%, var(--wc-page-bg) 50%, var(--wc-border-light) 75%);
+  background-size: 200% 100%;
+  animation: wc-shimmer 1.4s infinite;
+}
+
+/* ── Empty states ───────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px; gap: 12px; text-align: center;
+  color: var(--wc-text-muted);
+}
+.empty-state span { font-size: 36px; }
+.empty-state p { margin: 0; font-size: 13px; color: var(--wc-text-secondary); }
+
+.empty-state-sm {
+  padding: 16px; font-size: 12px; color: var(--wc-text-muted); text-align: center;
+}
+
+/* ── KPI extras ─────────────────────────────────────── */
+.kpi-skeleton {
+  display: inline-block; width: 48px; height: 32px;
+  border-radius: var(--wc-radius-sm);
+  background: linear-gradient(90deg, var(--wc-border-light) 25%, var(--wc-page-bg) 50%, var(--wc-border-light) 75%);
+  background-size: 200% 100%;
+  animation: wc-shimmer 1.4s infinite;
+  vertical-align: middle;
+}
+.kpi-arrow { font-size: 16px; color: var(--wc-text-muted); padding-left: 8px; }
+
+/* ── Lifecycle pct ───────────────────────────────────── */
+.lc-pct { font-size: 11px; font-weight: 500; opacity: 0.7; }
+
+/* ── Right column ────────────────────────────────────── */
+.dash-right { display: flex; flex-direction: column; gap: 0; }
+
+/* ── Alert sections ──────────────────────────────────── */
+.dash-section--ecr-alert {
+  background: #f5f3ff; border-color: #c4b5fd;
+  border-top: 3px solid #8b5cf6;
+}
+.dash-section--alert {
+  background: #fffbeb; border-color: #fcd34d;
+  border-top: 3px solid #f59e0b;
+}
+[data-theme="dark"] .dash-section--ecr-alert { background: #2e1065; border-color: #6d28d9; }
+[data-theme="dark"] .dash-section--alert { background: #451a03; border-color: #92400e; }
+.alert-text { margin: 0 0 12px; font-size: 13px; color: var(--wc-text-secondary); line-height: 1.5; }
+
+/* ── Small action buttons ────────────────────────────── */
+.btn-purple {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 7px 16px; border: none; border-radius: var(--wc-radius-sm);
+  background: #8b5cf6; color: #fff;
+  font-size: 13px; font-weight: 600; font-family: var(--wc-font);
+  cursor: pointer; transition: background 0.15s;
+}
+.btn-purple:hover { background: #7c3aed; }
+
+.btn-amber {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 7px 16px; border: none; border-radius: var(--wc-radius-sm);
+  background: #f59e0b; color: #fff;
+  font-size: 13px; font-weight: 600; font-family: var(--wc-font);
+  cursor: pointer; transition: background 0.15s;
+}
+.btn-amber:hover { background: #d97706; }
+
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+/* ── Link buttons ────────────────────────────────────── */
+.link-btn {
+  background: none; border: none; padding: 0;
+  color: var(--wc-indigo); font-size: inherit; font-family: var(--wc-font);
+  cursor: pointer; text-decoration: underline; text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s;
+}
+.link-btn:hover { text-decoration-color: var(--wc-indigo); }
+.view-all {
+  display: block; width: 100%; text-align: center; margin-top: 12px;
+  padding: 8px; font-size: 12px; font-weight: 600;
+  background: var(--wc-page-bg); border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-border); color: var(--wc-text-muted);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.view-all:hover { background: var(--wc-border-light); color: var(--wc-indigo); }
+
+/* ── Mono helper ─────────────────────────────────────── */
+.mono { font-family: var(--wc-font-mono); }
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 1200px) {

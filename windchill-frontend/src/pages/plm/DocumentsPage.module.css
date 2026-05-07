@@ -172,3 +172,11 @@
   border-top: 1px solid var(--wc-border); background: var(--wc-sidebar-active);
   font-weight: 600;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .toolbar { flex-direction: column; align-items: stretch; padding: 8px 10px; gap: 8px; }
+  .toolbarLeft, .toolbarRight { flex-wrap: wrap; gap: 6px; }
+  .searchBox { width: 100%; box-sizing: border-box; order: -1; }
+  .divider { display: none; }
+}

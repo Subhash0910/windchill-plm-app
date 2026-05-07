@@ -127,4 +127,6 @@
 @media (max-width: 768px) {
   .page    { padding: 12px 14px 32px; }
   .formRow { grid-template-columns: 1fr; }
+  .ctxRow  { flex-wrap: wrap; gap: 8px; }
+  .ctxOpenBtn { width: 100%; text-align: center; }
 }

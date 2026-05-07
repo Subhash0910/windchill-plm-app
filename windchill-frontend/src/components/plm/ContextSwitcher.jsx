@@ -5,9 +5,9 @@ import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import './ContextSwitcher.css';
 
 const TYPE_STYLE = {
-  PRODUCT: { bg: 'rgba(14,165,233,0.12)', text: '#0284C7', btn: '#0284C7' },
-  PROJECT: { bg: 'rgba(139,92,246,0.12)', text: '#7C3AED', btn: '#7C3AED' },
-  LIBRARY: { bg: 'rgba(16,185,129,0.12)', text: '#047857', btn: '#047857' },
+  PRODUCT: { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', btn: '#6366f1' },
+  PROJECT: { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', btn: '#6366f1' },
+  LIBRARY: { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', btn: '#6366f1' },
 };
 const TYPE_ROUTES = { PRODUCT: '/plm/parts', PROJECT: '/plm/projects', LIBRARY: '/plm/library' };
 const TYPE_LABELS = { PRODUCT: 'Open Workspace →', PROJECT: 'View Projects →', LIBRARY: 'View Library →' };

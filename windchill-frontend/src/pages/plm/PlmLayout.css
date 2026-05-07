@@ -133,5 +133,10 @@
   }
   /* Hide the desktop collapse toggle on mobile */
   .wc-shell__nav-toggle { display: none; }
-  .wc-shell__main { padding: 12px; }
+  .wc-shell__main {
+    padding: 12px;
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
 }
