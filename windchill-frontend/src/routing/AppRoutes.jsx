@@ -22,6 +22,7 @@ import LibraryPage from '../pages/plm/LibraryPage';
 import AuditLogPage from '../pages/plm/AuditLogPage';
 import TeamManagementPage from '../pages/plm/TeamManagementPage';
 import UsersAdminPage from '../pages/admin/UsersAdminPage';
+import WindchillSystemPage from '../pages/plm/WindchillSystemPage';
 import AIDemo from '../pages/AIDemo';
 import NotFoundPage from '../pages/NotFoundPage';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -52,6 +53,7 @@ const AppRoutes = () => (
           <Route path="team"              element={<TeamManagementPage />} />
           <Route path="ai-demo"           element={<AIDemo />} />
           <Route path="admin/users"       element={<UsersAdminPage />} />
+          <Route path="admin/system"      element={<WindchillSystemPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

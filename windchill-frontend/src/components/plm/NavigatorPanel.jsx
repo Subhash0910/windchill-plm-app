@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { plmApi } from '../../services/plmApi';
 import './NavigatorPanel.css';
 
@@ -37,7 +37,6 @@ const NavigatorPanel = () => {
   const [notifCount,     setNotifCount]     = useState(null);
 
   useEffect(() => {
-    // Live badge counts — fire & forget, silent failure
     plmApi.listMyWorkItems()
       .then(items => setWorklistCount(Array.isArray(items) ? items.filter(i => i.status === 'PENDING').length : 0))
       .catch(() => {});
@@ -60,14 +59,14 @@ const NavigatorPanel = () => {
       {/* PRODUCT DATA */}
       <NavGroup icon="📦" label="Product Data" defaultOpen>
         <NavItem to="/plm/products"  icon="📦" label="Products" />
-        <NavItem to="/plm/parts"     icon="⚙️" label="Parts" />
+        <NavItem to="/plm/parts"     icon="⚙️" label="Parts &amp; BOM" />
         <NavItem to="/plm/documents" icon="📄" label="Documents" />
         <NavItem to="/plm/library"   icon="📚" label="Library" />
       </NavGroup>
 
       {/* CHANGE MANAGEMENT */}
       <NavGroup icon="🔄" label="Change Management" defaultOpen>
-        <NavItem to="/plm/changes"       icon="📋" label="Change Requests" />
+        <NavItem to="/plm/changes"       icon="📋" label="Change Requests (ECR)" />
         <NavItem to="/plm/changes/tasks" icon="🔧" label="Change Tasks" />
       </NavGroup>
 
@@ -82,10 +81,11 @@ const NavigatorPanel = () => {
         <NavItem to="/plm/ai-demo" icon="⚡" label="AI Impact Engine" />
       </NavGroup>
 
-      {/* ADMIN */}
+      {/* ADMINISTRATION */}
       <NavGroup icon="🛠️" label="Administration" defaultOpen={false}>
-        <NavItem to="/plm/admin/users"   icon="👤" label="User Management" />
-        <NavItem to="/plm/audit-log" icon="📋" label="Audit Log" />
+        <NavItem to="/plm/admin/users"  icon="👤" label="User Management" />
+        <NavItem to="/plm/admin/system" icon="🖥️" label="System Status" />
+        <NavItem to="/plm/audit-log"    icon="📋" label="Audit Log" />
       </NavGroup>
     </nav>
   );

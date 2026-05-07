@@ -80,6 +80,17 @@ export const plmApi = {
   addBomLine:    async (pid, p)  => { const r = await api.post(`/api/v1/plm/parts/${pid}/bom`, p); return r.data.data; },
   deleteBomLine: async (id)      => { const r = await api.delete(`/api/v1/plm/bom-lines/${id}`); return r.data.data; },
 
+  // ── IBA (Instance-Based Attributes) ─────────────────────────────────────
+  listIbaAttributes:   async (partId)       => { const r = await api.get(`/api/v1/plm/parts/${partId}/iba`); return r.data?.data ?? []; },
+  createIbaAttribute:  async (partId, body) => { const r = await api.post(`/api/v1/plm/parts/${partId}/iba`, body); return r.data?.data; },
+  updateIbaAttribute:  async (partId, id, body) => { const r = await api.put(`/api/v1/plm/parts/${partId}/iba/${id}`, body); return r.data?.data; },
+  deleteIbaAttribute:  async (partId, id)   => { const r = await api.delete(`/api/v1/plm/parts/${partId}/iba/${id}`); return r.data?.data; },
+
+  // ── Part Substitutes / Alternates ──────────────────────────────────────
+  listSubstitutes:   async (partId)       => { const r = await api.get(`/api/v1/plm/parts/${partId}/substitutes`); return r.data?.data ?? []; },
+  addSubstitute:     async (partId, body) => { const r = await api.post(`/api/v1/plm/parts/${partId}/substitutes`, body); return r.data?.data; },
+  deleteSubstitute:  async (partId, id)   => { const r = await api.delete(`/api/v1/plm/parts/${partId}/substitutes/${id}`); return r.data?.data; },
+
   // ── Audit ──────────────────────────────────────────────────────────────
   getAudit: async (entityType, entityId) => {
     const r = await api.get('/api/v1/plm/audit', { params: { entityType, entityId } });

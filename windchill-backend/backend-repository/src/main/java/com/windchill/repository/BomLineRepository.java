@@ -11,6 +11,7 @@ import java.util.List;
 public interface BomLineRepository extends JpaRepository<BomLine, Long> {
     List<BomLine> findByParentPartIdAndIsDeletedFalseOrderBySortOrderAscIdAsc(Long parentPartId);
     boolean existsByParentPartIdAndChildPartIdAndIsDeletedFalse(Long parentPartId, Long childPartId);
+    long countByParentPartIdAndIsDeletedFalse(Long parentPartId);
 
     @Query("select distinct b.parentPartId from BomLine b where b.childPartId = :childPartId and b.isDeleted = false")
     List<Long> findDistinctParentPartIdsByChildPartId(@Param("childPartId") Long childPartId);

@@ -8,7 +8,6 @@ import AuditPanel from '../../components/plm/AuditPanel';
 import AttachmentsPanel from '../../components/plm/AttachmentsPanel';
 import StateBadge from '../../components/plm/StateBadge';
 import LifecycleStateflow from '../../components/plm/LifecycleStateflow';
-import InfoPage from '../../components/plm/InfoPage';
 import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
 import ImpactPreview from '../../components/ai/ImpactPreview';
 import ImpactVisualizer from '../../components/plm/ImpactVisualizer';
@@ -21,9 +20,11 @@ import styles from './PartDetailPage.module.css';
 
 const TAB = {
   STRUCTURE:   'STRUCTURE',
-  HISTORY:     'HISTORY',
+  IBA:         'IBA',
+  SUBSTITUTES: 'SUBSTITUTES',
   RELATED:     'RELATED',
   ATTACHMENTS: 'ATTACHMENTS',
+  HISTORY:     'HISTORY',
 };
 
 const RELATED_VIEW = {
@@ -31,6 +32,346 @@ const RELATED_VIEW = {
   WHERE_USED: 'WHERE_USED',
 };
 
+/* ── IBA Panel ─────────────────────────────────────────────────────────── */
+const IBAPanel = ({ partId }) => {
+  const [attrs,   setAttrs]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [adding,  setAdding]  = useState(false);
+  const [form,    setForm]    = useState({ attributeName: '', attributeValue: '', attributeType: 'STRING', unit: '', description: '' });
+  const [saving,  setSaving]  = useState(false);
+  const [editing, setEditing] = useState(null); // id of attr being edited inline
+
+  const load = () => {
+    setLoading(true);
+    plmApi.listIbaAttributes(partId)
+      .then(data => setAttrs(data || []))
+      .catch(e => setError(e.response?.data?.message || e.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [partId]); // eslint-disable-line
+
+  const handleAdd = async () => {
+    if (!form.attributeName.trim()) return;
+    setSaving(true);
+    try {
+      await plmApi.createIbaAttribute(partId, form);
+      setForm({ attributeName: '', attributeValue: '', attributeType: 'STRING', unit: '', description: '' });
+      setAdding(false);
+      load();
+    } catch (e) {
+      setError(e.response?.data?.message || e.message);
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await plmApi.deleteIbaAttribute(partId, id);
+      load();
+    } catch (e) { setError(e.response?.data?.message || e.message); }
+  };
+
+  const handleUpdate = async (attr, newValue) => {
+    try {
+      await plmApi.updateIbaAttribute(partId, attr.id, { attributeValue: newValue });
+      setEditing(null);
+      load();
+    } catch (e) { setError(e.response?.data?.message || e.message); }
+  };
+
+  const TYPE_OPTS = ['STRING', 'INTEGER', 'FLOAT', 'BOOLEAN', 'DATE', 'URL'];
+
+  if (loading) return <div className={styles.plmMuted}>Loading IBA attributes…</div>;
+
+  return (
+    <div>
+      <div className={styles.ibaHeader}>
+        <div>
+          <div className={styles.ibaTitle}>Instance-Based Attributes</div>
+          <div className={styles.plmMuted}>Soft attributes stored per part version — Windchill IBA pattern</div>
+        </div>
+        <Button variant="primary" size="sm" onClick={() => { setAdding(a => !a); setError(null); }}>
+          {adding ? 'Cancel' : '+ Add Attribute'}
+        </Button>
+      </div>
+
+      {error && <div className={styles.plmError} style={{ marginTop: 8 }}>{error}</div>}
+
+      {adding && (
+        <div className={styles.ibaAddForm}>
+          <div className={styles.ibaFormRow}>
+            <input
+              className={styles.plmInput}
+              placeholder="Attribute name *"
+              value={form.attributeName}
+              onChange={e => setForm({ ...form, attributeName: e.target.value })}
+            />
+            <select
+              className={styles.plmSelect}
+              value={form.attributeType}
+              onChange={e => setForm({ ...form, attributeType: e.target.value })}
+            >
+              {TYPE_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className={styles.ibaFormRow}>
+            <input
+              className={styles.plmInput}
+              placeholder="Value"
+              value={form.attributeValue}
+              onChange={e => setForm({ ...form, attributeValue: e.target.value })}
+            />
+            <input
+              className={styles.plmInput}
+              placeholder="Unit (e.g. mm, kg)"
+              value={form.unit}
+              onChange={e => setForm({ ...form, unit: e.target.value })}
+            />
+          </div>
+          <input
+            className={styles.plmInput}
+            placeholder="Description"
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+            <Button variant="secondary" size="sm" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleAdd} disabled={saving || !form.attributeName.trim()}>
+              {saving ? 'Saving…' : 'Save Attribute'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {attrs.length === 0 && !adding && (
+        <div className={styles.ibaEmpty}>
+          <div className={styles.ibaEmptyIcon}>📋</div>
+          <div>No IBA attributes defined for this part version.</div>
+          <div className={styles.plmMuted}>Instance-Based Attributes (IBA) store Windchill soft attribute values per object instance.</div>
+        </div>
+      )}
+
+      {attrs.length > 0 && (
+        <div className={styles.ibaTable}>
+          <div className={styles.ibaTableHeader}>
+            <span>Attribute</span>
+            <span>Type</span>
+            <span>Value</span>
+            <span>Unit</span>
+            <span></span>
+          </div>
+          {attrs.map(attr => (
+            <div key={attr.id} className={styles.ibaTableRow}>
+              <span className={styles.ibaAttrName}>{attr.attributeName}</span>
+              <span className={styles.ibaTypeBadge} data-type={attr.attributeType}>{attr.attributeType}</span>
+              <span className={styles.ibaAttrValue}>
+                {editing === attr.id ? (
+                  <IBAInlineEdit
+                    initial={attr.attributeValue}
+                    onSave={val => handleUpdate(attr, val)}
+                    onCancel={() => setEditing(null)}
+                  />
+                ) : (
+                  <button className={styles.ibaValueBtn} onClick={() => setEditing(attr.id)}>
+                    {attr.attributeValue || <span className={styles.plmMuted}>—</span>}
+                  </button>
+                )}
+              </span>
+              <span className={styles.plmMuted}>{attr.unit || '—'}</span>
+              <span>
+                <button className={styles.ibaDeleteBtn} onClick={() => handleDelete(attr.id)} title="Remove attribute">✕</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const IBAInlineEdit = ({ initial, onSave, onCancel }) => {
+  const [val, setVal] = useState(initial || '');
+  return (
+    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      <input
+        className={styles.plmInput}
+        style={{ padding: '3px 6px', fontSize: 12 }}
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        autoFocus
+        onKeyDown={e => { if (e.key === 'Enter') onSave(val); if (e.key === 'Escape') onCancel(); }}
+      />
+      <button className={styles.ibaValueBtn} onClick={() => onSave(val)}>✓</button>
+      <button className={styles.ibaDeleteBtn} onClick={onCancel}>✕</button>
+    </span>
+  );
+};
+
+/* ── Substitutes Panel ─────────────────────────────────────────────────── */
+const SubstitutesPanel = ({ partId, partsInCtx }) => {
+  const navigate = useNavigate();
+  const [subs,    setSubs]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+  const [adding,  setAdding]  = useState(false);
+  const [form,    setForm]    = useState({ substitutePartId: '', substituteType: 'SUBSTITUTE', rank: 1, note: '' });
+  const [saving,  setSaving]  = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    plmApi.listSubstitutes(partId)
+      .then(data => setSubs(data || []))
+      .catch(e => setError(e.response?.data?.message || e.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [partId]); // eslint-disable-line
+
+  const handleAdd = async () => {
+    if (!form.substitutePartId) return;
+    setSaving(true);
+    try {
+      await plmApi.addSubstitute(partId, {
+        ...form,
+        substitutePartId: Number(form.substitutePartId),
+        rank: Number(form.rank) || 1,
+      });
+      setForm({ substitutePartId: '', substituteType: 'SUBSTITUTE', rank: 1, note: '' });
+      setAdding(false);
+      load();
+    } catch (e) {
+      setError(e.response?.data?.message || e.message);
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await plmApi.deleteSubstitute(partId, id);
+      load();
+    } catch (e) { setError(e.response?.data?.message || e.message); }
+  };
+
+  const candidates = (partsInCtx || []).filter(p => String(p.id) !== String(partId));
+
+  if (loading) return <div className={styles.plmMuted}>Loading substitutes…</div>;
+
+  return (
+    <div>
+      <div className={styles.ibaHeader}>
+        <div>
+          <div className={styles.ibaTitle}>Substitutes &amp; Alternates</div>
+          <div className={styles.plmMuted}>Interchangeable or alternative parts for BOM configurations</div>
+        </div>
+        <Button variant="primary" size="sm" onClick={() => { setAdding(a => !a); setError(null); }}>
+          {adding ? 'Cancel' : '+ Add Substitute'}
+        </Button>
+      </div>
+
+      {error && <div className={styles.plmError} style={{ marginTop: 8 }}>{error}</div>}
+
+      {adding && (
+        <div className={styles.ibaAddForm}>
+          <div className={styles.ibaFormRow}>
+            <select
+              className={styles.plmSelect}
+              value={form.substitutePartId}
+              onChange={e => setForm({ ...form, substitutePartId: e.target.value })}
+            >
+              <option value="">Select substitute part…</option>
+              {candidates.map(p => (
+                <option key={p.id} value={p.id}>{p.partNumber} — {p.name}</option>
+              ))}
+            </select>
+            <select
+              className={styles.plmSelect}
+              value={form.substituteType}
+              onChange={e => setForm({ ...form, substituteType: e.target.value })}
+            >
+              <option value="SUBSTITUTE">SUBSTITUTE</option>
+              <option value="ALTERNATE">ALTERNATE</option>
+            </select>
+          </div>
+          <div className={styles.ibaFormRow}>
+            <input
+              className={styles.plmInput}
+              type="number"
+              min="1"
+              placeholder="Rank (1 = preferred)"
+              value={form.rank}
+              onChange={e => setForm({ ...form, rank: e.target.value })}
+            />
+            <input
+              className={styles.plmInput}
+              placeholder="Note"
+              value={form.note}
+              onChange={e => setForm({ ...form, note: e.target.value })}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+            <Button variant="secondary" size="sm" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleAdd} disabled={saving || !form.substitutePartId}>
+              {saving ? 'Saving…' : 'Add Substitute'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {subs.length === 0 && !adding && (
+        <div className={styles.ibaEmpty}>
+          <div className={styles.ibaEmptyIcon}>🔄</div>
+          <div>No substitutes or alternates defined.</div>
+          <div className={styles.plmMuted}>Substitutes are fully interchangeable; alternates require engineering approval.</div>
+        </div>
+      )}
+
+      {subs.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table className={styles.partsTable} style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Type</th>
+                <th>Part Number</th>
+                <th>Name</th>
+                <th>State</th>
+                <th>Note</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {subs.map(s => {
+                const sp = s.substitutePart;
+                return (
+                  <tr key={s.id}>
+                    <td className={styles.mono}>{s.rank}</td>
+                    <td>
+                      <span className={`${styles.subTypeBadge} ${s.substituteType === 'ALTERNATE' ? styles.subTypeBadgeAlt : ''}`}>
+                        {s.substituteType}
+                      </span>
+                    </td>
+                    <td className={styles.mono}>{sp?.partNumber || '—'}</td>
+                    <td>{sp?.name || '—'}</td>
+                    <td>{sp?.lifecycleState ? <StateBadge state={sp.lifecycleState} size="sm" /> : '—'}</td>
+                    <td className={styles.plmMuted}>{s.note || '—'}</td>
+                    <td style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      {sp?.id && (
+                        <Button variant="secondary" size="sm" onClick={() => navigate(`/plm/parts/${sp.id}`)}>Open</Button>
+                      )}
+                      <button className={styles.ibaDeleteBtn} onClick={() => handleDelete(s.id)}>✕</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ── Main PartDetailPage ────────────────────────────────────────────────── */
 const PartDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -213,9 +554,9 @@ const PartDetailPage = () => {
   }, [partsInCtx, part]);
 
   /* ── guards ─────────────────────────────────────────────────────────────── */
-  if (loading)        return <div className={styles.plmMuted}>Loading part…</div>;
-  if (error && !part) return <div className={styles.plmError}>{error}</div>;
-  if (!part)          return <div className={styles.plmMuted}>Part not found.</div>;
+  if (loading)        return <div className={styles.plmMuted} style={{ padding: 40, textAlign: 'center' }}>Loading part…</div>;
+  if (error && !part) return <div className={styles.plmError} style={{ margin: 20 }}>{error}</div>;
+  if (!part)          return <div className={styles.plmMuted} style={{ padding: 40 }}>Part not found.</div>;
 
   /* ── helpers ────────────────────────────────────────────────────────────── */
   const checkedOutByMe    = part.checkedOutBy && part.checkedOutBy === meUsername;
@@ -225,12 +566,22 @@ const PartDetailPage = () => {
     && part.lifecycleState !== 'OBSOLETE';
   const versionLabel = `${part.revision}.${part.iteration}`;
 
-  const TabButton = ({ tab, children }) => (
+  const TABS = [
+    { key: TAB.STRUCTURE,   icon: '🌳', label: 'Structure'   },
+    { key: TAB.IBA,         icon: '📋', label: 'IBA'         },
+    { key: TAB.SUBSTITUTES, icon: '🔄', label: 'Substitutes' },
+    { key: TAB.RELATED,     icon: '🔗', label: 'Related'     },
+    { key: TAB.ATTACHMENTS, icon: '📎', label: 'Files'       },
+    { key: TAB.HISTORY,     icon: '📜', label: 'History'     },
+  ];
+
+  const TabButton = ({ tab, icon, children }) => (
     <button
       type="button"
       onClick={() => setActiveTab(tab)}
       className={`${styles.tabBtn} ${activeTab === tab ? styles.tabBtnActive : ''}`}
     >
+      <span className={styles.tabIcon}>{icon}</span>
       {children}
     </button>
   );
@@ -256,9 +607,6 @@ const PartDetailPage = () => {
     if (v.includes('APPROVED') || v === 'RELEASED' || v === 'COMPLETED') variant = 'success';
     else if (v.includes('REJECT') || v === 'CANCELLED' || v === 'CRITICAL') variant = 'danger';
     else if (v.includes('PENDING') || v === 'IN_REVIEW') variant = 'warning';
-
-    // Using StateBadge directly or mapping to its classes would be better,
-    // but for now let's use the semantic tokens in a robust way.
     return (
       <span className={`wc-state-badge badge--${variant} wc-state-badge--sm`}>
         {v || '-'}
@@ -298,7 +646,6 @@ const PartDetailPage = () => {
 
       {/* ══ Windchill-style Info Page header ══════════════════════════════ */}
       <div className={styles.infoHeader}>
-        {/* Row 1: type icon + object identity */}
         <div className={styles.infoHeaderTop}>
           <div className={styles.infoHeaderLeft}>
             <span className={styles.typeIcon}>⚙️</span>
@@ -323,7 +670,6 @@ const PartDetailPage = () => {
           </div>
         </div>
 
-        {/* Row 2: checkout banner (only when checked out) */}
         {part.checkedOutBy && (
           <div className={`${styles.checkoutBanner} ${checkedOutByMe ? styles.checkoutBannerMine : styles.checkoutBannerOther}`}>
             {checkedOutByMe
@@ -332,14 +678,13 @@ const PartDetailPage = () => {
             }
             {checkedOutByMe && (
               <div className={styles.checkoutBannerActions}>
-                <button className={styles.checkoutBannerBtn} onClick={checkIn}     disabled={coLoading}>✅ Check In</button>
+                <button className={styles.checkoutBannerBtn} onClick={checkIn}      disabled={coLoading}>✅ Check In</button>
                 <button className={styles.checkoutBannerBtn} onClick={undoCheckOut} disabled={coLoading}>↩ Undo</button>
               </div>
             )}
           </div>
         )}
 
-        {/* Row 3: attribute grid */}
         <div className={styles.attrGrid}>
           {infoRows.map(r => (
             <div key={r.label} className={styles.attrCell}>
@@ -353,7 +698,7 @@ const PartDetailPage = () => {
       {/* ══ Two-column workspace ══════════════════════════════════════════ */}
       <div className={styles.detailGrid} style={{ marginTop: 16 }}>
 
-        {/* ── LEFT: Checkout bar + Edit fields + Lifecycle + Promotion ── */}
+        {/* ── LEFT: Edit + Lifecycle + Promotion ── */}
         <div className={styles.detailCard}>
           <ContextualInsightPanel
             title="AI change readiness"
@@ -385,7 +730,6 @@ const PartDetailPage = () => {
 
           <div className={styles.cardTitle}>Edit &amp; Actions</div>
 
-          {/* Checkout bar (compact, for non-banner context) */}
           <div className={styles.coBar}>
             {canCheckOut && (
               <Button variant="primary" size="sm" onClick={checkOut} disabled={coLoading || saving}>
@@ -400,7 +744,6 @@ const PartDetailPage = () => {
             )}
           </div>
 
-          {/* Editable fields */}
           <div className={styles.formRow}>
             <label>Name</label>
             <input
@@ -420,7 +763,6 @@ const PartDetailPage = () => {
             />
           </div>
 
-          {/* Lifecycle toolbar */}
           <div className={styles.detailBar}>
             <LifecycleActions
               state={part.lifecycleState}
@@ -574,25 +916,21 @@ const PartDetailPage = () => {
 
         {/* ── RIGHT: Tab workspace ── */}
         <div className={styles.detailCard}>
-          <div className="card-title" style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', gap: 10, flexWrap: 'wrap',
-          }}>
-            <div>Workspace</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <TabButton tab={TAB.STRUCTURE}>Structure</TabButton>
-              <TabButton tab={TAB.HISTORY}>History</TabButton>
-              <TabButton tab={TAB.RELATED}>Related Objects</TabButton>
-              <TabButton tab={TAB.ATTACHMENTS}>📎 Attachments</TabButton>
+          <div className={styles.workspaceHeader}>
+            <div className={styles.workspaceTitle}>Workspace</div>
+            <div className={styles.tabBar}>
+              {TABS.map(t => (
+                <TabButton key={t.key} tab={t.key} icon={t.icon}>{t.label}</TabButton>
+              ))}
             </div>
           </div>
 
           {activeTab === TAB.STRUCTURE && (
             <div>
-              <div style={{ marginBottom: 16 }}>
-                <div className={styles.plmMuted} style={{ marginBottom: 12 }}>Product Structure — click ▸ to expand child assemblies</div>
-                <BomTreeView rootPartId={part.id} />
+              <div className={styles.plmMuted} style={{ marginBottom: 12 }}>
+                Product Structure — click ▸ to expand child assemblies
               </div>
+              <BomTreeView rootPartId={part.id} />
               <details style={{ marginTop: 20 }}>
                 <summary style={{ cursor: 'pointer', color: 'var(--plm-text-muted, #64748b)', fontSize: 13 }}>
                   Edit BOM lines
@@ -602,6 +940,14 @@ const PartDetailPage = () => {
                 </div>
               </details>
             </div>
+          )}
+
+          {activeTab === TAB.IBA && (
+            <IBAPanel partId={part.id} />
+          )}
+
+          {activeTab === TAB.SUBSTITUTES && (
+            <SubstitutesPanel partId={part.id} partsInCtx={partsInCtx} />
           )}
 
           {activeTab === TAB.HISTORY && (
