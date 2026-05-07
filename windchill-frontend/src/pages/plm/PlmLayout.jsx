@@ -12,6 +12,7 @@ const PlmLayout = () => {
   const navigate = useNavigate();
   const [aiActionTrigger, setAiActionTrigger] = useState(null);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const isAiDemo = location.pathname.startsWith('/plm/ai-demo');
   const isWorkspace = location.pathname.startsWith('/plm')
@@ -78,13 +79,25 @@ const PlmLayout = () => {
   return (
     <div className="wc-shell">
       {/* ── Top bar ── */}
-      <Header title="PLM Learning Workspace" />
+      <Header
+        title="PLM Learning Workspace"
+        onMenuToggle={() => setMobileNavOpen(o => !o)}
+        mobileNavOpen={mobileNavOpen}
+      />
 
       {/* ── Main body: Navigator + Content ── */}
       <div className="wc-shell__body">
 
+        {/* ── Mobile backdrop ── */}
+        {mobileNavOpen && (
+          <div
+            className="wc-shell__backdrop"
+            onClick={() => setMobileNavOpen(false)}
+          />
+        )}
+
         {/* ── Left Navigator ── */}
-        <aside className={`wc-shell__nav ${navCollapsed ? 'collapsed' : ''}`}>
+        <aside className={`wc-shell__nav ${navCollapsed ? 'collapsed' : ''} ${mobileNavOpen ? 'mobile-open' : ''}`}>
 
           {/* Context switcher: pinned at top, never scrolls */}
           <div className="wc-shell__nav-header">

@@ -102,7 +102,36 @@
   padding: 20px 24px;
 }
 
+/* ── Mobile backdrop ── */
+.wc-shell__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 399;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 @media (max-width: 768px) {
-  .wc-shell__nav  { display: none; }
+  /* Sidebar becomes a slide-in drawer */
+  .wc-shell__nav {
+    position: fixed;
+    top: var(--wc-topbar-h);
+    left: 0;
+    bottom: 0;
+    z-index: 400;
+    width: 260px;
+    min-width: 260px;
+    transform: translateX(-100%);
+    transition: transform 240ms var(--wc-ease-out),
+                box-shadow 240ms var(--wc-ease-out);
+    border-right: none;
+  }
+  .wc-shell__nav.mobile-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
+  }
+  /* Hide the desktop collapse toggle on mobile */
+  .wc-shell__nav-toggle { display: none; }
   .wc-shell__main { padding: 12px; }
 }

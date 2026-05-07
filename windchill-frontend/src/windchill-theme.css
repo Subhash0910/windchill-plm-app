@@ -43,8 +43,8 @@
 
   /* ── Text ── */
   --wc-text-primary:   #111827;
-  --wc-text-secondary: #4b5563;
-  --wc-text-muted:     #9ca3af;
+  --wc-text-secondary: #374151;
+  --wc-text-muted:     #6b7280;
   --wc-text-inverse:   #ffffff;
   --wc-text-link:      var(--wc-indigo);
 

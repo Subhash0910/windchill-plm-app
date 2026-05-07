@@ -189,22 +189,56 @@
   transform: rotate(15deg);
 }
 
+/* ── Hamburger button (mobile only) ── */
+.wc-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--wc-radius-sm);
+  transition: background 150ms;
+}
+.wc-hamburger:hover { background: var(--wc-sidebar-hover); }
+.wc-hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #fff;
+  border-radius: 2px;
+  transition: transform 240ms var(--wc-ease-out), opacity 200ms;
+  transform-origin: center;
+}
+/* Animate to X when open */
+.wc-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.wc-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.wc-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .wc-header-brand  { width: auto; min-width: unset; border-right: none; padding: 0 10px; }
+  .wc-hamburger     { display: flex; }
+
+  .wc-header-brand  { width: auto; min-width: unset; border-right: none; padding: 0 8px 0 0; }
   .wc-logo-text     { display: none; }
   .wc-header-context { display: none; }
   .wc-header-sep    { display: none; }
 
-  /* Hide the search bar — too wide for mobile header */
+  /* Hide search bar — too wide for mobile header */
   .wc-header-breadcrumb .gsb-wrap { display: none; }
 
-  /* Right controls: tighter gap + padding so avatar isn't flush to edge */
+  /* Right controls: tighter gap + right padding so avatar isn't flush to edge */
   .wc-header-right  { gap: 4px; padding-right: 10px; }
 
-  /* Hide Admin chip on small screens — accessible via /admin/users route */
+  /* Hide Admin chip — accessible via URL */
   .wc-nav-chip      { display: none; }
 
-  /* Breadcrumb takes full remaining space */
   .wc-header-breadcrumb { padding: 0 8px; }
 }

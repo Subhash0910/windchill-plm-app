@@ -9,7 +9,7 @@ import './Header.css';
  * Enterprise PLM-style 56px top bar.
  * Slot layout:  [Brand]  [Breadcrumb — flex 1]  [Admin chip | Bell | Theme | Avatar]
  */
-const Header = ({ title }) => {
+const Header = ({ title, onMenuToggle, mobileNavOpen }) => {
   const { user, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -48,6 +48,17 @@ const Header = ({ title }) => {
 
   return (
     <header className="wc-header">
+
+      {/* Hamburger — mobile only, shown when onMenuToggle is provided */}
+      {onMenuToggle && (
+        <button
+          className={`wc-hamburger ${mobileNavOpen ? 'open' : ''}`}
+          onClick={onMenuToggle}
+          aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+        >
+          <span /><span /><span />
+        </button>
+      )}
 
       {/* Brand */}
       <div className="wc-header-brand">
