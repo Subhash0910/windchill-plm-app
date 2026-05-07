@@ -62,19 +62,3 @@ try {
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host " Verification Complete" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Changed files this session:" -ForegroundColor White
-Write-Host "  backend-repository/ChangeRequestRepository.java"
-Write-Host "  backend-service/.../ai/AIImpactServiceImpl.java"
-Write-Host "  backend-service/.../ai/GraphAnalysisService.java"
-Write-Host "  backend-service/.../ai/dto/AIImpactAnalysis.java"
-Write-Host "  backend-service/.../ai/AIImpactServiceImplTest.java (NEW)"
-Write-Host "  backend-service/.../ai/GraphAnalysisServiceTest.java"
-Write-Host "  windchill-frontend/.../ai/ImpactPreview.jsx"
-Write-Host "  windchill-frontend/.../ai/ImpactPreview.css"
-Write-Host "  windchill-frontend/.../plm/PartDetailPage.jsx"
-Write-Host "  docker-compose.yml"
-Write-Host "  .github/workflows/ci.yml"
-Write-Host "  windchill-backend/pom.xml (JaCoCo)"
-Write-Host ""
-Write-Host "Next: git commit && git push" -ForegroundColor Cyan

@@ -97,8 +97,10 @@ docker-compose.override.yml
 .gradle/
 gradle-app.setting
 
-# ── Claude Code local worktrees (never commit) ─────────────────────
+# ── Claude Code — local config only, never commit ──────────────────
 .claude/worktrees/
+.claude/settings.local.json
+CLAUDE.md
 
 # ── Build / dev artefacts that should not be committed ─────────────
 build_log.txt
