@@ -261,11 +261,11 @@
   color: var(--wc-info-text);
   flex-shrink: 0;
 }
-.httpMethodBadge[data-method="POST"]   { background: #fef3c7; color: #92400e; }
-.httpMethodBadge[data-method="GET"]    { background: #dcfce7; color: #15803d; }
-.httpMethodBadge[data-method="PUT"]    { background: #dbeafe; color: #1d4ed8; }
-.httpMethodBadge[data-method="DELETE"] { background: #fee2e2; color: #b91c1c; }
-.httpMethodBadge[data-method="PATCH"]  { background: #f3e8ff; color: #7e22ce; }
+.httpMethodBadge[data-method="POST"]   { background: var(--wc-warning-bg);  color: var(--wc-warning-text); }
+.httpMethodBadge[data-method="GET"]    { background: var(--wc-success-bg);  color: var(--wc-success-text); }
+.httpMethodBadge[data-method="PUT"]    { background: var(--wc-info-bg);     color: var(--wc-info-text); }
+.httpMethodBadge[data-method="DELETE"] { background: var(--wc-danger-bg);   color: var(--wc-danger-text); }
+.httpMethodBadge[data-method="PATCH"]  { background: var(--wc-indigo-muted); color: var(--wc-indigo); }
 .endpointText {
   font-family: var(--wc-font-mono);
   font-size: 11px;

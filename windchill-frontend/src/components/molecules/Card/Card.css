@@ -1,32 +1,32 @@
 .card {
-  background: white;
+  background: var(--wc-content-bg);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--wc-border);
+  box-shadow: var(--wc-shadow-sm);
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--wc-shadow-md);
 }
 
 .card-header {
   padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--wc-border);
 }
 
 .card-title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--wc-text-primary);
 }
 
 .card-subtitle {
   margin: 4px 0 0 0;
   font-size: 13px;
-  color: #666;
+  color: var(--wc-text-muted);
 }
 
 .card-body {

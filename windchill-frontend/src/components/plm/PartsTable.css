@@ -1,24 +1,50 @@
-.parts-table-wrap{border:1px solid #eef0f7;border-radius:10px;overflow:hidden;background:#fff;}
-
-.parts-table-toolbar{
-  padding:10px 12px;
-  border-bottom:1px solid #eef0f7;
-  background:#fff;
+.parts-table-wrap {
+  border: 1px solid var(--wc-border-light);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--wc-content-bg);
 }
 
-.parts-table{width:100%;border-collapse:collapse;font-size:14px;}
-.parts-table th{background:#f8fafc;text-align:left;padding:9px 10px;border-bottom:1px solid #eef0f7;color:#374151;font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
-.parts-table td{padding:9px 10px;border-bottom:1px solid #f2f4fb;color:#111827;}
-.parts-table tr:hover td{background:#fafbff;}
+.parts-table-toolbar {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wc-border-light);
+  background: var(--wc-content-bg);
+}
 
-.mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+.parts-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.parts-table th {
+  background: var(--wc-page-bg);
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wc-border-light);
+  color: var(--wc-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.parts-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wc-border-light);
+  color: var(--wc-text-primary);
+}
+.parts-table tr:hover td { background: var(--wc-row-hover); }
 
-/* Make actions feel like enterprise grid actions (subtle button, not a loud link) */
-.link{display:inline-block;color:#0f4d6d;text-decoration:none;font-weight:800;padding:5px 10px;border-radius:10px;border:1px solid #dbe6ee;background:#f4fbff;}
-.link:hover{background:#e6f3fb;border-color:#b6d8ea;}
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
-.pill{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:900;display:inline-block;letter-spacing:.02em;}
-.pill-inwork{background:#fef3c7;color:#92400e;}
-.pill-underreview{background:#e0f2fe;color:#075985;}
-.pill-released{background:#dcfce7;color:#166534;}
-.pill-obsolete{background:#fee2e2;color:#991b1b;}
+.link {
+  display: inline-block;
+  color: var(--wc-indigo);
+  text-decoration: none;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--wc-border);
+  background: var(--wc-info-bg);
+}
+.link:hover { background: var(--wc-row-hover); border-color: var(--wc-info-border); }
+
+.pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 900; display: inline-block; letter-spacing: .02em; }
+.pill-inwork    { background: var(--wc-warning-bg); color: var(--wc-warning-text); }
+.pill-underreview { background: var(--wc-info-bg); color: var(--wc-info-text); }
+.pill-released  { background: var(--wc-success-bg); color: var(--wc-success-text); }
+.pill-obsolete  { background: var(--wc-danger-bg); color: var(--wc-danger-text); }

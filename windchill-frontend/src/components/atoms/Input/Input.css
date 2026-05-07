@@ -12,35 +12,41 @@
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 6px;
-  color: #333;
+  color: var(--wc-text-secondary);
   display: block;
 }
 
 .input {
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--wc-border);
   border-radius: 6px;
   font-size: 14px;
   transition: all 0.3s ease;
   font-family: inherit;
+  background: var(--wc-content-bg);
+  color: var(--wc-text-primary);
+}
+
+.input::placeholder {
+  color: var(--wc-text-muted);
 }
 
 .input:focus {
   outline: none;
-  border-color: #2180ae;
-  box-shadow: 0 0 0 3px rgba(33, 128, 174, 0.1);
+  border-color: var(--wc-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
 .input--error {
-  border-color: #d32f2f;
+  border-color: var(--wc-danger);
 }
 
 .input--error:focus {
-  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
 }
 
 .input-error {
-  color: #d32f2f;
+  color: var(--wc-danger-text);
   font-size: 12px;
   margin-top: 4px;
 }

@@ -186,10 +186,10 @@
   transition: all .15s;
 }
 .msBtn:hover { background: var(--wc-row-hover); }
-.msBtnStart { border-color: #22c55e; color: #15803d; }
-.msBtnStart:hover { background: #f0fdf4; }
-.msBtnStop { border-color: #ef4444; color: #b91c1c; }
-.msBtnStop:hover { background: #fef2f2; }
+.msBtnStart { border-color: var(--wc-success-border); color: var(--wc-success-text); }
+.msBtnStart:hover { background: var(--wc-success-bg); }
+.msBtnStop { border-color: var(--wc-danger-border); color: var(--wc-danger-text); }
+.msBtnStop:hover { background: var(--wc-danger-bg); }
 
 /* ── Tables ── */
 .sysTable {
@@ -223,8 +223,8 @@
   border-radius: 8px;
   font-size: 10px;
   font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--wc-info-bg);
+  color: var(--wc-info-text);
 }
 
 /* ── Event log ── */
@@ -247,9 +247,9 @@
   font-weight: 800;
   white-space: nowrap;
 }
-.levelInfo  { background: #dbeafe; color: #1d4ed8; }
-.levelWarn  { background: #fef3c7; color: #92400e; }
-.levelError { background: #fee2e2; color: #b91c1c; }
+.levelInfo  { background: var(--wc-info-bg);    color: var(--wc-info-text); }
+.levelWarn  { background: var(--wc-warning-bg); color: var(--wc-warning-text); }
+.levelError { background: var(--wc-danger-bg);  color: var(--wc-danger-text); }
 
 /* ── Shell card ── */
 .shellCard {

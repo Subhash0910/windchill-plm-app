@@ -20,15 +20,15 @@
 .lsf-dot {
   width: 14px; height: 14px;
   border-radius: 50%;
-  border: 2px solid #cbd5e1;
-  background: #fff;
+  border: 2px solid var(--wc-border);
+  background: var(--wc-content-bg);
   flex-shrink: 0;
 }
 
 .lsf-label {
   font-size: 10px;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--wc-text-muted);
   margin-top: 6px;
   text-align: center;
   white-space: nowrap;
@@ -38,26 +38,26 @@
 .lsf-line {
   flex: 1;
   height: 2px;
-  background: #e2e8f0;
+  background: var(--wc-border);
   margin-top: 6px;
   min-width: 24px;
 }
 
-.lsf-line-done { background: #2563eb; }
+.lsf-line-done { background: var(--wc-indigo); }
 
-.lsf-past .lsf-dot   { background: #2563eb; border-color: #2563eb; }
-.lsf-past .lsf-label { color: #64748b; }
+.lsf-past .lsf-dot   { background: var(--wc-indigo); border-color: var(--wc-indigo); }
+.lsf-past .lsf-label { color: var(--wc-text-secondary); }
 
 .lsf-current .lsf-dot {
-  background: #2563eb;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px #dbeafe;
+  background: var(--wc-indigo);
+  border-color: var(--wc-indigo);
+  box-shadow: 0 0 0 4px var(--wc-indigo-muted);
   width: 18px; height: 18px;
   margin-top: -2px;
 }
 .lsf-current .lsf-label {
-  color: #1d4ed8;
+  color: var(--wc-indigo);
   font-weight: 700;
 }
 
-.lsf-future .lsf-dot  { background: #f8fafc; border-color: #e2e8f0; }
+.lsf-future .lsf-dot  { background: var(--wc-page-bg); border-color: var(--wc-border); }

@@ -10,9 +10,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-family: var(--wc-font);
 }
 
-/* Enterprise feel: no jumpy lift; subtle focus ring */
 .btn:hover:not(:disabled) {
   transform: none;
   box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
@@ -20,7 +20,7 @@
 
 .btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(15, 77, 109, 0.18);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
 }
 
 .btn:disabled {
@@ -29,24 +29,25 @@
 }
 
 .btn--primary {
-  background-color: #0f4d6d;
-  border-color: #0f4d6d;
-  color: white;
+  background-color: var(--wc-indigo);
+  border-color: var(--wc-indigo);
+  color: #fff;
 }
 
 .btn--primary:hover:not(:disabled) {
-  background-color: #0c3f5a;
-  border-color: #0c3f5a;
+  background-color: var(--wc-indigo-dark);
+  border-color: var(--wc-indigo-dark);
 }
 
 .btn--secondary {
-  background-color: #f8fafc;
-  color: #111827;
-  border: 1px solid #e7e9f3;
+  background-color: var(--wc-content-bg);
+  color: var(--wc-text-primary);
+  border: 1px solid var(--wc-border);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: #eef2f7;
+  background-color: var(--wc-page-bg);
+  border-color: var(--wc-border);
 }
 
 .btn--sm {

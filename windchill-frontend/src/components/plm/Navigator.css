@@ -1,9 +1,9 @@
 .wc-navigator {
-  background: #fff;
-  border: 1px solid #e7e9f3;
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: var(--wc-shadow-xs);
 }
 
 .wc-nav-heading {
@@ -12,13 +12,13 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.9px;
-  color: #9ca3af;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fafbff;
+  color: var(--wc-text-muted);
+  border-bottom: 1px solid var(--wc-border-light);
+  background: var(--wc-page-bg);
 }
 
 /* ── Section header ── */
-.wc-nav-section { border-bottom: 1px solid #f1f5f9; }
+.wc-nav-section { border-bottom: 1px solid var(--wc-border-light); }
 .wc-nav-section:last-child { border-bottom: none; }
 
 .wc-nav-section-hdr {
@@ -33,20 +33,21 @@
   text-align: left;
   font-size: 12px;
   font-weight: 700;
-  color: #374151;
+  color: var(--wc-text-secondary);
   transition: background 0.1s;
+  font-family: var(--wc-font);
 }
-.wc-nav-section-hdr:hover { background: #f8fafc; }
-.wc-nav-section-hdr.open  { background: #eef7ff; color: #0f4d6d; }
+.wc-nav-section-hdr:hover { background: var(--wc-page-bg); }
+.wc-nav-section-hdr.open  { background: var(--wc-sidebar-active); color: var(--wc-indigo); }
 
 .wc-nav-sec-icon  { font-size: 13px; flex-shrink: 0; }
 .wc-nav-sec-label { flex: 1; }
-.wc-nav-chevron   { font-size: 10px; color: #9ca3af; margin-left: auto; }
+.wc-nav-chevron   { font-size: 10px; color: var(--wc-text-muted); margin-left: auto; }
 
 /* ── Items ── */
 .wc-nav-items {
   padding: 3px 0 5px;
-  background: #fafbff;
+  background: var(--wc-page-bg);
 }
 
 .wc-nav-item {
@@ -60,20 +61,21 @@
   cursor: pointer;
   text-align: left;
   font-size: 12.5px;
-  color: #4b5563;
+  color: var(--wc-text-secondary);
   font-weight: 500;
   transition: background 0.1s, color 0.1s;
   border-left: 3px solid transparent;
+  font-family: var(--wc-font);
 }
 .wc-nav-item:hover {
-  background: #e8f4fd;
-  color: #0f4d6d;
+  background: var(--wc-row-hover);
+  color: var(--wc-indigo);
 }
 .wc-nav-item.active {
-  background: #dbeafe;
-  color: #0f4d6d;
+  background: var(--wc-sidebar-active);
+  color: var(--wc-indigo);
   font-weight: 700;
-  border-left-color: #1a7bb9;
+  border-left-color: var(--wc-indigo);
   padding-left: 25px;
 }
 .wc-nav-item-icon { font-size: 13px; flex-shrink: 0; }

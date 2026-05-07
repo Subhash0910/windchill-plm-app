@@ -10,7 +10,7 @@
 
 /* ─ Drop Zone ─────────────────────────────────────── */
 .att-dropzone {
-  border: 2px dashed #c7d2fe;
+  border: 2px dashed rgba(99,102,241,0.4);
   border-radius: 12px;
   padding: 24px 16px;
   display: flex;
@@ -18,36 +18,36 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  background: #f5f3ff;
+  background: var(--wc-indigo-muted);
   transition: border-color 0.15s, background 0.15s;
   text-align: center;
   user-select: none;
 }
 .att-dropzone:hover,
 .att-dropzone--over {
-  border-color: #6366f1;
-  background: #ede9fe;
+  border-color: var(--wc-indigo);
+  background: rgba(99,102,241,0.15);
 }
 
 .att-drop-icon { font-size: 26px; }
-.att-drop-text  { font-size: 13px; color: #4338ca; font-weight: 500; }
+.att-drop-text  { font-size: 13px; color: var(--wc-indigo); font-weight: 500; }
 .att-drop-text strong { font-weight: 700; }
-.att-drop-hint  { font-size: 11px; color: #94a3b8; }
+.att-drop-hint  { font-size: 11px; color: var(--wc-text-muted); }
 
 .att-uploading {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: #4338ca;
+  color: var(--wc-indigo);
   font-weight: 600;
 }
 
 .att-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #c7d2fe;
-  border-top-color: #4f46e5;
+  border: 2px solid var(--wc-border);
+  border-top-color: var(--wc-indigo);
   border-radius: 50%;
   animation: att-spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -56,12 +56,12 @@
 
 /* ─ Error ────────────────────────────────────────── */
 .att-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
-  color: #b91c1c;
+  color: var(--wc-danger-text);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -70,7 +70,7 @@
 .att-error button {
   background: none;
   border: none;
-  color: #b91c1c;
+  color: var(--wc-danger-text);
   cursor: pointer;
   font-size: 16px;
   font-weight: 700;
@@ -83,7 +83,7 @@
 .att-skeleton {
   height: 54px;
   border-radius: 9px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--wc-border-light) 25%, var(--wc-page-bg) 50%, var(--wc-border-light) 75%);
   background-size: 200% 100%;
   animation: att-shimmer 1.4s infinite linear;
 }
@@ -102,8 +102,8 @@
   text-align: center;
 }
 .att-empty > span:first-child { font-size: 38px; }
-.att-empty p { margin: 0; font-size: 14px; color: #374151; font-weight: 600; }
-.att-empty-hint { font-size: 12px; color: #94a3b8; }
+.att-empty p { margin: 0; font-size: 14px; color: var(--wc-text-secondary); font-weight: 600; }
+.att-empty-hint { font-size: 12px; color: var(--wc-text-muted); }
 
 /* ─ File List ──────────────────────────────────────── */
 .att-list { display: flex; flex-direction: column; gap: 8px; }
@@ -113,18 +113,19 @@
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--wc-text-muted);
   padding-bottom: 2px;
 }
 
 .att-refresh {
   background: none;
   border: none;
-  color: #4f46e5;
+  color: var(--wc-indigo);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  font-family: var(--wc-font);
 }
 .att-refresh:hover { text-decoration: underline; }
 
@@ -134,11 +135,11 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 9px;
-  border: 1px solid #f1f5f9;
-  background: white;
+  border: 1px solid var(--wc-border-light);
+  background: var(--wc-content-bg);
   transition: border-color 0.12s, background 0.12s;
 }
-.att-row:hover { border-color: #e0e7ff; background: #f8f8ff; }
+.att-row:hover { border-color: var(--wc-indigo-muted); background: var(--wc-row-hover); }
 
 .att-file-icon { font-size: 22px; flex-shrink: 0; }
 
@@ -148,7 +149,7 @@
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--wc-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -157,7 +158,7 @@
 .att-meta {
   display: block;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--wc-text-muted);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -167,15 +168,16 @@
 .att-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 .att-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--wc-content-bg);
+  border: 1px solid var(--wc-border);
   border-radius: 7px;
   padding: 5px 9px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.12s;
   line-height: 1;
+  color: var(--wc-text-secondary);
 }
-.att-btn:hover           { border-color: #cbd5e1; background: #f8fafc; }
-.att-btn--delete:hover   { border-color: #fca5a5; background: #fef2f2; }
+.att-btn:hover           { border-color: var(--wc-border); background: var(--wc-page-bg); }
+.att-btn--delete:hover   { border-color: var(--wc-danger-border); background: var(--wc-danger-bg); color: var(--wc-danger-text); }
 .att-btn:disabled        { opacity: 0.5; cursor: not-allowed; }
