@@ -1,0 +1,303 @@
+/* ═══════════════════════════════════════════════════════════════
+   WcActionToolbar — Windchill-style dynamic action toolbar
+   Mimics the blue action bar above the Info Page in PTC Windchill
+═══════════════════════════════════════════════════════════════ */
+
+.wc-action-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  height: 44px;
+  background: linear-gradient(135deg, #1e2030 0%, #252840 100%);
+  border-bottom: 1px solid rgba(99,102,241,0.25);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.wc-action-toolbar::-webkit-scrollbar { display: none; }
+
+/* ── Object type badge ── */
+.wc-action-toolbar__type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Dividers ── */
+.wc-action-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+/* ── Primary button group ── */
+.wc-action-toolbar__primary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Loading skeleton ── */
+.wc-action-toolbar__loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOLBAR BUTTONS
+═══════════════════════════════════════════════════════════════ */
+
+.wc-action-toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.87);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease,
+    transform 100ms ease,
+    box-shadow 100ms ease;
+  user-select: none;
+}
+.wc-action-toolbar__btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.13);
+  border-color: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+.wc-action-toolbar__btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.wc-action-toolbar__btn:disabled,
+.wc-action-toolbar__btn--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ── Primary variant ── */
+.wc-action-toolbar__btn--primary {
+  background: rgba(99,102,241,0.25);
+  border-color: rgba(99,102,241,0.5);
+  color: #c7d2fe;
+}
+.wc-action-toolbar__btn--primary:hover:not(:disabled) {
+  background: rgba(99,102,241,0.4);
+  border-color: rgba(99,102,241,0.7);
+  box-shadow: 0 3px 10px rgba(99,102,241,0.3);
+}
+
+/* ── Checkout variant ── */
+.wc-action-toolbar__btn--checkout {
+  background: rgba(245,158,11,0.2);
+  border-color: rgba(245,158,11,0.4);
+  color: #fcd34d;
+}
+.wc-action-toolbar__btn--checkout:hover:not(:disabled) {
+  background: rgba(245,158,11,0.32);
+  border-color: rgba(245,158,11,0.6);
+}
+
+/* ── Success variant ── */
+.wc-action-toolbar__btn--success {
+  background: rgba(34,197,94,0.18);
+  border-color: rgba(34,197,94,0.4);
+  color: #86efac;
+}
+.wc-action-toolbar__btn--success:hover:not(:disabled) {
+  background: rgba(34,197,94,0.28);
+  border-color: rgba(34,197,94,0.6);
+}
+
+/* ── Danger variant ── */
+.wc-action-toolbar__btn--danger {
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(239,68,68,0.4);
+  color: #fca5a5;
+}
+.wc-action-toolbar__btn--danger:hover:not(:disabled) {
+  background: rgba(239,68,68,0.28);
+  border-color: rgba(239,68,68,0.6);
+}
+
+/* ── Revise variant ── */
+.wc-action-toolbar__btn--revise {
+  background: rgba(6,182,212,0.18);
+  border-color: rgba(6,182,212,0.4);
+  color: #67e8f9;
+}
+.wc-action-toolbar__btn--revise:hover:not(:disabled) {
+  background: rgba(6,182,212,0.28);
+  border-color: rgba(6,182,212,0.6);
+}
+
+/* ── AI variant ── */
+.wc-action-toolbar__btn--ai {
+  background: linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.25) 100%);
+  border-color: rgba(139,92,246,0.4);
+  color: #c4b5fd;
+}
+.wc-action-toolbar__btn--ai:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(139,92,246,0.38) 0%, rgba(99,102,241,0.38) 100%);
+}
+
+.wc-action-toolbar__btn-icon { font-size: 13px; line-height: 1; }
+.wc-action-toolbar__btn-label { line-height: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MORE ACTIONS DROPDOWN
+═══════════════════════════════════════════════════════════════ */
+
+.wc-action-toolbar__more {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wc-action-toolbar__more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 100ms ease;
+}
+.wc-action-toolbar__more-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.9);
+}
+.wc-action-toolbar__more-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.wc-action-toolbar__more-arrow {
+  display: inline-block;
+  transition: transform 160ms ease;
+  font-size: 10px;
+}
+.wc-action-toolbar__more-arrow.open { transform: rotate(180deg); }
+
+/* ── Dropdown panel ── */
+.wc-action-toolbar__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  min-width: 220px;
+  background: #1e2030;
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+  overflow: hidden;
+  animation: wcDropIn 0.15s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes wcDropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.wc-action-toolbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms ease;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.wc-action-toolbar__dropdown-item:last-child { border-bottom: none; }
+.wc-action-toolbar__dropdown-item:hover:not(:disabled):not(.disabled) {
+  background: rgba(99,102,241,0.18);
+  color: #fff;
+}
+.wc-action-toolbar__dropdown-item.disabled,
+.wc-action-toolbar__dropdown-item:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.wc-action-toolbar__dropdown-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.wc-action-toolbar__disabled-reason {
+  margin-left: auto;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+}
+
+/* ─── Customize button ── */
+.wc-action-toolbar__customize {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 120ms ease;
+  letter-spacing: 0.02em;
+}
+.wc-action-toolbar__customize:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.7);
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .wc-action-toolbar { padding: 0 12px; height: 40px; }
+  .wc-action-toolbar__btn { padding: 4px 9px; font-size: 11px; }
+  .wc-action-toolbar__btn-label { display: none; }
+  .wc-action-toolbar__btn-icon { font-size: 15px; }
+  .wc-action-toolbar__customize { display: none; }
+  .wc-action-toolbar__type span { display: none; }
+}

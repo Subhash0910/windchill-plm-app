@@ -80,6 +80,17 @@ export const plmApi = {
   addBomLine:    async (pid, p)  => { const r = await api.post(`/api/v1/plm/parts/${pid}/bom`, p); return r.data.data; },
   deleteBomLine: async (id)      => { const r = await api.delete(`/api/v1/plm/bom-lines/${id}`); return r.data.data; },
 
+  // ── Action Model Registry ─────────────────────────────────────────────────
+  listActionModels:    async (objectType) => {
+    const r = await api.get('/api/v1/plm/actions', { params: objectType ? { objectType } : {} });
+    return r.data?.data ?? [];
+  },
+  createActionModel:   async (body)       => { const r = await api.post('/api/v1/plm/actions', body); return r.data?.data; },
+  updateActionModel:   async (id, body)   => { const r = await api.put(`/api/v1/plm/actions/${id}`, body); return r.data?.data; },
+  toggleActionModel:   async (id)         => { const r = await api.patch(`/api/v1/plm/actions/${id}/toggle`); return r.data?.data; },
+  deleteActionModel:   async (id)         => { const r = await api.delete(`/api/v1/plm/actions/${id}`); return r.data?.data; },
+  getActionXml:        async (id)         => { const r = await api.get(`/api/v1/plm/actions/${id}/xml`); return r.data?.data; },
+
   // ── IBA (Instance-Based Attributes) ─────────────────────────────────────
   listIbaAttributes:   async (partId)       => { const r = await api.get(`/api/v1/plm/parts/${partId}/iba`); return r.data?.data ?? []; },
   createIbaAttribute:  async (partId, body) => { const r = await api.post(`/api/v1/plm/parts/${partId}/iba`, body); return r.data?.data; },

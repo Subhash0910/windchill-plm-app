@@ -81,11 +81,16 @@ const NavigatorPanel = () => {
         <NavItem to="/plm/ai-demo" icon="⚡" label="AI Impact Engine" />
       </NavGroup>
 
+      {/* CUSTOMIZATION */}
+      <NavGroup icon="⚙️" label="Customization" defaultOpen={false}>
+        <NavItem to="/plm/admin/actions" icon="⚡" label="Action Model Registry" />
+        <NavItem to="/plm/admin/system"  icon="🖥️" label="System Status" />
+      </NavGroup>
+
       {/* ADMINISTRATION */}
       <NavGroup icon="🛠️" label="Administration" defaultOpen={false}>
-        <NavItem to="/plm/admin/users"  icon="👤" label="User Management" />
-        <NavItem to="/plm/admin/system" icon="🖥️" label="System Status" />
-        <NavItem to="/plm/audit-log"    icon="📋" label="Audit Log" />
+        <NavItem to="/plm/admin/users" icon="👤" label="User Management" />
+        <NavItem to="/plm/audit-log"   icon="📋" label="Audit Log" />
       </NavGroup>
     </nav>
   );

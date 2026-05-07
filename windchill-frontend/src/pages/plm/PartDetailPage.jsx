@@ -11,6 +11,7 @@ import LifecycleStateflow from '../../components/plm/LifecycleStateflow';
 import ContextualInsightPanel from '../../components/ai/ContextualInsightPanel';
 import ImpactPreview from '../../components/ai/ImpactPreview';
 import ImpactVisualizer from '../../components/plm/ImpactVisualizer';
+import WcActionToolbar from '../../components/plm/WcActionToolbar';
 import { plmApi } from '../../services/plmApi';
 import { aiService } from '../../services/aiService';
 import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
@@ -506,6 +507,22 @@ const PartDetailPage = () => {
     } finally { setSaving(false); }
   };
 
+  /* ── toolbar action dispatcher ─────────────────────────────────────────── */
+  const handleToolbarAction = (actionName) => {
+    switch (actionName) {
+      case 'checkout':     return checkOut();
+      case 'checkin':      return checkIn();
+      case 'undoCheckout': return undoCheckOut();
+      case 'submitReview': return promote('UNDERREVIEW');
+      case 'release':      return promote('RELEASED');
+      case 'obsolete':     return promote('OBSOLETE');
+      case 'revise':       return revise();
+      case 'analyzeImpact':return setShowAiAnalysis(true);
+      case 'newEcr':       return navigate('/plm/changes');
+      default: break;
+    }
+  };
+
   /* ── checkout actions ───────────────────────────────────────────────────── */
   const checkOut = async () => {
     try {
@@ -694,6 +711,15 @@ const PartDetailPage = () => {
           ))}
         </div>
       </div>
+
+      {/* ══ Windchill-style action toolbar ════════════════════════════════ */}
+      <WcActionToolbar
+        objectType="PART"
+        objectId={part.id}
+        currentState={part.lifecycleState}
+        onAction={handleToolbarAction}
+        loading={saving || coLoading}
+      />
 
       {/* ══ Two-column workspace ══════════════════════════════════════════ */}
       <div className={styles.detailGrid} style={{ marginTop: 16 }}>
