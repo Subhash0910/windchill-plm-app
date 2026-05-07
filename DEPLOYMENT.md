@@ -6,7 +6,7 @@ Two options depending on your infrastructure. **Option A is recommended** — it
 
 ## Option A — Single Server (Docker Compose)
 
-Best for: a VPS, a Railway Docker Compose deployment, or a DigitalOcean Droplet.
+Best for: a VPS or a DigitalOcean Droplet where you control the full server.
 
 ### Prerequisites
 - Server with Docker + Docker Compose v2 installed
@@ -73,37 +73,38 @@ docker-compose up -d --no-deps backend
 
 ---
 
-## Option B — Split Deploy (Vercel + Railway)
+## Option B — Split Deploy (Vercel + Render)
 
-Best for: free tier hosting, no VPS available.
+This is the live deployment setup for this project. Frontend on Vercel, backend on Render free tier.
 
 ### Frontend → Vercel
-1. Push code to GitHub (already done)
-2. Go to [vercel.com](https://vercel.com) → New Project → Import from GitHub
-3. Set **Root Directory** to `windchill-frontend`
-4. Add environment variable:
-   - `VITE_API_BASE_URL` = `https://your-backend.up.railway.app`
-5. Deploy
 
-### Backend + MySQL + Redis → Railway
-1. Go to [railway.app](https://railway.app) → New Project
-2. Add **MySQL** plugin → copy the `MYSQL_URL` from Railway
-3. Add **Redis** plugin → copy the `REDIS_URL` from Railway
-4. Add a new Service → Deploy from GitHub repo
-   - Set **Root Directory** to `windchill-backend`
-   - Set **Start Command** to let Railway detect the Dockerfile
-5. Set these environment variables in Railway:
+1. Go to [vercel.com](https://vercel.com) → New Project → Import from GitHub
+2. Set **Root Directory** to `windchill-frontend`
+3. Add one environment variable:
+   - `VITE_API_BASE_URL` = your Render backend URL (e.g. `https://windchill-backend.onrender.com`)
+4. Deploy — Vercel auto-deploys on every push to `main`
 
-```
-SPRING_PROFILES_ACTIVE=prod
-SPRING_DATASOURCE_URL=jdbc:mysql://YOUR_RAILWAY_MYSQL_HOST:PORT/windchill_db?serverTimezone=UTC&useSSL=true&allowPublicKeyRetrieval=true
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=your-railway-mysql-password
-SPRING_DATA_REDIS_HOST=your-redis-host.railway.internal
-SPRING_DATA_REDIS_PORT=6379
-APP_JWTSECRET=your-64-char-secret-from-openssl
-APP_BASE_URL=https://your-app.vercel.app
-```
+### Backend → Render
+
+The repo already includes `render.yaml` which Render reads automatically.
+
+1. Go to [render.com](https://render.com) → New → Blueprint
+2. Connect the GitHub repo — Render detects `render.yaml` and configures the service
+3. The backend deploys with `SPRING_PROFILES_ACTIVE=demo` (H2 in-memory DB, no MySQL needed on Render free tier)
+4. Render auto-generates `APP_JWTSECRET` — no manual secret needed
+
+**Key Render environment variables (set in Render dashboard if overriding defaults):**
+
+| Variable | Value |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `demo` (free tier) or `prod` (paid tier with external MySQL) |
+| `APP_BASE_URL` | Your Vercel frontend URL |
+| `ML_SERVICE_URL` | Your Render ML service URL |
+
+**Free tier note:** Render free instances sleep after 15 minutes of inactivity. The first request after sleep takes 30–60 seconds to wake up. This is expected — it is not a bug.
+
+**ML service on Render:** The `windchill-ml` service is also configured in `render.yaml` and deploys alongside the backend. It runs the FastAPI risk model independently.
 
 ---
 
