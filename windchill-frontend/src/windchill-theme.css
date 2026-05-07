@@ -719,3 +719,50 @@ a:hover { text-decoration: underline; }
 .wc-flex     { display: flex; align-items: center; gap: 8px; }
 .wc-stack    { display: flex; flex-direction: column; gap: 4px; }
 .wc-spacer   { flex: 1; }
+
+/* ── PLM legacy utilities (used throughout app) ── */
+.plm-error {
+  background: var(--wc-danger-bg);
+  border: 1px solid var(--wc-danger-border);
+  border-radius: var(--wc-radius-sm);
+  color: var(--wc-danger-text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  margin: 8px 0;
+}
+.plm-muted {
+  color: var(--wc-text-muted);
+  font-size: 13px;
+}
+.plm-select {
+  width: 100%;
+  padding: 7px 11px;
+  font-size: 13px;
+  font-family: var(--wc-font);
+  border: 1px solid var(--wc-border);
+  border-radius: var(--wc-radius-sm);
+  background: var(--wc-content-bg);
+  color: var(--wc-text-primary);
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--wc-duration-fast), box-shadow var(--wc-duration-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+.plm-select:focus {
+  border-color: var(--wc-indigo);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+
+/* ── ECO/ECR global state color classes (used in ChangeOrderDetailPage) ── */
+.wc-state-draft        { background: var(--wc-info-bg);               color: var(--wc-info-text);               border-color: var(--wc-info-border, transparent); }
+.wc-state-open         { background: var(--wc-state-inwork-bg);        color: var(--wc-state-inwork-text);        border-color: var(--wc-state-inwork-border); }
+.wc-state-underreview  { background: var(--wc-state-underreview-bg);   color: var(--wc-state-underreview-text);   border-color: var(--wc-state-underreview-border); }
+.wc-state-approved     { background: var(--wc-success-bg);             color: var(--wc-success-text);             border-color: var(--wc-success-border, transparent); }
+.wc-state-implementing { background: var(--wc-indigo-muted);           color: var(--wc-indigo-dark);              border-color: rgba(99,102,241,0.25); }
+.wc-state-released     { background: var(--wc-state-released-bg);      color: var(--wc-state-released-text);      border-color: var(--wc-state-released-border); }
+.wc-state-obsolete     { background: var(--wc-state-obsolete-bg);      color: var(--wc-state-obsolete-text);      border-color: var(--wc-state-obsolete-border); }

@@ -75,7 +75,7 @@ const Header = ({ title, onMenuToggle, mobileNavOpen }) => {
       {/* Right controls */}
       <div className="wc-header-right">
         {user?.role === 'ADMIN' && (
-          <a className="wc-nav-chip" href="/admin/users">Admin</a>
+          <a className="wc-nav-chip" href="/plm/admin/users">Admin</a>
         )}
         <NotificationBell />
 

@@ -65,6 +65,6 @@
   fill: var(--wc-text-secondary);
 }
 .react-flow__controls button:hover {
-  background: var(--wc-sidebar-hover);
+  background: var(--wc-row-hover);
   fill: var(--wc-text-primary);
 }

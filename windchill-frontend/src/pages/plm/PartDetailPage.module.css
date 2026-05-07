@@ -278,7 +278,7 @@
 
 .relatedNav {
   width: 160px;
-  background: var(--wc-sidebar-bg);
+  background: var(--wc-page-bg);
   border-right: 1px solid var(--wc-border-light);
   display: flex;
   flex-direction: column;

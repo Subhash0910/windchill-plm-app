@@ -12,7 +12,7 @@
 .pageHeader {
   padding: 14px 20px 10px;
   border-bottom: 1px solid var(--wc-border);
-  background: var(--wc-sidebar-bg);
+  background: var(--wc-content-bg);
 }
 .pageTitleRow {
   display: flex;
@@ -330,7 +330,7 @@
   font-weight: 600;
   color: var(--wc-text-muted);
   border-top: 1px solid var(--wc-border);
-  background: var(--wc-sidebar-bg);
+  background: var(--wc-page-bg);
 }
 
 /* ─── Mobile ─── */

@@ -84,7 +84,7 @@ const NavigatorPanel = () => {
 
       {/* ADMIN */}
       <NavGroup icon="🛠️" label="Administration" defaultOpen={false}>
-        <NavItem to="/admin/users"   icon="👤" label="User Management" />
+        <NavItem to="/plm/admin/users"   icon="👤" label="User Management" />
         <NavItem to="/plm/audit-log" icon="📋" label="Audit Log" />
       </NavGroup>
     </nav>

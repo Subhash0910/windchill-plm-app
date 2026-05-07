@@ -32,8 +32,6 @@ const AppRoutes = () => (
       <Routes>
         <Route path="/login"       element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/dashboard"   element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-        <Route path="/admin/users" element={<PrivateRoute><UsersAdminPage /></PrivateRoute>} />
-
         <Route path="/plm" element={<PrivateRoute><PlmLayout /></PrivateRoute>}>
           <Route index element={<Navigate to="parts" replace />} />
           <Route path="parts"             element={<PartsPage />} />
@@ -53,6 +51,7 @@ const AppRoutes = () => (
           <Route path="audit-log"         element={<AuditLogPage />} />
           <Route path="team"              element={<TeamManagementPage />} />
           <Route path="ai-demo"           element={<AIDemo />} />
+          <Route path="admin/users"       element={<UsersAdminPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
