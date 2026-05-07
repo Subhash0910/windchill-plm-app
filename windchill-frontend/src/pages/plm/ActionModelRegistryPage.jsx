@@ -190,7 +190,7 @@ const ActionDialog = ({ action, onSave, onClose }) => {
                 <div>
                   <div className={styles.processorIntroTitle}>Form Processor Registration</div>
                   <div className={styles.processorIntroSub}>
-                    In PTC Windchill, form processors are Java classes registered via XML.
+                    In enterprise PLM systems, form processors are Java classes registered via XML.
                     Each action button maps to a processor method that executes the business logic.
                   </div>
                 </div>
@@ -256,8 +256,8 @@ const ActionDialog = ({ action, onSave, onClose }) => {
             <div>
               <div className={styles.xmlInfoBanner}>
                 <span>📘</span>
-                <span>In PTC Windchill, this XML would live in
-                  <code> codebase/config/actions/site_actionmodels.xml</code> and be loaded
+                <span>In enterprise PLM deployments, this XML lives in
+                  <code> codebase/config/actions/site_actionmodels.xml</code> and is loaded
                   by the MethodServer at startup. Here it is database-driven but fully equivalent.</span>
               </div>
               <XmlViewer xml={xml || buildLocalXml(form)} />
@@ -381,9 +381,9 @@ const ActionModelRegistryPage = () => {
         <div>
           <div className={styles.conceptBannerTitle}>How Windchill Action Models Work</div>
           <div className={styles.conceptBannerText}>
-            In PTC Windchill, every toolbar button is a registered <strong>action</strong> bound to a
+            In enterprise PLM systems, every toolbar button is a registered <strong>action</strong> bound to a
             <strong> form processor</strong> Java class. Clicking "Check Out" invokes
-            <code> com.ptc.windchill.mpml.part.PartActionProcessor.checkout()</code>.
+            <code> com.windchill.service.plm.PartActionProcessor.checkout()</code>.
             This registry is the database-driven equivalent — same architecture, REST delivery.
           </div>
         </div>
@@ -536,7 +536,7 @@ const ActionModelRegistryPage = () => {
           </div>
           <div className={styles.refItem}>
             <div className={styles.refItemTitle}>Form Processor Class</div>
-            <code className={styles.refItemCode}>com.ptc.windchill.mpml.part.PartActionProcessor</code>
+            <code className={styles.refItemCode}>com.windchill.service.plm.PartActionProcessor</code>
             <div className={styles.refItemDesc}>Java class implementing the action logic. Methods map 1:1 to registered actions.</div>
           </div>
           <div className={styles.refItem}>
@@ -586,8 +586,8 @@ function buildLocalXml(form) {
   Action Name : ${form.actionName || '?'}
   Generated   : ${new Date().toISOString().split('T')[0]}
 -->
-<actionModels xmlns="http://www.ptc.com/windchill/actionModel"
-              version="11.0">
+<actionModels xmlns="http://openplm.io/schema/actionModel"
+              version="1.0">
 
   <action name="${form.actionName || 'myAction'}"
           resourceBundle="${rb}"
