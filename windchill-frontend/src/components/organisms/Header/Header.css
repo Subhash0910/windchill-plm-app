@@ -173,6 +173,29 @@
 .wc-dropdown-logout { color: var(--wc-danger-text); }
 .wc-dropdown-logout:hover { background: var(--wc-danger-bg); }
 
+/* ── Help / tour replay button ── */
+.tour-help-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--wc-radius-sm);
+  border: 1px solid var(--wc-border);
+  background: var(--wc-content-bg);
+  color: var(--wc-text-secondary);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 200ms var(--wc-ease-spring);
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: var(--wc-font);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.tour-help-btn:hover {
+  background: var(--wc-indigo);
+  border-color: var(--wc-indigo);
+  color: #fff;
+}
+
 /* ── Theme toggle ── */
 .wc-theme-toggle {
   width: 32px; height: 32px;

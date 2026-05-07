@@ -79,6 +79,16 @@ const Header = ({ title, onMenuToggle, mobileNavOpen }) => {
         )}
         <NotificationBell />
 
+        {/* Help — replay onboarding tour */}
+        <button
+          className="tour-help-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('wc-start-tour'))}
+          title="Replay product tour"
+          aria-label="Open product tour"
+        >
+          ?
+        </button>
+
         {/* Dark mode toggle */}
         <button
           className="wc-theme-toggle"

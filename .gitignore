@@ -102,3 +102,9 @@ gradle-app.setting
 
 # ── Build / dev artefacts that should not be committed ─────────────
 build_log.txt
+response.txt
+
+# ── Screenshots and images captured outside the repo ──────────────
+Screenshot*.png
+screenshot*.png
+*.screenshot.png

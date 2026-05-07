@@ -5,6 +5,7 @@ import ContextSwitcher from '../../components/plm/ContextSwitcher';
 import FolderTree from '../../components/plm/FolderTree';
 import NavigatorPanel from '../../components/plm/NavigatorPanel';
 import AIChatBot from '../../components/ai/AIChatBot';
+import OnboardingTour from '../../components/plm/OnboardingTour';
 import './PlmLayout.css';
 
 const PlmLayout = () => {
@@ -127,6 +128,7 @@ const PlmLayout = () => {
       </div>
 
       <AIChatBot onAction={handleChatAction} currentPage={getCurrentPage()} />
+      <OnboardingTour />
     </div>
   );
 };
