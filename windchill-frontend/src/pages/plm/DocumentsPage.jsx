@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
 import { documentApi } from '../../services/documentApi';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import styles from './DocumentsPage.module.css';
 
 const DOC_TYPES = ['SPEC', 'DRAWING', 'PROCEDURE', 'REPORT'];
 
 const DocumentsPage = () => {
   const navigate = useNavigate();
+  const { selectedContextId } = useContext(PlmWorkspaceContext);
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,15 +20,14 @@ const DocumentsPage = () => {
   const [form, setForm] = useState({ docNumber: '', name: '', description: '', docType: 'SPEC' });
   const [saving, setSaving] = useState(false);
 
-  const contextId = localStorage.getItem('activeContextId') || 1;
-
   const load = useCallback(() => {
+    if (!selectedContextId) { setDocs([]); setLoading(false); return; }
     setLoading(true);
-    documentApi.list(contextId)
+    documentApi.list(selectedContextId)
       .then(data => { setDocs(Array.isArray(data) ? data : []); setError(null); })
       .catch(e => setError(e.response?.data?.message || e.message))
       .finally(() => setLoading(false));
-  }, [contextId]);
+  }, [selectedContextId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -48,7 +49,7 @@ const DocumentsPage = () => {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      await documentApi.create({ ...form, contextId: Number(contextId) });
+      await documentApi.create({ ...form, contextId: Number(selectedContextId) });
       setCreating(false);
       setForm({ docNumber: '', name: '', description: '', docType: 'SPEC' });
       load();

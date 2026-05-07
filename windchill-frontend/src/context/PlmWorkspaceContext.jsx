@@ -26,9 +26,12 @@ export const PlmWorkspaceProvider = ({ children }) => {
       setSelectedContextId(Number(ctxId));
       if (ctxName) setSelectedContextName(ctxName);
     } else {
-      // No stored context — auto-select the first available one
+      // No stored context — auto-select the first non-DEFAULT active context
       plmApi.listContexts().then(contexts => {
-        const active = Array.isArray(contexts) ? contexts.find(c => c.isActive !== false) : null;
+        if (!Array.isArray(contexts) || contexts.length === 0) return;
+        const active =
+          contexts.find(c => c.isActive !== false && c.code !== 'DEFAULT') ||
+          contexts.find(c => c.isActive !== false);
         if (active) {
           setSelectedContextId(active.id);
           setSelectedContextName(active.name || active.code || '');

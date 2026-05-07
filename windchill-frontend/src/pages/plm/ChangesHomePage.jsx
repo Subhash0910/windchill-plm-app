@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import {
   getEcrsByContext, createEcr,
   submitEcr, startEcrReview, approveEcr, rejectEcr, closeEcr, reopenEcr,
@@ -38,6 +39,7 @@ const ECO_TRANSITIONS = {
 // ── component ────────────────────────────────────────────────────────────────
 export default function ChangesHomePage() {
   const { user } = useContext(AuthContext);
+  const { selectedContextId } = useContext(PlmWorkspaceContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('ecr');
@@ -51,7 +53,7 @@ export default function ChangesHomePage() {
   const [ecrForm, setEcrForm] = useState({ title: '', description: '', priority: 'MEDIUM' });
   const [ecoForm, setEcoForm] = useState({ title: '', description: '', priority: 'MEDIUM', ecrId: '' });
 
-  const contextId = user?.contextId || 1;
+  const contextId = selectedContextId || 1;
 
   const loadAll = useCallback(async () => {
     setLoading(true); setError('');

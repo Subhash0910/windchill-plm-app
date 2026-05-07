@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StateBadge from '../../components/plm/StateBadge';
 import { plmApi } from '../../services/plmApi';
+import { PlmWorkspaceContext } from '../../context/PlmWorkspaceContext';
 import styles from './PartsPage.module.css';
 
 const LIFECYCLE_TRANSITIONS = {
@@ -13,6 +14,7 @@ const LIFECYCLE_TRANSITIONS = {
 
 export default function PartsPage() {
   const navigate = useNavigate();
+  const { selectedContextId } = useContext(PlmWorkspaceContext);
   const [parts,    setParts]    = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
@@ -31,15 +33,14 @@ export default function PartsPage() {
   const [actBusy, setActBusy] = useState(false);
   const [actError, setActError] = useState(null);
 
-  const contextId = localStorage.getItem('activeContextId') || 1;
-
   const load = useCallback(() => {
+    if (!selectedContextId) { setParts([]); setLoading(false); return; }
     setLoading(true);
-    plmApi.listParts(contextId)
+    plmApi.listParts(selectedContextId)
       .then(data => { setParts(Array.isArray(data) ? data : []); setError(null); })
       .catch(e  => setError(e.response?.data?.message || e.message))
       .finally(() => setLoading(false));
-  }, [contextId]);
+  }, [selectedContextId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -78,7 +79,7 @@ export default function PartsPage() {
     if (!form.partNumber.trim() || !form.name.trim()) return;
     setSaving(true);
     try {
-      await plmApi.createPart({ ...form, contextId: Number(contextId) });
+      await plmApi.createPart({ ...form, contextId: Number(selectedContextId) });
       setCreating(false);
       setForm({ partNumber: '', name: '', description: '' });
       load();
@@ -245,7 +246,7 @@ export default function PartsPage() {
       </div>
 
       <footer className={styles.statusBar}>
-        Showing {filtered.length} parts in {contextId === 1 ? 'Global Context' : `Context ID: ${contextId}`}
+        Showing {filtered.length} parts {selectedContextId ? `in context #${selectedContextId}` : '— no context selected'}
       </footer>
 
       {dialog && (
