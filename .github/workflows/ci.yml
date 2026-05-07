@@ -26,6 +26,9 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
+          # Ephemeral CI-only credentials — this container is destroyed after each run.
+          # These are NOT production credentials. Production secrets are managed via
+          # GitHub Secrets (see docker push steps below) and Render env vars.
           MYSQL_ROOT_PASSWORD: rootpassword
           MYSQL_DATABASE: windchill_db
           MYSQL_USER: windchill
