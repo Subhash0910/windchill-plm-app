@@ -89,6 +89,10 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  height: 100%;
+  padding: 0 16px;
+  background: var(--wc-page-bg);
+  border-bottom: 1px solid var(--wc-border);
 }
 
 .wc-nav-chip {
