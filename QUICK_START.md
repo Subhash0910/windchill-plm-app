@@ -1,248 +1,112 @@
-# ⚡ QUICK START - Windchill PLM App
+# Quick Start
 
-## **OPTION 1: DOCKER (EASIEST) - 3 STEPS** 🐳
+## Option A: Docker (recommended)
 
-### Step 1: Pull Code
+The full stack — Spring Boot, MySQL, Redis, ML service, React — runs in 3 commands.
+
+### Prerequisites
+- Docker Desktop installed and running
+- Git
+
+### Steps
+
 ```bash
+git clone https://github.com/Subhash0910/windchill-plm-app.git
 cd windchill-plm-app
-git checkout feature/ai-impact-engine
-git pull
+cp .env.example .env        # Windows: copy .env.example .env
+docker-compose up -d --build
 ```
 
-### Step 2: Configure
-```bash
-copy .env.example .env
-```
+First build takes ~3 minutes (Maven downloads dependencies and the ML model trains). Subsequent starts are fast.
 
-### Step 3: Start Everything
-```bash
-docker-compose up --build
-```
+Open [http://localhost:3000](http://localhost:3000)
 
-**✅ DONE! Open http://localhost:3000**
+**Default credentials**
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Password | `admin123` |
 
 ---
 
-## **OPTION 2: MANUAL (FULL CONTROL) - 5 STEPS**
+## Option B: Manual (no Docker)
 
-### Step 1: Pull Code
-```bash
-cd windchill-plm-app
-git checkout feature/ai-impact-engine
-git pull
-```
+### Prerequisites
+- Java 17+
+- Node.js 18+
+- Maven 3.9+
+- MySQL 8 running locally
+- Redis running locally
 
-### Step 2: Add Backend Dependencies
-Open `windchill-backend/pom.xml` and add:
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-mail</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-thymeleaf</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-websocket</artifactId>
-</dependency>
-```
+### 1. Configure environment
 
-### Step 3: Install Frontend Dependencies
-```bash
-cd windchill-frontend
-npm install react-dropzone sockjs-client @stomp/stompjs react-hot-toast
-```
+Create a local config override at `windchill-backend/backend-api/src/main/resources/application-dev.yml` and set your local MySQL and Redis connection details, or export them as environment variables matching the names in `.env.example`.
 
-### Step 4: Configure Application
-Create `windchill-backend/src/main/resources/application.yml`:
-```yaml
-spring:
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${EMAIL_USERNAME:your-email@gmail.com}
-    password: ${EMAIL_PASSWORD:your-app-password}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+### 2. Run the backend
 
-app:
-  email:
-    enabled: false
-  base-url: http://localhost:3000
-  file-storage:
-    local:
-      path: C:/windchill-files
-```
-
-Create file storage directory:
-```bash
-mkdir C:\windchill-files
-```
-
-### Step 5: Start Services
-
-**Terminal 1 - Backend:**
 ```bash
 cd windchill-backend
-mvn spring-boot:run
+mvn spring-boot:run -pl backend-api -am
 ```
 
-**Terminal 2 - Frontend:**
+Backend starts on `http://localhost:8080`. Spring Boot will auto-create all tables on first run (profile: `dev`, `ddl-auto: update`).
+
+### 3. Run the frontend
+
 ```bash
 cd windchill-frontend
-npm start
+npm install
+npm run dev
 ```
 
-**✅ DONE! Open http://localhost:3000**
+Frontend starts on `http://localhost:5173` (Vite dev server).
 
 ---
 
-## **🧪 TESTING THE FEATURES**
+## Verify the stack is up
 
-### Test File Upload:
 ```bash
-# Using curl (replace YOUR_TOKEN)
-curl -X POST http://localhost:8080/api/v1/files/upload \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@test.pdf" \
-  -F "entityType=ECN" \
-  -F "entityId=1"
+# Backend health
+curl http://localhost:8080/actuator/health
+
+# Frontend (Docker)
+curl -I http://localhost:3000
 ```
 
-### Test Notifications:
-```bash
-# Get unread count
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://localhost:8080/api/v1/notifications/count
-
-# Get notifications
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://localhost:8080/api/v1/notifications/unread
-```
-
-### Check WebSocket:
-1. Open browser DevTools (F12)
-2. Go to Console tab
-3. Look for: `✅ WebSocket connected`
+All services should report healthy. If the backend shows `DOWN`, check `docker-compose logs backend` for the startup error.
 
 ---
 
-## **🔧 INTEGRATION IN YOUR APP**
+## Common issues
 
-### Add NotificationBell to Header:
-```jsx
-// In your Header.jsx
-import NotificationBell from '../notifications/NotificationBell';
-
-function Header() {
-  return (
-    <header>
-      {/* Your existing header */}
-      <NotificationBell />
-    </header>
-  );
-}
-```
-
-### Add File Upload to ECN Form:
-```jsx
-// In your ECNDetails.jsx
-import FileUpload from '../../components/files/FileUpload';
-import FileList from '../../components/files/FileList';
-
-function ECNDetails({ ecn }) {
-  const [refreshFiles, setRefreshFiles] = useState(0);
-
-  return (
-    <div>
-      {/* Existing ECN details */}
-      
-      <div className="mt-8">
-        <h3>Attachments</h3>
-        
-        <FileUpload
-          entityType="ECN"
-          entityId={ecn.id}
-          onUploadSuccess={() => setRefreshFiles(prev => prev + 1)}
-        />
-        
-        <FileList
-          entityType="ECN"
-          entityId={ecn.id}
-          refreshTrigger={refreshFiles}
-        />
-      </div>
-    </div>
-  );
-}
-```
-
----
-
-## **⚠️ COMMON ISSUES**
-
-### Issue: "Port already in use"
+**Port 8080 already in use**
 ```bash
-# Find and kill process (Windows PowerShell as Admin)
+# Windows PowerShell
 netstat -ano | findstr :8080
 Stop-Process -Id <PID> -Force
 ```
 
-### Issue: "Module not found"
+**Frontend module not found**
 ```bash
 cd windchill-frontend
-rm -rf node_modules package-lock.json
+Remove-Item -Recurse -Force node_modules, package-lock.json
 npm install
 ```
 
-### Issue: "Database connection failed"
-```bash
-# Make sure PostgreSQL is running
-# Or use H2 in-memory database for testing
+**MySQL connection refused (manual mode)**
+Make sure MySQL is running and the `windchill_db` database exists. The app does not create the database automatically — only the tables.
+```sql
+CREATE DATABASE windchill_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### Issue: "WebSocket not connecting"
-- Check if backend is running on port 8080
-- Check browser console for errors
-- Update WebSocket URL in `useWebSocket.js`
+**Backend takes too long to start on Render free tier**
+Render free instances sleep after 15 minutes of inactivity. The first request wakes them up and may take 30–60 seconds. This is expected behavior.
 
 ---
 
-## **📚 DOCUMENTATION**
+## Documentation
 
-- **Full Setup:** [FEATURE_IMPLEMENTATION_SUMMARY.md](./FEATURE_IMPLEMENTATION_SUMMARY.md)
-- **Docker Guide:** [DOCKER_DEPLOYMENT_GUIDE.md](./DOCKER_DEPLOYMENT_GUIDE.md)
-- **Production Plan:** [PRODUCTION_UPGRADE_PLAN.md](./PRODUCTION_UPGRADE_PLAN.md)
-
----
-
-## **✅ VERIFICATION CHECKLIST**
-
-After setup, verify:
-- [ ] Backend starts without errors
-- [ ] Frontend starts without errors
-- [ ] Can login to the app
-- [ ] NotificationBell appears in header
-- [ ] Can upload files
-- [ ] Can download files
-- [ ] WebSocket shows "connected" in console
-- [ ] Can create test notification
-
----
-
-## **💬 NEED HELP?**
-
-1. Check logs for errors
-2. Review documentation files
-3. Test with curl commands
-4. Check browser DevTools console
-
----
-
-**You're all set! 🎉**
+- [DEPLOYMENT.md](./DEPLOYMENT.md) — Docker Compose, Vercel + Railway, HTTPS, security checklist
+- [docs/SETUP_GUIDE.md](./docs/SETUP_GUIDE.md) — full setup reference
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — backend module and frontend layer map
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines
